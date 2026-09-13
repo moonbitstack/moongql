@@ -4,7 +4,7 @@
 
 **A code-first GraphQL library for MoonBit — `← strawberry-graphql`.**
 
-[![Check and Test](https://github.com/Lfan-ke/moongql/actions/workflows/ci.yml/badge.svg)](https://github.com/Lfan-ke/moongql/actions/workflows/ci.yml)
+[![Check and Test](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml/badge.svg)](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 [![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoongql-brightgreen)](https://mooncakes.io/docs/Lfan-ke/moongql)
 

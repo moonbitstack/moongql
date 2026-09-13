@@ -1,10 +1,10 @@
 name = "Lfan-ke/moongql"
 
-version = "0.8.0"
+version = "0.8.1"
 
 readme = "README.md"
 
-repository = "https://github.com/Lfan-ke/moongql"
+repository = "https://github.com/moonbitstack/moongql"
 
 license = "Apache-2.0"
 
