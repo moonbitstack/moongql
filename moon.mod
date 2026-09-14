@@ -1,4 +1,4 @@
-name = "Lfan-ke/moongql"
+name = "moonbitstack/moongql"
 
 version = "0.8.1"
 
@@ -13,5 +13,5 @@ keywords = [ "graphql", "strawberry", "schema", "sdl", "code-first", "moonbit" ]
 description = "moongql — a code-first GraphQL library for MoonBit (← strawberry-graphql): define object types and fields in code, emit the schema SDL."
 
 import {
-  "Lfan-ke/moonasgi@0.8.0",
+  "moonbitstack/moonasgi@0.8.2",
 }

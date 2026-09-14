@@ -1,6 +1,6 @@
 import {
-  "Lfan-ke/moongql",
-  "Lfan-ke/moonasgi",
+  "moonbitstack/moongql",
+  "moonbitstack/moonasgi",
 }
 
 pkgtype(kind: "executable")

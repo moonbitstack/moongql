@@ -6,9 +6,11 @@
 
 [![Check and Test](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml/badge.svg)](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
-[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoongql-brightgreen)](https://mooncakes.io/docs/Lfan-ke/moongql)
+[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoongql-brightgreen)](https://mooncakes.io/docs/moonbitstack/moongql)
 
 </div>
+
+> Moved on mooncakes from `Lfan-ke/moongql` to `moonbitstack/moongql`.
 
 `moongql` defines a GraphQL schema **in code** — object types and fields — the way `strawberry-graphql` does for Python, and emits the schema SDL. `v0` ships the code-first schema and SDL printer; it's pure logic with no runtime dependencies, so it runs on every backend.
 
@@ -193,7 +195,7 @@ loader.get(1)                                   // Some("author#1")
 
 ## HTTP endpoint
 
-`graphql_handler` wires a schema and its resolvers onto the [moonasgi](https://mooncakes.io/docs/Lfan-ke/moonasgi) seam, so moongql serves over `mooncat` (or any server that binds the ASGI callable), following the [GraphQL-over-HTTP](https://graphql.github.io/graphql-over-http/draft/) specification:
+`graphql_handler` wires a schema and its resolvers onto the [moonasgi](https://mooncakes.io/docs/moonbitstack/moonasgi) seam, so moongql serves over `mooncat` (or any server that binds the ASGI callable), following the [GraphQL-over-HTTP](https://graphql.github.io/graphql-over-http/draft/) specification:
 
 ```moonbit
 let handler = @moongql.graphql_handler(schema, resolvers)      // path defaults to /graphql

@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "Lfan-ke/moongql"
+package "moonbitstack/moongql"
 
 import {
-  "Lfan-ke/moonasgi",
+  "moonbitstack/moonasgi",
 }
 
 // Values
