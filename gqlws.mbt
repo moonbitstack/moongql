@@ -94,9 +94,9 @@ pub fn GqlWs::recv(
   msg : @moonasgi.WsMessage,
 ) -> Array[@moonasgi.WsSend] {
   match msg {
-    @moonasgi.Text(t) => self.recv_text(t)
-    @moonasgi.Binary(_) =>
-      [@moonasgi.Close(code=4400, reason="binary frames are not allowed")]
+    @ws.Text(t) => self.recv_text(t)
+    @ws.Binary(_) =>
+      [@ws.Close(code=4400, reason="binary frames are not allowed")]
   }
 }
 
@@ -118,15 +118,13 @@ pub fn GqlWs::tick(self : GqlWs, now : Int64) -> Array[@moonasgi.WsSend] {
   }
   if not(self.initialized) {
     if self.init_timeout > 0 && since >= self.init_timeout {
-      return [
-        @moonasgi.Close(code=4408, reason="Connection initialisation timeout"),
-      ]
+      return [@ws.Close(code=4408, reason="Connection initialisation timeout")]
     }
     return []
   }
   if self.ping_interval > 0 && now - self.pinged >= self.ping_interval {
     self.pinged = now
-    return [@moonasgi.SendText(gql_ws_message("ping", None, None))]
+    return [@ws.SendText(gql_ws_message("ping", None, None))]
   }
   []
 }
@@ -161,9 +159,9 @@ pub fn GqlWs::handler(self : GqlWs) -> @moonasgi.WebSocketHandler {
   @moonasgi.WebSocketHandler::new(
     on_connect=fn(scope) {
       if scope.subprotocols.contains("graphql-transport-ws") {
-        @moonasgi.Accept(subprotocol=Some("graphql-transport-ws"), headers=[])
+        @ws.Accept(subprotocol=Some("graphql-transport-ws"), headers=[])
       } else {
-        @moonasgi.Accept(subprotocol=None, headers=[])
+        @ws.Accept(subprotocol=None, headers=[])
       }
     },
     on_receive=fn(msg) { self.recv(msg) },
@@ -243,30 +241,29 @@ fn GqlWs::op_context(self : GqlWs) -> Json {
 /// message and dispatches on its `type`.
 fn GqlWs::recv_text(self : GqlWs, text : String) -> Array[@moonasgi.WsSend] {
   let json = @json.parse(text) catch {
-    _ => return [@moonasgi.Close(code=4400, reason="invalid JSON")]
+    _ => return [@ws.Close(code=4400, reason="invalid JSON")]
   }
   let obj = match json {
     Object(m) => m
-    _ => return [@moonasgi.Close(code=4400, reason="message must be an object")]
+    _ => return [@ws.Close(code=4400, reason="message must be an object")]
   }
   let mtype = match obj.get("type") {
     Some(String(s)) => s
-    _ => return [@moonasgi.Close(code=4400, reason="message is missing 'type'")]
+    _ => return [@ws.Close(code=4400, reason="message is missing 'type'")]
   }
   match mtype {
     "connection_init" =>
       if self.initialized {
-        [@moonasgi.Close(code=4429, reason="Too many initialisation requests")]
+        [@ws.Close(code=4429, reason="Too many initialisation requests")]
       } else {
         self.initialized = true
         self.params = match obj.get("payload") {
           Some(p) => p
           None => Json::null()
         }
-        [@moonasgi.SendText(gql_ws_message("connection_ack", None, None))]
+        [@ws.SendText(gql_ws_message("connection_ack", None, None))]
       }
-    "ping" =>
-      [@moonasgi.SendText(gql_ws_message("pong", None, obj.get("payload")))]
+    "ping" => [@ws.SendText(gql_ws_message("pong", None, obj.get("payload")))]
     "pong" => []
     // The client wants to stop an operation. A pull source has already finished,
     // so there is nothing to cancel — but the id it was running under is now free.
@@ -278,7 +275,7 @@ fn GqlWs::recv_text(self : GqlWs, text : String) -> Array[@moonasgi.WsSend] {
       []
     }
     "subscribe" => self.subscribe(obj)
-    _ => [@moonasgi.Close(code=4400, reason="invalid message type: " + mtype)]
+    _ => [@ws.Close(code=4400, reason="invalid message type: " + mtype)]
   }
 }
 
@@ -291,19 +288,15 @@ fn GqlWs::subscribe(
   obj : Map[String, Json],
 ) -> Array[@moonasgi.WsSend] {
   if not(self.initialized) {
-    return [@moonasgi.Close(code=4401, reason="Unauthorized")]
+    return [@ws.Close(code=4401, reason="Unauthorized")]
   }
   let id = match obj.get("id") {
     Some(String(i)) => i
-    _ =>
-      return [@moonasgi.Close(code=4400, reason="subscribe requires an 'id'")]
+    _ => return [@ws.Close(code=4400, reason="subscribe requires an 'id'")]
   }
   if not(self.claim(id)) {
     return [
-      @moonasgi.Close(
-        code=4409,
-        reason="Subscriber for " + id + " already exists",
-      ),
+      @ws.Close(code=4409, reason="Subscriber for " + id + " already exists"),
     ]
   }
   let sends = self.run(id, obj)
@@ -321,32 +314,28 @@ fn GqlWs::run(
   let payload = match obj.get("payload") {
     Some(Object(p)) => p
     _ =>
-      return [
-        @moonasgi.SendText(err_message(id, "subscribe is missing 'payload'")),
-      ]
+      return [@ws.SendText(err_message(id, "subscribe is missing 'payload'"))]
   }
   let query = match payload.get("query") {
     Some(String(q)) => q
     _ =>
       return [
-        @moonasgi.SendText(
-          err_message(id, "subscribe payload is missing 'query'"),
-        ),
+        @ws.SendText(err_message(id, "subscribe payload is missing 'query'")),
       ]
   }
   let variables : Map[String, Json] = match payload.get("variables") {
     Some(Object(v)) => v
     _ => Map([])
   }
-  let op_name : String? = match payload.get("operationName") {
+  let operation_name : String? = match payload.get("operationName") {
     Some(String(n)) => Some(n)
     _ => None
   }
   let context = self.op_context()
-  match operation_type_of(self.schema, query, op_name) {
+  match operation_type_of(self.schema, query, operation_name) {
     Err(errs) =>
       [
-        @moonasgi.SendText(
+        @ws.SendText(
           gql_ws_message("error", Some(id), Some(gql_ws_errors_json(errs))),
         ),
       ]
@@ -358,26 +347,22 @@ fn GqlWs::run(
           self.subscribers,
           query,
           variables~,
-          operation_name=op_name,
+          operation_name?,
           root_value=self.root_value,
           context~,
         ) {
         RequestError(errs) =>
           [
-            @moonasgi.SendText(
+            @ws.SendText(
               gql_ws_message("error", Some(id), Some(gql_ws_errors_json(errs))),
             ),
           ]
         EventStream(payloads) => {
           let sends : Array[@moonasgi.WsSend] = []
           for p in payloads {
-            sends.push(
-              @moonasgi.SendText(gql_ws_message("next", Some(id), Some(p))),
-            )
+            sends.push(@ws.SendText(gql_ws_message("next", Some(id), Some(p))))
           }
-          sends.push(
-            @moonasgi.SendText(gql_ws_message("complete", Some(id), None)),
-          )
+          sends.push(@ws.SendText(gql_ws_message("complete", Some(id), None)))
           sends
         }
       }
@@ -389,13 +374,13 @@ fn GqlWs::run(
         self.resolvers,
         query,
         variables~,
-        operation_name=op_name,
+        operation_name?,
         root_value=self.root_value,
         context~,
       )
       [
-        @moonasgi.SendText(gql_ws_message("next", Some(id), Some(result))),
-        @moonasgi.SendText(gql_ws_message("complete", Some(id), None)),
+        @ws.SendText(gql_ws_message("next", Some(id), Some(result))),
+        @ws.SendText(gql_ws_message("complete", Some(id), None)),
       ]
     }
   }

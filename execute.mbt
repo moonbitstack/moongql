@@ -1029,7 +1029,7 @@ pub fn execute(
   resolvers : Resolvers,
   query : String,
   variables? : Map[String, Json] = Map([]),
-  operation_name? : String? = None,
+  operation_name? : String,
   root_value? : Json = Json::null(),
   context? : Json = Json::null(),
   extensions? : Map[String, Json] = Map([]),

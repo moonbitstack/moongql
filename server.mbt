@@ -297,7 +297,7 @@ fn run_body(
   let (query, variables, operation_name) = parse_request(body)
   match query {
     None => Err("No GraphQL query found in request body")
-    Some(q) => Ok(execute(schema, resolvers, q, variables~, operation_name~))
+    Some(q) => Ok(execute(schema, resolvers, q, variables~, operation_name?))
   }
 }
 
@@ -338,7 +338,7 @@ fn get_request(
   }
   wire_response(
     wire,
-    execute(schema, resolvers, query, variables~, operation_name~),
+    execute(schema, resolvers, query, variables~, operation_name?),
   )
 }
 

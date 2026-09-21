@@ -401,3 +401,12 @@ pub fn Document::to_query(self : Document) -> String {
   }
   sb.to_string()
 }
+
+///|
+pub extend OperationType with Eq::{not_equal, equal}
+
+///|
+pub extend Pos with Eq::{not_equal, equal}
+
+///|
+pub extend TypeRef with Eq::{not_equal, equal}

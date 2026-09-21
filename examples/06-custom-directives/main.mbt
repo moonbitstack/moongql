@@ -14,12 +14,12 @@ fn main {
     "prefix",
     locations=["FIELD"],
     args=[("text", @moongql.NonNull(@moongql.Scalar("String")))],
-    on_field=Some((value, args) => {
+    on_field=(value, args) => {
       match (value, args.get("text")) {
         (String(x), Some(String(p))) => (p + x).to_json()
         _ => value
       }
-    }),
+    },
   )
   let r = @moongql.Resolvers::new()
   r.field("Query", "greeting", fn(_info) { "world".to_json() })

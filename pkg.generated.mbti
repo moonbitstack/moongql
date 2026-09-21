@@ -2,23 +2,25 @@
 package "moonbitstack/moongql"
 
 import {
-  "moonbitstack/moonasgi",
+  "moonbitstack/moonasgi/http",
+  "moonbitstack/moonasgi/spec",
+  "moonbitstack/moonasgi/ws",
 }
 
 // Values
-pub fn create_source_event_stream(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String?, root_value? : Json, context? : Json) -> SubscriptionResult
+pub fn create_source_event_stream(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> SubscriptionResult
 
-pub fn execute(Schema, Resolvers, String, variables? : Map[String, Json], operation_name? : String?, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
+pub fn execute(Schema, Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
 
-pub fn execute_subscription(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String?, root_value? : Json, context? : Json) -> Array[Json]
+pub fn execute_subscription(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
 
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(Schema, Resolvers, path? : String, graphiql? : Bool) -> async (@moonasgi.Scope, async () -> @moonasgi.Event, async (@moonasgi.Event) -> Unit) -> Unit
+pub fn graphql_app(Schema, Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
-pub fn graphql_handler(Schema, Resolvers, path? : String, graphiql? : Bool) -> (@moonasgi.Request) -> @moonasgi.Response
+pub fn graphql_handler(Schema, Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
 
-pub fn graphql_ws_handler(Schema, Resolvers, Subscribers, root_value? : Json, context? : Json) -> @moonasgi.WebSocketHandler
+pub fn graphql_ws_handler(Schema, Resolvers, Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
 
 pub fn parse(String) -> Document raise GqlSyntaxError
 
@@ -30,6 +32,7 @@ pub fn validate(Schema, Document) -> Array[GqlError]
 pub suberror GqlSyntaxError {
   GqlSyntaxError(String, Int, Int)
 }
+pub fn GqlSyntaxError::output(Self, &Logger) -> Unit
 pub fn GqlSyntaxError::to_string(Self) -> String
 pub impl Show for GqlSyntaxError
 
@@ -153,7 +156,9 @@ pub(all) enum GqlType {
   NonNull(GqlType)
   ListOf(GqlType)
 } derive(Eq)
+pub fn GqlType::equal(Self, Self) -> Bool
 pub fn GqlType::named_base(Self) -> String
+pub fn GqlType::not_equal(Self, Self) -> Bool
 
 pub struct GqlWs {
   schema : Schema
@@ -170,11 +175,11 @@ pub struct GqlWs {
   active : Map[String, Unit]
 }
 pub fn GqlWs::claim(Self, String) -> Bool
-pub fn GqlWs::handler(Self) -> @moonasgi.WebSocketHandler
+pub fn GqlWs::handler(Self) -> @ws.WebSocketHandler
 pub fn GqlWs::new(Schema, Resolvers, Subscribers, root_value? : Json, context? : Json, init_timeout? : Int64, ping_interval? : Int64) -> Self
-pub fn GqlWs::recv(Self, @moonasgi.WsMessage) -> Array[@moonasgi.WsSend]
+pub fn GqlWs::recv(Self, @ws.WsMessage) -> Array[@ws.WsSend]
 pub fn GqlWs::release(Self, String) -> Unit
-pub fn GqlWs::tick(Self, Int64) -> Array[@moonasgi.WsSend]
+pub fn GqlWs::tick(Self, Int64) -> Array[@ws.WsSend]
 
 pub(all) struct ObjectType {
   name : String
@@ -202,11 +207,15 @@ pub(all) enum OperationType {
   Mutation
   Subscription
 } derive(Eq)
+pub fn OperationType::equal(Self, Self) -> Bool
+pub fn OperationType::not_equal(Self, Self) -> Bool
 
 pub(all) struct Pos {
   line : Int
   col : Int
 } derive(Eq)
+pub fn Pos::equal(Self, Self) -> Bool
+pub fn Pos::not_equal(Self, Self) -> Bool
 
 pub(all) struct QueryField {
   alias_ : String?
@@ -254,7 +263,7 @@ pub struct Schema {
 pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
 pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
 pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
-pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : ((Json, Map[String, Json]) -> Json)?) -> Unit
+pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json) -> Unit
 pub fn Schema::directive_def_by_name(Self, String) -> DirectiveDef?
 pub fn Schema::enum_(Self, String, Array[String], deprecated? : Array[(String, String)], description? : String, descriptions? : Array[(String, String)]) -> Unit
 pub fn Schema::enum_by_name(Self, String) -> EnumType?
@@ -321,18 +330,24 @@ pub(all) enum TokenKind {
   Pipe
   Eof
 } derive(Eq)
+pub fn TokenKind::equal(Self, Self) -> Bool
+pub fn TokenKind::not_equal(Self, Self) -> Bool
 
 pub(all) enum TypeKind {
   Object
   Input
   Interface
 } derive(Eq)
+pub fn TypeKind::equal(Self, Self) -> Bool
+pub fn TypeKind::not_equal(Self, Self) -> Bool
 
 pub(all) enum TypeRef {
   NamedType(String)
   ListType(TypeRef)
   NonNullType(TypeRef)
 } derive(Eq)
+pub fn TypeRef::equal(Self, Self) -> Bool
+pub fn TypeRef::not_equal(Self, Self) -> Bool
 pub fn TypeRef::to_query(Self) -> String
 
 pub(all) struct UnionType {

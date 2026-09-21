@@ -1,13 +1,13 @@
 ///|
 /// A client control frame `{ type }` as a text message.
 fn ctrl_frame(type_ : String) -> @moonasgi.WsMessage {
-  @moonasgi.Text(jobj([("type", type_.to_json())]).stringify())
+  @ws.Text(jobj([("type", type_.to_json())]).stringify())
 }
 
 ///|
 /// A `connection_init` frame carrying connection parameters.
 fn init_frame(payload : Json) -> @moonasgi.WsMessage {
-  @moonasgi.Text(
+  @ws.Text(
     jobj([("type", "connection_init".to_json()), ("payload", payload)]).stringify(),
   )
 }
@@ -15,7 +15,7 @@ fn init_frame(payload : Json) -> @moonasgi.WsMessage {
 ///|
 /// A client `complete` frame `{ id, type }` as a text message.
 fn complete_frame(id : String) -> @moonasgi.WsMessage {
-  @moonasgi.Text(
+  @ws.Text(
     jobj([("id", id.to_json()), ("type", "complete".to_json())]).stringify(),
   )
 }
@@ -24,7 +24,7 @@ fn complete_frame(id : String) -> @moonasgi.WsMessage {
 /// A `subscribe` frame `{ id, type, payload: { query } }` as a text message.
 fn subscribe_frame(id : String, query : String) -> @moonasgi.WsMessage {
   let payload = jobj([("query", query.to_json())])
-  @moonasgi.Text(
+  @ws.Text(
     jobj([
       ("id", id.to_json()),
       ("type", "subscribe".to_json()),
@@ -39,7 +39,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
   let out : Array[String] = []
   for s in sends {
     match s {
-      @moonasgi.SendText(t) => out.push(t)
+      @ws.SendText(t) => out.push(t)
       _ => ()
     }
   }
@@ -50,7 +50,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
 /// The close code in a handler's reply, or -1 if it did not close.
 fn close_code(sends : Array[@moonasgi.WsSend]) -> Int {
   for s in sends {
-    if s is @moonasgi.Close(code~, ..) {
+    if s is @ws.Close(code~, ..) {
       return code
     }
   }
@@ -283,7 +283,7 @@ test "graphql-transport-ws answers ping with pong, echoing the payload" {
     sent_texts((h.on_receive)(ctrl_frame("ping")))[0],
     "{\"type\":\"pong\"}",
   )
-  let ping = @moonasgi.Text(
+  let ping = @ws.Text(
     jobj([("type", "ping".to_json()), ("payload", jobj([("n", (1).to_json())]))]).stringify(),
   )
   assert_eq(
@@ -295,7 +295,7 @@ test "graphql-transport-ws answers ping with pong, echoing the payload" {
 ///|
 test "graphql-transport-ws closes on a binary frame (4400)" {
   let h = graphql_ws_handler(sub_schema(), Resolvers::new(), sub_subscribers())
-  assert_eq(close_code((h.on_receive)(@moonasgi.Binary(b"\x00"))), 4400)
+  assert_eq(close_code((h.on_receive)(@ws.Binary(b"\x00"))), 4400)
 }
 
 ///|
@@ -331,13 +331,13 @@ test "graphql-transport-ws negotiates the subprotocol on connect" {
     "graphql-transport-ws",
   ])
   let chosen = match (h.on_connect)(offered) {
-    @moonasgi.Accept(subprotocol~, ..) => subprotocol
+    @ws.Accept(subprotocol~, ..) => subprotocol
     _ => None
   }
   assert_eq(chosen, Some("graphql-transport-ws"))
   let bare = @moonasgi.WebSocketScope::new(path="/graphql")
   let none_chosen = match (h.on_connect)(bare) {
-    @moonasgi.Accept(subprotocol~, ..) => subprotocol
+    @ws.Accept(subprotocol~, ..) => subprotocol
     _ => Some("unexpected")
   }
   assert_eq(none_chosen, None)

@@ -2,7 +2,7 @@
 /// A `connection_init` frame carrying the connection's parameters.
 fn init_frame(params : Json) -> @moonasgi.WsMessage {
   let m : Json = { "type": "connection_init", "payload": params }
-  @moonasgi.Text(m.stringify())
+  @ws.Text(m.stringify())
 }
 
 ///|
@@ -10,7 +10,7 @@ fn init_frame(params : Json) -> @moonasgi.WsMessage {
 fn subscribe_frame(id : String, query : String) -> @moonasgi.WsMessage {
   let payload : Json = { "query": query.to_json() }
   let m : Json = { "id": id.to_json(), "type": "subscribe", "payload": payload }
-  @moonasgi.Text(m.stringify())
+  @ws.Text(m.stringify())
 }
 
 ///|
@@ -19,7 +19,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
   let out : Array[String] = []
   for s in sends {
     match s {
-      @moonasgi.SendText(t) => out.push(t)
+      @ws.SendText(t) => out.push(t)
       _ => ()
     }
   }
@@ -30,7 +30,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
 /// The close code in a reply, or -1 when it did not close.
 fn close_code(sends : Array[@moonasgi.WsSend]) -> Int {
   for s in sends {
-    if s is @moonasgi.Close(code~, ..) {
+    if s is @ws.Close(code~, ..) {
       return code
     }
   }

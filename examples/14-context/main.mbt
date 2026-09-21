@@ -50,9 +50,9 @@ fn main {
     #|query A { whoami }
     #|query B { field }
   println(
-    @moongql.execute(s, r, doc, context=ctx, operation_name=Some("A")).stringify(),
+    @moongql.execute(s, r, doc, context=ctx, operation_name="A").stringify(),
   )
   println(
-    @moongql.execute(s, r, doc, context=ctx, operation_name=Some("B")).stringify(),
+    @moongql.execute(s, r, doc, context=ctx, operation_name="B").stringify(),
   )
 }

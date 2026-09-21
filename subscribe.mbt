@@ -123,7 +123,7 @@ pub fn create_source_event_stream(
   subscribers : Subscribers,
   query : String,
   variables? : Map[String, Json] = Map([]),
-  operation_name? : String? = None,
+  operation_name? : String,
   root_value? : Json = Json::null(),
   context? : Json = Json::null(),
 ) -> SubscriptionResult {
@@ -254,7 +254,7 @@ pub fn execute_subscription(
   subscribers : Subscribers,
   query : String,
   variables? : Map[String, Json] = Map([]),
-  operation_name? : String? = None,
+  operation_name? : String,
   root_value? : Json = Json::null(),
   context? : Json = Json::null(),
 ) -> Array[Json] {
@@ -265,7 +265,7 @@ pub fn execute_subscription(
       subscribers,
       query,
       variables~,
-      operation_name~,
+      operation_name?,
       root_value~,
       context~,
     ) {

@@ -12,12 +12,12 @@ fn prefix_setup(register : Bool) -> (Schema, Resolvers) {
       "prefix",
       locations=["FIELD"],
       args=[("text", NonNull(Scalar("String")))],
-      on_field=Some((v, args) => {
+      on_field=(v, args) => {
         match (v, args.get("text")) {
           (String(x), Some(String(p))) => (p + x).to_json()
           _ => v
         }
-      }),
+      },
     )
   }
   let r = Resolvers::new()

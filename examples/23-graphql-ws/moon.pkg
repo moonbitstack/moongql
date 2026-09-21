@@ -1,4 +1,5 @@
 import {
+  "moonbitstack/moonasgi/ws",
   "moonbitstack/moongql",
   "moonbitstack/moonasgi",
 }

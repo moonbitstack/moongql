@@ -185,7 +185,7 @@ fn Exec::input_value_json(
   self : Exec,
   name : String,
   typ : GqlType,
-  default? : Json? = None,
+  default? : Json,
   description? : String = "",
 ) -> Json {
   jobj([
@@ -214,7 +214,8 @@ fn Exec::input_value_json(
 fn Exec::field_json(self : Exec, f : Field) -> Json {
   let args : Array[Json] = []
   for a in f.args {
-    args.push(self.input_value_json(a.0, a.1, default=f.arg_defaults.get(a.0)))
+    let default = f.arg_defaults.get(a.0)
+    args.push(self.input_value_json(a.0, a.1, default?))
   }
   jobj([
     ("name", f.name.to_json()),
@@ -452,7 +453,7 @@ fn Exec::directives_json(self : Exec) -> Json {
     self.input_value_json(
       "reason",
       Scalar("String"),
-      default=Some("No longer supported".to_json()),
+      default="No longer supported".to_json(),
     ),
   ]
   let directive = fn(

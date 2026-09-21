@@ -443,3 +443,9 @@ pub fn Schema::to_sdl(self : Schema) -> String {
   }
   out
 }
+
+///|
+pub extend GqlType with Eq::{not_equal, equal}
+
+///|
+pub extend TypeKind with Eq::{not_equal, equal}

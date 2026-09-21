@@ -683,3 +683,9 @@ pub fn tokenize(src : String) -> Array[Token] raise GqlSyntaxError {
   }
   out
 }
+
+///|
+pub extend GqlSyntaxError with Show::{output}
+
+///|
+pub extend TokenKind with Eq::{not_equal, equal}

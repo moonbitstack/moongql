@@ -69,7 +69,7 @@ pub fn Schema::directive(
   locations~ : Array[String],
   args? : Array[(String, GqlType)] = [],
   is_repeatable? : Bool = false,
-  on_field? : FieldDirectiveHook? = None,
+  on_field? : FieldDirectiveHook,
 ) -> Unit {
   self.directive_defs.push({ name, locations, args, is_repeatable, on_field, })
 }
