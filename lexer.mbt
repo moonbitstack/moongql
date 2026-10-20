@@ -443,7 +443,7 @@ fn Lexer::emit_code_point(
 }
 
 ///|
-/// Read a `"""..."""` block string, honoring the `\"""` escape and applying the
+/// Read a `"""..."""` block string, honouring the `\"""` escape and applying the
 /// spec's block-string dedent (`BlockStringValue`). The cursor is on the first
 /// of the three opening quotes.
 fn Lexer::read_block_string(
