@@ -22,15 +22,15 @@ fn federated_v2_setup(mark_inaccessible : Bool) -> (Schema, Resolvers) {
   let r = Resolvers::new()
   r.field("Query", "me", _info => {
     jobj([
-      ("id", "1".to_json()),
-      ("name", "Ada".to_json()),
-      ("ssn", "123-45-6789".to_json()),
+      ("id", Json("1")),
+      ("name", Json("Ada")),
+      ("ssn", Json("123-45-6789")),
     ])
   })
   let fed = Federation::new(v2=true)
   fed.entity(name="User", key="id", resolve=(rep, _ctx) => {
     let id = rep_str(rep, "id")
-    jobj([("id", id.to_json()), ("name", ("User#" + id).to_json())])
+    jobj([("id", Json(id)), ("name", Json("User#" + id))])
   })
   fed.entity(name="Product", key="upc", extends=true, external=["weight"], resolve=(
     rep,
@@ -40,7 +40,7 @@ fn federated_v2_setup(mark_inaccessible : Bool) -> (Schema, Resolvers) {
     // @requires(fields: "weight"): the gateway includes the external weight in
     // the representation, and the resolver reads it to compute the estimate.
     let weight = rep_int(rep, "weight")
-    jobj([("upc", upc.to_json()), ("shippingEstimate", (weight * 2).to_json())])
+    jobj([("upc", Json(upc)), ("shippingEstimate", Json(weight * 2))])
   })
   fed.shareable("Product", "name")
   fed.override_("Product", "price", from="legacy")
@@ -67,7 +67,7 @@ fn rep_str(rep : Json, key : String) -> String {
 
 ///|
 /// Read an integer field off a representation JSON object, or `0`.
-fn rep_int(rep : Json, key : String) -> Int {
+fn rep_int(rep : Json, key : String) -> Int32 {
   match rep {
     Object(m) =>
       match m.get(key) {
@@ -185,15 +185,15 @@ test "federation v2 @requires resolver reads the external field" {
     #|    ... on Product { upc shippingEstimate }
     #|  }
     #|}
-  let run = fn(weight : Int) -> String {
+  let run = fn(weight : Int32) -> String {
     let reps : Array[Json] = [
       jobj([
-        ("__typename", "Product".to_json()),
-        ("upc", "abc".to_json()),
-        ("weight", weight.to_json()),
+        ("__typename", Json("Product")),
+        ("upc", Json("abc")),
+        ("weight", Json(weight)),
       ]),
     ]
-    let vars : Map[String, Json] = Map([("reps", reps.to_json())])
+    let vars : Map[String, Json] = Map([("reps", Json(reps))])
     execute(s, r, query, variables=vars).stringify()
   }
   assert_eq(

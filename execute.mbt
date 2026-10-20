@@ -96,21 +96,21 @@ fn GqlError::at(message : String, pos : Pos) -> GqlError {
 /// Serialise an error to the GraphQL JSON error shape, omitting an empty path
 /// or locations list.
 fn GqlError::to_json(self : GqlError) -> Json {
-  let entries : Array[(String, Json)] = [("message", self.message.to_json())]
+  let entries : Array[(String, Json)] = [("message", Json(self.message))]
   if self.locations.length() > 0 {
     let locs : Array[Json] = []
     for p in self.locations {
-      locs.push(jobj([("line", p.line.to_json()), ("column", p.col.to_json())]))
+      locs.push(jobj([("line", Json(p.line)), ("column", Json(p.col))]))
     }
-    entries.push(("locations", locs.to_json()))
+    entries.push(("locations", Json(locs)))
   }
   if self.path.length() > 0 {
-    entries.push(("path", self.path.to_json()))
+    entries.push(("path", Json(self.path)))
   }
   // A resolver-supplied `extensions` map (← GraphQL spec §7.1.2), emitted only
   // when non-empty.
   if !self.extensions.is_empty() {
-    entries.push(("extensions", self.extensions.to_json()))
+    entries.push(("extensions", Json(self.extensions)))
   }
   jobj(entries)
 }
@@ -122,7 +122,7 @@ fn jobj(entries : Array[(String, Json)]) -> Json {
   for e in entries {
     m[e.0] = e.1
   }
-  m.to_json()
+  Json(m)
 }
 
 ///|
@@ -220,23 +220,23 @@ fn Exec::value_to_json(self : Exec, v : Value) -> Json {
       }
     IntValue(s) => parse_number_json(s)
     FloatValue(s) => parse_number_json(s)
-    StringValue(s, _) => s.to_json()
-    BooleanValue(b) => b.to_json()
+    StringValue(s, _) => Json(s)
+    BooleanValue(b) => Json(b)
     NullValue => Json::null()
-    EnumValue(n) => n.to_json()
+    EnumValue(n) => Json(n)
     ListValue(items) => {
       let out : Array[Json] = []
       for it in items {
         out.push(self.value_to_json(it))
       }
-      out.to_json()
+      Json(out)
     }
     ObjectValue(fields) => {
       let m : Map[String, Json] = Map([])
       for kv in fields {
         m[kv.0] = self.value_to_json(kv.1)
       }
-      m.to_json()
+      Json(m)
     }
   }
 }
@@ -277,7 +277,7 @@ fn Exec::coerce_input(self : Exec, value : Json, typ : GqlType) -> Json {
           for it in items {
             out.push(self.coerce_input(it, inner))
           }
-          out.to_json()
+          Json(out)
         }
         _ => value
       }
@@ -462,7 +462,7 @@ fn Exec::resolve_raw(
 ) -> Json {
   let name = field.name
   if name == "__typename" {
-    return obj.name.to_json()
+    return Json(obj.name)
   }
   let args = self.coerce_args(field)
   match obj.field_by_name(name) {
@@ -647,10 +647,10 @@ fn Exec::complete(
           let out : Array[Json] = []
           for i, item in items {
             let ipath = path.copy()
-            ipath.push(i.to_json())
+            ipath.push(Json(i))
             out.push(self.complete(inner, item, fields, ipath))
           }
-          out.to_json()
+          Json(out)
         }
         _ => {
           self.add_error("Expected a list value", path, pos)
@@ -800,10 +800,10 @@ fn Exec::execute_selection_set(
       None => continue
     }
     let fpath = path.copy()
-    fpath.push(key.to_json())
+    fpath.push(Json(key))
     result[key] = self.execute_field(obj, group, parent, fpath)
   }
-  result.to_json()
+  Json(result)
 }
 
 ///|
@@ -909,7 +909,7 @@ fn coerce_variables(
   op : OperationDefinition,
   supplied : Map[String, Json],
   fragments : Map[String, FragmentDefinition],
-  errors? : Array[GqlError] = [],
+  errors~ : Array[GqlError] = [],
 ) -> Map[String, Json] {
   let coerced : Map[String, Json] = Map([])
   // A throwaway executor is used only for default-value literal coercion, which
@@ -967,7 +967,7 @@ fn coerce_variables(
 fn build_response(
   data : Json?,
   errors : Array[GqlError],
-  extensions? : Map[String, Json] = Map([]),
+  extensions~ : Map[String, Json] = Map([]),
 ) -> Json {
   let entries : Array[(String, Json)] = []
   match data {
@@ -979,10 +979,10 @@ fn build_response(
     for e in errors {
       arr.push(e.to_json())
     }
-    entries.push(("errors", arr.to_json()))
+    entries.push(("errors", Json(arr)))
   }
   if !extensions.is_empty() {
-    entries.push(("extensions", extensions.to_json()))
+    entries.push(("extensions", Json(extensions)))
   }
   jobj(entries)
 }
@@ -1028,11 +1028,11 @@ pub fn execute(
   schema : Schema,
   resolvers : Resolvers,
   query : String,
-  variables? : Map[String, Json] = Map([]),
+  variables~ : Map[String, Json] = Map([]),
   operation_name? : String,
-  root_value? : Json = Json::null(),
-  context? : Json = Json::null(),
-  extensions? : Map[String, Json] = Map([]),
+  root_value~ : Json = Json::null(),
+  context~ : Json = Json::null(),
+  extensions~ : Map[String, Json] = Map([]),
 ) -> Json {
   let doc = parse(query) catch {
     GqlSyntaxError(m, line, col) =>

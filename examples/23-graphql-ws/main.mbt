@@ -8,8 +8,8 @@ fn init_frame(params : Json) -> @moonasgi.WsMessage {
 ///|
 /// A `subscribe` frame `{ id, type, payload: { query } }` as a text message.
 fn subscribe_frame(id : String, query : String) -> @moonasgi.WsMessage {
-  let payload : Json = { "query": query.to_json() }
-  let m : Json = { "id": id.to_json(), "type": "subscribe", "payload": payload }
+  let payload : Json = { "query": Json(query) }
+  let m : Json = { "id": Json(id), "type": "subscribe", "payload": payload }
   @ws.Text(m.stringify())
 }
 
@@ -28,7 +28,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
 
 ///|
 /// The close code in a reply, or -1 when it did not close.
-fn close_code(sends : Array[@moonasgi.WsSend]) -> Int {
+fn close_code(sends : Array[@moonasgi.WsSend]) -> Int32 {
   for s in sends {
     if s is @ws.Close(code~, ..) {
       return code
@@ -60,16 +60,16 @@ fn main {
   let sub = s.object("Subscription")
   sub.field("ticks", @moongql.NonNull(@moongql.Scalar("Int")))
   let subs = @moongql.Subscribers::new()
-  subs.field("Subscription", "ticks", _info => [(1).to_json(), (2).to_json()])
+  subs.field("Subscription", "ticks", _info => [Json(1), Json(2)])
   let r = @moongql.Resolvers::new()
   r.field("Query", "ok", info => {
     match info.ctx {
       Object(m) =>
         match m.get("connectionParams") {
           Some(p) => p
-          None => "no params".to_json()
+          None => Json("no params")
         }
-      _ => "no context".to_json()
+      _ => Json("no context")
     }
   })
   let ws = @moongql.GqlWs::new(s, r, subs)

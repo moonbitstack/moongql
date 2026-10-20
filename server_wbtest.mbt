@@ -11,7 +11,7 @@ fn server_schema() -> (Schema, Resolvers) {
   let r = Resolvers::new()
   r.field("Query", "user", fn(info) {
     match info.arg("id") {
-      String("1") => jobj([("id", "1".to_json()), ("name", "Alice".to_json())])
+      String("1") => jobj([("id", Json("1")), ("name", Json("Alice"))])
       _ => Json::null()
     }
   })
@@ -23,7 +23,7 @@ fn server_schema() -> (Schema, Resolvers) {
 /// `{ query, variables }` object as JSON and serialise it.
 fn request_body(query : String, variables : Json) -> Bytes {
   @utf8.encode(
-    jobj([("query", query.to_json()), ("variables", variables)]).stringify(),
+    jobj([("query", Json(query)), ("variables", variables)]).stringify(),
   )
 }
 
@@ -62,7 +62,7 @@ test "graphql endpoint answers a real POST with the exact data" {
 test "graphql endpoint binds request variables" {
   let (s, r) = server_schema()
   let client = @moonasgi.TestClient::new(graphql_handler(s, r))
-  let vars = jobj([("uid", "1".to_json())])
+  let vars = jobj([("uid", Json("1"))])
   let body = request_body(
     (
       #|query ($uid: ID!) { user(id: $uid) { name } }

@@ -22,7 +22,9 @@ test "fragment spread on an impossible type is rejected (spec 5.5.2.3)" {
       Object(em) =>
         if em.get("message") ==
           Some(
-            "Fragment cannot be spread here as objects of type 'Dog' can never be of type 'Cat'".to_json(),
+            Json(
+              "Fragment cannot be spread here as objects of type 'Dog' can never be of type 'Cat'",
+            ),
           ) {
           found = true
         }

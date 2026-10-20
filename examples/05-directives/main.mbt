@@ -12,9 +12,9 @@ fn main {
   q.field("name", @moongql.NonNull(@moongql.Scalar("String")))
   q.field("age", @moongql.Scalar("Int"))
   let r = @moongql.Resolvers::new()
-  r.field("Query", "id", fn(_info) { "1".to_json() })
-  r.field("Query", "name", fn(_info) { "lfanke".to_json() })
-  r.field("Query", "age", fn(_info) { (233).to_json() })
+  r.field("Query", "id", fn(_info) { Json("1") })
+  r.field("Query", "name", fn(_info) { Json("lfanke") })
+  r.field("Query", "age", fn(_info) { Json(233) })
   let query =
     #|query ($withAge: Boolean!, $hideName: Boolean!) {
     #|  id

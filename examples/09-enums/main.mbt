@@ -10,7 +10,7 @@ fn main {
   q.field("role", @moongql.Named("Role"))
   s.enum_("Role", ["ADMIN", "USER", "GUEST"])
   let r = @moongql.Resolvers::new()
-  r.field("Query", "role", fn(_info) { "ADMIN".to_json() })
+  r.field("Query", "role", fn(_info) { Json("ADMIN") })
   println(@moongql.execute(s, r, "{ role }").stringify())
   println(
     @moongql.execute(

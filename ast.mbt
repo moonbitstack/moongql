@@ -10,8 +10,8 @@
 /// point back at carries one, so a validation or field error can answer with the
 /// `locations` entry the spec requires (§7.1.2).
 pub(all) struct Pos {
-  line : Int
-  col : Int
+  line : Int32
+  col : Int32
 } derive(Eq)
 
 ///|
@@ -135,7 +135,7 @@ pub(all) enum Value {
 
 ///|
 /// A string of `2 * n` spaces, used as one indentation level by the printer.
-fn indent_pad(n : Int) -> String {
+fn indent_pad(n : Int32) -> String {
   let sb = StringBuilder()
   for _ in 0..<(n * 2) {
     sb.write_char(' ')
@@ -259,7 +259,7 @@ fn arguments_sdl(args : Array[Argument]) -> String {
 
 ///|
 /// Print a selection set as an indented `{ ... }` block at the given depth.
-fn selection_set_sdl(sels : Array[Selection], depth : Int) -> String {
+fn selection_set_sdl(sels : Array[Selection], depth : Int32) -> String {
   let sb = StringBuilder()
   sb.write_string("{\n")
   let pad = indent_pad(depth + 1)
@@ -275,7 +275,7 @@ fn selection_set_sdl(sels : Array[Selection], depth : Int) -> String {
 
 ///|
 /// Print one selection (field / fragment spread / inline fragment) at `depth`.
-fn selection_sdl(sel : Selection, depth : Int) -> String {
+fn selection_sdl(sel : Selection, depth : Int32) -> String {
   match sel {
     FieldSel(f) => {
       let sb = StringBuilder()

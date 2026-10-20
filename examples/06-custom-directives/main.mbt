@@ -16,13 +16,13 @@ fn main {
     args=[("text", @moongql.NonNull(@moongql.Scalar("String")))],
     on_field=(value, args) => {
       match (value, args.get("text")) {
-        (String(x), Some(String(p))) => (p + x).to_json()
+        (String(x), Some(String(p))) => Json(p + x)
         _ => value
       }
     },
   )
   let r = @moongql.Resolvers::new()
-  r.field("Query", "greeting", fn(_info) { "world".to_json() })
+  r.field("Query", "greeting", fn(_info) { Json("world") })
   println(
     @moongql.execute(s, r, "{ greeting @prefix(text: \"qwq, \") }").stringify(),
   )

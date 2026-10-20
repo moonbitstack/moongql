@@ -19,12 +19,12 @@ fn main {
       Object(m) =>
         match m.get("user") {
           Some(u) => u
-          _ => "anon".to_json()
+          _ => Json("anon")
         }
-      _ => "anon".to_json()
+      _ => Json("anon")
     }
   })
-  r.field("Query", "field", info => info.field_name.to_json())
+  r.field("Query", "field", info => Json(info.field_name))
   r.field("Query", "origin", info => {
     match info.parent {
       Object(m) =>

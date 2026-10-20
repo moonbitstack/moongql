@@ -20,13 +20,13 @@ fn main {
     "Tag",
     serialize=fn(j) {
       match j {
-        String(x) => ("out:" + x).to_json()
+        String(x) => Json("out:" + x)
         _ => j
       }
     },
     parse_value=fn(j) {
       match j {
-        String(x) => ("in:" + x).to_json()
+        String(x) => Json("in:" + x)
         _ => j
       }
     },

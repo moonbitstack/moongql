@@ -23,17 +23,17 @@ fn main {
   ])
   s.apply_schema_directive(
     @moongql.AppliedDirective::new("link", args=[
-      ("url", "https://example.com".to_json()),
+      ("url", Json("https://example.com")),
     ]),
   )
   s.apply_type_directive(
     "User",
-    @moongql.AppliedDirective::new("tag", args=[("name", "core".to_json())]),
+    @moongql.AppliedDirective::new("tag", args=[("name", Json("core"))]),
   )
   s.apply_field_directive(
     "User",
     "email",
-    @moongql.AppliedDirective::new("tag", args=[("name", "pii".to_json())]),
+    @moongql.AppliedDirective::new("tag", args=[("name", Json("pii"))]),
   )
   println("User has @tag: \{s.type_has_directive("User", "tag")}")
   println(

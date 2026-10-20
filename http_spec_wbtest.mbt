@@ -10,7 +10,7 @@ fn http_schema() -> (Schema, Resolvers) {
   let (s, r) = server_schema()
   s.set_mutation("Mutation")
   s.object("Mutation").field("touch", NonNull(Scalar("String")))
-  r.field("Mutation", "touch", _info => "done".to_json())
+  r.field("Mutation", "touch", _info => Json("done"))
   (s, r)
 }
 
@@ -260,22 +260,26 @@ test "a batch of two operations returns two results" {
   let one = jobj([
     (
       "query",
-      (
-        #|{ user(id: "1") { name } }
-      ).to_json(),
+      Json(
+        (
+          #|{ user(id: "1") { name } }
+        ),
+      ),
     ),
   ])
   let two = jobj([
     (
       "query",
-      (
-        #|{ hero: user(id: "1") { id } }
-      ).to_json(),
+      Json(
+        (
+          #|{ hero: user(id: "1") { id } }
+        ),
+      ),
     ),
   ])
   let resp = client.post(
     "/graphql",
-    body=@utf8.encode([one, two].to_json().stringify()),
+    body=@utf8.encode(Json([one, two]).stringify()),
     headers=json_headers(),
   )
   assert_eq(resp.status, 200)
@@ -297,16 +301,18 @@ test "a batch reports a bad entry without losing the others" {
     jobj([
       (
         "query",
-        (
-          #|{ user(id: "1") { name } }
-        ).to_json(),
+        Json(
+          (
+            #|{ user(id: "1") { name } }
+          ),
+        ),
       ),
     ]),
-    jobj([("nothing", "here".to_json())]),
+    jobj([("nothing", Json("here"))]),
   ]
   let resp = client.post(
     "/graphql",
-    body=@utf8.encode(batch.to_json().stringify()),
+    body=@utf8.encode(Json(batch).stringify()),
     headers=json_headers(),
   )
   assert_eq(resp.status, 200)

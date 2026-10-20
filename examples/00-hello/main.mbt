@@ -10,10 +10,8 @@ fn main {
   query.field("greeting", @moongql.NonNull(@moongql.Scalar("String")))
   query.field("luckyNumber", @moongql.NonNull(@moongql.Scalar("Int")))
   let resolvers = @moongql.Resolvers::new()
-  resolvers.field("Query", "greeting", fn(_info) {
-    "qwq from moongql".to_json()
-  })
-  resolvers.field("Query", "luckyNumber", fn(_info) { (233).to_json() })
+  resolvers.field("Query", "greeting", fn(_info) { Json("qwq from moongql") })
+  resolvers.field("Query", "luckyNumber", fn(_info) { Json(233) })
   let res = @moongql.execute(schema, resolvers, "{ greeting luckyNumber }")
   println(res.stringify())
 }

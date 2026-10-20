@@ -5,7 +5,7 @@ test "introspection answers for its own types and renders argument defaults" {
   let s = Schema::new()
   let q = s.object("Query")
   q.field_args("search", [("limit", Scalar("Int"))], Scalar("String"), defaults=[
-    ("limit", (23).to_json()),
+    ("limit", Json(23)),
   ])
   let r = Resolvers::new()
   let meta = execute(s, r, "{ __type(name: \"__Schema\") { name kind } }")

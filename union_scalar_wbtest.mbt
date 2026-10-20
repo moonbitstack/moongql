@@ -2,18 +2,18 @@
 /// A `Book` object value tagged with its `__typename` for union discrimination.
 fn jbook(title : String) -> Json {
   let m : Map[String, Json] = Map([])
-  m["__typename"] = "Book".to_json()
-  m["title"] = title.to_json()
-  m.to_json()
+  m["__typename"] = Json("Book")
+  m["title"] = Json(title)
+  Json(m)
 }
 
 ///|
 /// An `Author` object value tagged with its `__typename`.
 fn jauthor(name : String) -> Json {
   let m : Map[String, Json] = Map([])
-  m["__typename"] = "Author".to_json()
-  m["name"] = name.to_json()
-  m.to_json()
+  m["__typename"] = Json("Author")
+  m["name"] = Json(name)
+  Json(m)
 }
 
 ///|
@@ -36,7 +36,7 @@ fn union_schema() -> Schema {
 /// the tagged parent value.
 fn union_resolvers(results : Array[Json]) -> Resolvers {
   let r = Resolvers::new()
-  r.field("Query", "search", fn(_info) { results.to_json() })
+  r.field("Query", "search", fn(_info) { Json(results) })
   r
 }
 
@@ -70,10 +70,10 @@ test "union resolves members by __typename" {
 /// error, nulling the list element's enclosing non-null slot.
 test "union value without __typename is a field error" {
   let bad : Map[String, Json] = Map([])
-  bad["title"] = "Untagged".to_json()
+  bad["title"] = Json("Untagged")
   let res = execute(
     union_schema(),
-    union_resolvers([bad.to_json()]),
+    union_resolvers([Json(bad)]),
     (
       #|{ search { __typename ... on Book { title } } }
     ),
@@ -86,10 +86,10 @@ test "union value without __typename is a field error" {
 /// A `__typename` naming a type outside the union is rejected.
 test "union value tagged with a non-member type is an error" {
   let movie : Map[String, Json] = Map([])
-  movie["__typename"] = "Movie".to_json()
+  movie["__typename"] = Json("Movie")
   let res = execute(
     union_schema(),
-    union_resolvers([movie.to_json()]),
+    union_resolvers([Json(movie)]),
     (
       #|{ search { __typename } }
     ),
@@ -154,13 +154,13 @@ fn scalar_schema() -> Schema {
     "Tag",
     serialize=fn(j) {
       match j {
-        String(x) => ("out:" + x).to_json()
+        String(x) => Json("out:" + x)
         _ => j
       }
     },
     parse_value=fn(j) {
       match j {
-        String(x) => ("in:" + x).to_json()
+        String(x) => Json("in:" + x)
         _ => j
       }
     },
@@ -200,7 +200,7 @@ test "custom scalar parse and serialize hooks run" {
 /// The scalar's `parse_value` also runs on a value supplied through a variable.
 test "custom scalar parses a variable-supplied argument" {
   let vars : Map[String, Json] = Map([])
-  vars["v"] = "world".to_json()
+  vars["v"] = Json("world")
   let res = execute(
     scalar_schema(),
     scalar_resolvers(),

@@ -1,7 +1,7 @@
 ///|
 /// Encode a GraphQL-over-HTTP POST body as `{ query, variables }` JSON.
 fn request_body(query : String, variables : Json) -> Bytes {
-  let obj : Json = { "query": query.to_json(), "variables": variables }
+  let obj : Json = { "query": Json(query), "variables": variables }
   @utf8.encode(obj.stringify())
 }
 

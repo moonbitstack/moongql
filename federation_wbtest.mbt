@@ -23,7 +23,7 @@ fn federated_setup() -> (Schema, Resolvers) {
         }
       _ => ""
     }
-    jobj([("id", id.to_json()), ("name", ("User#" + id).to_json())])
+    jobj([("id", Json(id)), ("name", Json("User#" + id))])
   })
   fed.entity(name="Product", key="upc", extends=true, external=["upc"], resolve=(
     rep,
@@ -37,7 +37,7 @@ fn federated_setup() -> (Schema, Resolvers) {
         }
       _ => ""
     }
-    jobj([("upc", upc.to_json()), ("reviews", ["great", "ok"].to_json())])
+    jobj([("upc", Json(upc)), ("reviews", Json(["great", "ok"]))])
   })
   fed.apply(s, r)
   (s, r)
@@ -89,10 +89,10 @@ test "_service returns the federated SDL" {
 test "_entities resolves representations into entities" {
   let (s, r) = federated_setup()
   let reps : Array[Json] = [
-    jobj([("__typename", "User".to_json()), ("id", "7".to_json())]),
-    jobj([("__typename", "Product".to_json()), ("upc", "abc".to_json())]),
+    jobj([("__typename", Json("User")), ("id", Json("7"))]),
+    jobj([("__typename", Json("Product")), ("upc", Json("abc"))]),
   ]
-  let vars = jobj([("reps", reps.to_json())])
+  let vars = jobj([("reps", Json(reps))])
   let query =
     #|query ($reps: [_Any!]!) {
     #|  _entities(representations: $reps) {
@@ -119,9 +119,9 @@ test "_entities resolves representations into entities" {
 test "_entities yields null for an unknown entity type" {
   let (s, r) = federated_setup()
   let reps : Array[Json] = [
-    jobj([("__typename", "Unknown".to_json()), ("id", "1".to_json())]),
+    jobj([("__typename", Json("Unknown")), ("id", Json("1"))]),
   ]
-  let variables : Map[String, Json] = Map([("reps", reps.to_json())])
+  let variables : Map[String, Json] = Map([("reps", Json(reps))])
   let query =
     #|query ($reps: [_Any!]!) {
     #|  _entities(representations: $reps) { __typename }

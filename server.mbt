@@ -14,7 +14,7 @@
 /// CDN via an import map, and a fetcher points at the GraphQL endpoint. Splitting
 /// the template around the endpoint keeps it a plain string with no interpolation
 /// machinery.
-pub fn graphiql_html(endpoint? : String = "/graphql") -> String {
+pub fn graphiql_html(endpoint~ : String = "/graphql") -> String {
   graphiql_head() + endpoint + graphiql_tail()
 }
 
@@ -75,9 +75,9 @@ fn graphiql_tail() -> String {
 /// An `application/json` error reply carrying a single `errors` entry, for the
 /// transport-level failures (wrong path, wrong method, an unacceptable or missing
 /// media type, an unreadable body) that stop a request before the executor runs.
-fn error_response(status : Int, message : String) -> @moonasgi.Response {
-  let errs : Array[Json] = [jobj([("message", message.to_json())])]
-  @moonasgi.Response::json(status~, jobj([("errors", errs.to_json())]))
+fn error_response(status : Int32, message : String) -> @moonasgi.Response {
+  let errs : Array[Json] = [jobj([("message", Json(message))])]
+  @moonasgi.Response::json(status~, jobj([("errors", Json(errs))]))
 }
 
 ///|
@@ -93,7 +93,7 @@ priv enum Wire {
 
 ///|
 /// An ASCII upper-case code point folded to lower case.
-fn fold_case(c : Int) -> Int {
+fn fold_case(c : Int32) -> Int32 {
   if c >= 65 && c <= 90 {
     c + 32
   } else {
@@ -206,7 +206,7 @@ fn wire_content_type(wire : Wire) -> String {
 /// a 200 and the client reads `errors`; under the GraphQL media type a response
 /// with no `data` entry is a request error — the operation never ran — which the
 /// specification maps to 400. A batch is neither, and answers 200.
-fn wire_status(wire : Wire, body : Json) -> Int {
+fn wire_status(wire : Wire, body : Json) -> Int32 {
   match wire {
     AppJson => 200
     GraphqlJson =>
@@ -384,7 +384,7 @@ fn post_request(
           },
         )
       }
-      wire_response(wire, results.to_json())
+      wire_response(wire, Json(results))
     }
     _ =>
       match run_body(schema, resolvers, body) {
@@ -409,8 +409,8 @@ fn post_request(
 pub fn graphql_handler(
   schema : Schema,
   resolvers : Resolvers,
-  path? : String = "/graphql",
-  graphiql? : Bool = true,
+  path~ : String = "/graphql",
+  graphiql~ : Bool = true,
 ) -> @moonasgi.Handler {
   fn(req : @moonasgi.Request) -> @moonasgi.Response {
     if req.path != path {
@@ -454,8 +454,8 @@ pub fn graphql_handler(
 pub fn graphql_app(
   schema : Schema,
   resolvers : Resolvers,
-  path? : String = "/graphql",
-  graphiql? : Bool = true,
+  path~ : String = "/graphql",
+  graphiql~ : Bool = true,
 ) -> @moonasgi.AsgiApp {
   @moonasgi.to_asgi(graphql_handler(schema, resolvers, path~, graphiql~))
 }

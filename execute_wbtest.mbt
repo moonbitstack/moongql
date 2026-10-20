@@ -1,11 +1,11 @@
 ///|
 /// Build a `User` object value as JSON for the resolver dataset.
-fn juser(id : String, name : String, age : Int) -> Json {
+fn juser(id : String, name : String, age : Int32) -> Json {
   let m : Map[String, Json] = Map([])
-  m["id"] = id.to_json()
-  m["name"] = name.to_json()
-  m["age"] = age.to_json()
-  m.to_json()
+  m["id"] = Json(id)
+  m["name"] = Json(name)
+  m["age"] = Json(age)
+  Json(m)
 }
 
 ///|
@@ -47,7 +47,7 @@ fn demo_resolvers() -> Resolvers {
     }
   })
   r.field("Query", "users", fn(_info) {
-    [juser("1", "Alice", 30), juser("2", "Bob", 25)].to_json()
+    Json([juser("1", "Alice", 30), juser("2", "Bob", 25)])
   })
   r.field("Query", "mustFail", fn(_info) { Json::null() })
   r
@@ -70,8 +70,8 @@ test "execute a real query with variables, alias, fragment and @include" {
     #|  name
     #|}
   let vars : Map[String, Json] = Map([])
-  vars["uid"] = "1".to_json()
-  vars["withAge"] = true.to_json()
+  vars["uid"] = Json("1")
+  vars["withAge"] = Json(true)
   let res = execute(demo_schema(), demo_resolvers(), query, variables=vars)
   assert_eq(
     res.stringify(),
@@ -93,8 +93,8 @@ test "skip/include directives drop guarded fields" {
     #|  }
     #|}
   let vars : Map[String, Json] = Map([])
-  vars["uid"] = "2".to_json()
-  vars["withAge"] = false.to_json()
+  vars["uid"] = Json("2")
+  vars["withAge"] = Json(false)
   let res = execute(demo_schema(), demo_resolvers(), query, variables=vars)
   assert_eq(
     res.stringify(),
@@ -265,7 +265,7 @@ test "a missing required variable is a request error" {
   let reached : Array[Json] = []
   r.field("Query", "user", info => {
     reached.push(info.arg("id"))
-    { "id": "u1" }.to_json()
+    Json({ "id": "u1" })
   })
   let query = "query ($id: ID!) { user(id: $id) { id } }"
   let resp = execute(s, r, query, variables=Map([]))
@@ -274,7 +274,7 @@ test "a missing required variable is a request error" {
   assert_eq(text.contains("was not provided"), true)
   assert_eq(text.contains("\"data\""), false)
   // Supplied, it runs.
-  let ok = execute(s, r, query, variables=Map([("id", "u1".to_json())]))
+  let ok = execute(s, r, query, variables=Map([("id", Json("u1"))]))
   assert_eq(reached.length(), 1)
   assert_eq(ok.stringify().contains("\"errors\""), false)
 }

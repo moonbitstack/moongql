@@ -9,10 +9,10 @@ test "custom scalar specifiedByURL surfaces in introspection (@specifiedBy)" {
   guard res is Object(m) else { fail("response should be an object") }
   guard m.get("data") is Some(Object(data)) else { fail("data") }
   guard data.get("__type") is Some(Object(t)) else { fail("__type") }
-  assert_eq(t.get("kind"), Some("SCALAR".to_json()))
+  assert_eq(t.get("kind"), Some(Json("SCALAR")))
   assert_eq(
     t.get("specifiedByURL"),
-    Some("https://scalars.graphql.org/datetime".to_json()),
+    Some(Json("https://scalars.graphql.org/datetime")),
   )
   // A built-in scalar carries no spec URL.
   let res2 = execute(

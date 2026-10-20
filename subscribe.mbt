@@ -62,7 +62,7 @@ fn Exec::execute_subscription_event(
   event : Json,
 ) -> Json {
   let first = group[0]
-  let fpath : Array[Json] = [key.to_json()]
+  let fpath : Array[Json] = [Json(key)]
   match self.field_type_of(root_type, first.name) {
     None => {
       self.add_error(
@@ -76,7 +76,7 @@ fn Exec::execute_subscription_event(
       )
       let m : Map[String, Json] = Map([])
       m[key] = Json::null()
-      m.to_json()
+      Json(m)
     }
     Some(ftype) => {
       let completed = self.complete(ftype, event, group, fpath) catch {
@@ -89,7 +89,7 @@ fn Exec::execute_subscription_event(
       }
       let m : Map[String, Json] = Map([])
       m[key] = completed
-      m.to_json()
+      Json(m)
     }
   }
 }
@@ -122,10 +122,10 @@ pub fn create_source_event_stream(
   resolvers : Resolvers,
   subscribers : Subscribers,
   query : String,
-  variables? : Map[String, Json] = Map([]),
+  variables~ : Map[String, Json] = Map([]),
   operation_name? : String,
-  root_value? : Json = Json::null(),
-  context? : Json = Json::null(),
+  root_value~ : Json = Json::null(),
+  context~ : Json = Json::null(),
 ) -> SubscriptionResult {
   let doc = parse(query) catch {
     GqlSyntaxError(m, line, col) =>
@@ -253,10 +253,10 @@ pub fn execute_subscription(
   resolvers : Resolvers,
   subscribers : Subscribers,
   query : String,
-  variables? : Map[String, Json] = Map([]),
+  variables~ : Map[String, Json] = Map([]),
   operation_name? : String,
-  root_value? : Json = Json::null(),
-  context? : Json = Json::null(),
+  root_value~ : Json = Json::null(),
+  context~ : Json = Json::null(),
 ) -> Array[Json] {
   match
     create_source_event_stream(

@@ -28,7 +28,7 @@ pub(all) struct AppliedDirective {
 /// An applied directive with no arguments, or with the given constant arguments.
 pub fn AppliedDirective::new(
   name : String,
-  args? : Array[(String, Json)] = [],
+  args~ : Array[(String, Json)] = [],
 ) -> AppliedDirective {
   { name, args, }
 }
@@ -67,8 +67,8 @@ pub fn Schema::directive(
   self : Schema,
   name : String,
   locations~ : Array[String],
-  args? : Array[(String, GqlType)] = [],
-  is_repeatable? : Bool = false,
+  args~ : Array[(String, GqlType)] = [],
+  is_repeatable~ : Bool = false,
   on_field? : FieldDirectiveHook,
 ) -> Unit {
   self.directive_defs.push({ name, locations, args, is_repeatable, on_field, })

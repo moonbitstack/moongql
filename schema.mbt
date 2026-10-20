@@ -100,7 +100,7 @@ pub fn ObjectType::field_args(
   name : String,
   args : Array[(String, GqlType)],
   typ : GqlType,
-  defaults? : Array[(String, Json)] = [],
+  defaults~ : Array[(String, Json)] = [],
   deprecation_reason? : String,
   description? : String,
 ) -> Unit {
@@ -179,7 +179,7 @@ pub struct Schema {
 /// Create an empty schema whose root query type is `query` (default `Query`),
 /// with no mutation or subscription root until `set_mutation` / `set_subscription`
 /// name them.
-pub fn Schema::new(query? : String = "Query") -> Schema {
+pub fn Schema::new(query~ : String = "Query") -> Schema {
   {
     types: [],
     enums: [],
@@ -258,8 +258,8 @@ pub fn Schema::union_by_name(self : Schema, name : String) -> UnionType? {
 pub fn Schema::scalar(
   self : Schema,
   name : String,
-  serialize? : (Json) -> Json = fn(x) { x },
-  parse_value? : (Json) -> Json = fn(x) { x },
+  serialize~ : (Json) -> Json = fn(x) { x },
+  parse_value~ : (Json) -> Json = fn(x) { x },
   spec_url? : String,
 ) -> Unit {
   self.scalars.push({ name, serialize, parse_value, spec_url, })
@@ -364,9 +364,9 @@ pub fn Schema::enum_(
   self : Schema,
   name : String,
   values : Array[String],
-  deprecated? : Array[(String, String)] = [],
+  deprecated~ : Array[(String, String)] = [],
   description? : String,
-  descriptions? : Array[(String, String)] = [],
+  descriptions~ : Array[(String, String)] = [],
 ) -> Unit {
   self.enums.push({
     name,

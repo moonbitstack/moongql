@@ -52,7 +52,7 @@ pub struct Federation {
 /// SDL opens with `extend schema @link(...)` importing the federation spec and
 /// which may use the v2-only directives (`@shareable`, `@inaccessible`,
 /// `@override`).
-pub fn Federation::new(v2? : Bool = false) -> Federation {
+pub fn Federation::new(v2~ : Bool = false) -> Federation {
   { entities: [], v2, field_dirs: [], }
 }
 
@@ -61,18 +61,18 @@ pub fn Federation::new(v2? : Bool = false) -> Federation {
 /// the directive names the subgraph imports.
 fn federation_link_directive() -> AppliedDirective {
   let imports : Array[Json] = [
-    "@key".to_json(),
-    "@shareable".to_json(),
-    "@inaccessible".to_json(),
-    "@override".to_json(),
-    "@external".to_json(),
-    "@requires".to_json(),
-    "@provides".to_json(),
-    "@extends".to_json(),
+    Json("@key"),
+    Json("@shareable"),
+    Json("@inaccessible"),
+    Json("@override"),
+    Json("@external"),
+    Json("@requires"),
+    Json("@provides"),
+    Json("@extends"),
   ]
   AppliedDirective::new("link", args=[
-    ("url", "https://specs.apollo.dev/federation/v2.3".to_json()),
-    ("import", imports.to_json()),
+    ("url", Json("https://specs.apollo.dev/federation/v2.3")),
+    ("import", Json(imports)),
   ])
 }
 
@@ -115,7 +115,7 @@ pub fn Federation::override_(
     (
       type_name,
       field_name,
-      AppliedDirective::new("override", args=[("from", from.to_json())]),
+      AppliedDirective::new("override", args=[("from", Json(from))]),
     ),
   )
 }
@@ -134,7 +134,7 @@ pub fn Federation::requires(
     (
       type_name,
       field_name,
-      AppliedDirective::new("requires", args=[("fields", fields.to_json())]),
+      AppliedDirective::new("requires", args=[("fields", Json(fields))]),
     ),
   )
 }
@@ -152,7 +152,7 @@ pub fn Federation::provides(
     (
       type_name,
       field_name,
-      AppliedDirective::new("provides", args=[("fields", fields.to_json())]),
+      AppliedDirective::new("provides", args=[("fields", Json(fields))]),
     ),
   )
 }
@@ -168,8 +168,8 @@ pub fn Federation::entity(
   name~ : String,
   key~ : String,
   resolve~ : EntityResolver,
-  extends? : Bool = false,
-  external? : Array[String] = [],
+  extends~ : Bool = false,
+  external~ : Array[String] = [],
 ) -> Unit {
   self.entities.push({ name, key, extends, external, resolve, })
 }
@@ -302,8 +302,8 @@ fn representation_typename(rep : Json) -> String {
 fn tag_typename(value : Json, typename : String) -> Json {
   match value {
     Object(m) => {
-      m["__typename"] = typename.to_json()
-      m.to_json()
+      m["__typename"] = Json(typename)
+      Json(m)
     }
     _ => value
   }
@@ -350,7 +350,7 @@ pub fn Federation::apply(
   // The fields go on the schema's query root, whatever it is named, so the
   // resolvers have to be registered against the same type.
   resolvers.field(schema.query, "_service", fn(_info) {
-    jobj([("sdl", fed.sdl(schema).to_json())])
+    jobj([("sdl", Json(fed.sdl(schema)))])
   })
   resolvers.field(schema.query, "_entities", info => {
     let reps = match info.arg("representations") {
@@ -365,6 +365,6 @@ pub fn Federation::apply(
         None => out.push(Json::null())
       }
     }
-    out.to_json()
+    Json(out)
   })
 }

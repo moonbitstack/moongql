@@ -66,10 +66,10 @@ pub fn GqlWs::new(
   schema : Schema,
   resolvers : Resolvers,
   subscribers : Subscribers,
-  root_value? : Json = Json::null(),
-  context? : Json = Json::null(),
-  init_timeout? : Int64 = 3000,
-  ping_interval? : Int64 = 12000,
+  root_value~ : Json = Json::null(),
+  context~ : Json = Json::null(),
+  init_timeout~ : Int64 = 3000,
+  ping_interval~ : Int64 = 12000,
 ) -> GqlWs {
   {
     schema,
@@ -180,8 +180,8 @@ pub fn graphql_ws_handler(
   schema : Schema,
   resolvers : Resolvers,
   subscribers : Subscribers,
-  root_value? : Json = Json::null(),
-  context? : Json = Json::null(),
+  root_value~ : Json = Json::null(),
+  context~ : Json = Json::null(),
 ) -> @moonasgi.WebSocketHandler {
   GqlWs::new(schema, resolvers, subscribers, root_value~, context~).handler()
 }
@@ -191,10 +191,10 @@ pub fn graphql_ws_handler(
 fn gql_ws_message(type_ : String, id : String?, payload : Json?) -> String {
   let entries : Array[(String, Json)] = []
   match id {
-    Some(i) => entries.push(("id", i.to_json()))
+    Some(i) => entries.push(("id", Json(i)))
     None => ()
   }
-  entries.push(("type", type_.to_json()))
+  entries.push(("type", Json(type_)))
   match payload {
     Some(p) => entries.push(("payload", p))
     None => ()
@@ -210,7 +210,7 @@ fn gql_ws_errors_json(errors : Array[GqlError]) -> Json {
   for e in errors {
     arr.push(e.to_json())
   }
-  arr.to_json()
+  Json(arr)
 }
 
 ///|
@@ -229,7 +229,7 @@ fn GqlWs::op_context(self : GqlWs) -> Json {
         merged[k] = v
       }
       merged["connectionParams"] = self.params
-      merged.to_json()
+      Json(merged)
     }
     Null => jobj([("connectionParams", self.params)])
     other => other

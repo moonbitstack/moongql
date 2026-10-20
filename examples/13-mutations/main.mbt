@@ -27,7 +27,7 @@ fn main {
   input.field("title", @moongql.NonNull(@moongql.Scalar("String")))
   let store : Array[Json] = []
   let r = @moongql.Resolvers::new()
-  r.field("Query", "posts", _info => store.to_json())
+  r.field("Query", "posts", _info => Json(store))
   r.field("Mutation", "addPost", info => {
     let title = match info.arg("input") {
       Object(m) =>
@@ -38,8 +38,8 @@ fn main {
       _ => ""
     }
     let created : Json = {
-      "id": (store.length() + 1).to_string().to_json(),
-      "title": title.to_json(),
+      "id": Json((store.length() + 1).to_string()),
+      "title": Json(title),
     }
     store.push(created)
     created

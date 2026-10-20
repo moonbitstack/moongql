@@ -2,10 +2,10 @@
 /// Build a `Message` object value for the subscription source stream.
 fn jmsg(id : String, body : String, channel : String) -> Json {
   let m : Map[String, Json] = Map([])
-  m["id"] = id.to_json()
-  m["body"] = body.to_json()
-  m["channel"] = channel.to_json()
-  m.to_json()
+  m["id"] = Json(id)
+  m["body"] = Json(body)
+  m["channel"] = Json(channel)
+  Json(m)
 }
 
 ///|
@@ -42,9 +42,7 @@ fn sub_subscribers() -> Subscribers {
     }
     [jmsg("1", "hello", ch), jmsg("2", "world", ch), jmsg("3", "bye", ch)]
   })
-  subs.field("Subscription", "ticks", fn(_info) {
-    [(1).to_json(), (2).to_json()]
-  })
+  subs.field("Subscription", "ticks", fn(_info) { [Json(1), Json(2)] })
   subs
 }
 
@@ -58,7 +56,7 @@ test "subscription yields an ordered stream of payloads" {
     #|  messageAdded(channel: $c) { id body channel }
     #|}
   let vars : Map[String, Json] = Map([])
-  vars["c"] = "general".to_json()
+  vars["c"] = Json("general")
   let payloads = execute_subscription(
     sub_schema(),
     Resolvers::new(),

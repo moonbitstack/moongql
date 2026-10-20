@@ -59,7 +59,7 @@ fn introspection_type_def(name : String) -> ObjectType? {
       for fname in ["fields", "enumValues"] {
         if ty.field_by_name(fname) is Some(f) {
           f.args.push(("includeDeprecated", Scalar("Boolean")))
-          f.arg_defaults["includeDeprecated"] = false.to_json()
+          f.arg_defaults["includeDeprecated"] = Json(false)
         }
       }
       Some(ty)
@@ -137,8 +137,8 @@ fn Exec::type_kind(self : Exec, name : String) -> String {
 /// (`ofType`, `queryType`, a field's `type`, interface / possibleType entries).
 fn Exec::named_type_ref(self : Exec, name : String) -> Json {
   jobj([
-    ("kind", self.type_kind(name).to_json()),
-    ("name", name.to_json()),
+    ("kind", Json(self.type_kind(name))),
+    ("name", Json(name)),
     ("description", Json::null()),
     ("fields", Json::null()),
     ("interfaces", Json::null()),
@@ -153,7 +153,7 @@ fn Exec::named_type_ref(self : Exec, name : String) -> Json {
 /// A `__Type` wrapper reference (`NON_NULL` / `LIST`) around `of_type`.
 fn wrapper_ref(kind : String, of_type : Json) -> Json {
   jobj([
-    ("kind", kind.to_json()),
+    ("kind", Json(kind)),
     ("name", Json::null()),
     ("description", Json::null()),
     ("fields", Json::null()),
@@ -186,23 +186,23 @@ fn Exec::input_value_json(
   name : String,
   typ : GqlType,
   default? : Json,
-  description? : String = "",
+  description~ : String = "",
 ) -> Json {
   jobj([
-    ("name", name.to_json()),
+    ("name", Json(name)),
     (
       "description",
       if description == "" {
         Json::null()
       } else {
-        description.to_json()
+        Json(description)
       },
     ),
     ("type", self.type_ref_json(typ)),
     (
       "defaultValue",
       match default {
-        Some(d) => json_to_gql_literal(d).to_json()
+        Some(d) => Json(json_to_gql_literal(d))
         None => Json::null()
       },
     ),
@@ -218,11 +218,11 @@ fn Exec::field_json(self : Exec, f : Field) -> Json {
     args.push(self.input_value_json(a.0, a.1, default?))
   }
   jobj([
-    ("name", f.name.to_json()),
+    ("name", Json(f.name)),
     ("description", reason_json(f.description)),
-    ("args", args.to_json()),
+    ("args", Json(args)),
     ("type", self.type_ref_json(f.typ)),
-    ("isDeprecated", (f.deprecation_reason is Some(_)).to_json()),
+    ("isDeprecated", Json(f.deprecation_reason is Some(_))),
     ("deprecationReason", reason_json(f.deprecation_reason)),
   ])
 }
@@ -231,7 +231,7 @@ fn Exec::field_json(self : Exec, f : Field) -> Json {
 /// A `deprecationReason` value: the reason string, or JSON null when not set.
 fn reason_json(reason : String?) -> Json {
   match reason {
-    Some(r) => r.to_json()
+    Some(r) => Json(r)
     None => Json::null()
   }
 }
@@ -256,7 +256,7 @@ fn filter_deprecated(items : Json, included : Bool) -> Json {
           out.push(it)
         }
       }
-      out.to_json()
+      Json(out)
     }
     _ => items
   }
@@ -283,7 +283,7 @@ fn Exec::composite_type_json(self : Exec, def : ObjectType) -> Json {
       }
       fs.push(self.field_json(f))
     }
-    fs.to_json()
+    Json(fs)
   }
   let input_fields = if def.kind is Input {
     let fs : Array[Json] = []
@@ -293,7 +293,7 @@ fn Exec::composite_type_json(self : Exec, def : ObjectType) -> Json {
       }
       fs.push(self.input_value_json(f.name, f.typ))
     }
-    fs.to_json()
+    Json(fs)
   } else {
     Json::null()
   }
@@ -304,7 +304,7 @@ fn Exec::composite_type_json(self : Exec, def : ObjectType) -> Json {
     for i in def.interfaces {
       is_.push(self.named_type_ref(i))
     }
-    is_.to_json()
+    Json(is_)
   }
   let possible_types = if def.kind is Interface {
     let ps : Array[Json] = []
@@ -316,13 +316,13 @@ fn Exec::composite_type_json(self : Exec, def : ObjectType) -> Json {
         }
       }
     }
-    ps.to_json()
+    Json(ps)
   } else {
     Json::null()
   }
   jobj([
-    ("kind", kind.to_json()),
-    ("name", def.name.to_json()),
+    ("kind", Json(kind)),
+    ("name", Json(def.name)),
     ("description", reason_json(def.description)),
     ("fields", fields),
     ("interfaces", interfaces),
@@ -342,21 +342,21 @@ fn Exec::enum_type_json(self : Exec, def : EnumType) -> Json {
     let reason = def.deprecations.get(v)
     vals.push(
       jobj([
-        ("name", v.to_json()),
+        ("name", Json(v)),
         ("description", reason_json(def.value_descriptions.get(v))),
-        ("isDeprecated", (reason is Some(_)).to_json()),
+        ("isDeprecated", Json(reason is Some(_))),
         ("deprecationReason", reason_json(reason)),
       ]),
     )
   }
   jobj([
-    ("kind", "ENUM".to_json()),
-    ("name", def.name.to_json()),
+    ("kind", Json("ENUM")),
+    ("name", Json(def.name)),
     ("description", reason_json(def.description)),
     ("fields", Json::null()),
     ("interfaces", Json::null()),
     ("possibleTypes", Json::null()),
-    ("enumValues", vals.to_json()),
+    ("enumValues", Json(vals)),
     ("inputFields", Json::null()),
     ("ofType", Json::null()),
   ])
@@ -371,12 +371,12 @@ fn Exec::union_type_json(self : Exec, def : UnionType) -> Json {
     members.push(self.named_type_ref(m))
   }
   jobj([
-    ("kind", "UNION".to_json()),
-    ("name", def.name.to_json()),
+    ("kind", Json("UNION")),
+    ("name", Json(def.name)),
     ("description", Json::null()),
     ("fields", Json::null()),
     ("interfaces", Json::null()),
-    ("possibleTypes", members.to_json()),
+    ("possibleTypes", Json(members)),
     ("enumValues", Json::null()),
     ("inputFields", Json::null()),
     ("ofType", Json::null()),
@@ -387,8 +387,8 @@ fn Exec::union_type_json(self : Exec, def : UnionType) -> Json {
 /// Materialise the full `__Type` for a built-in or custom scalar.
 fn scalar_type_json(name : String, spec_url? : String) -> Json {
   jobj([
-    ("kind", "SCALAR".to_json()),
-    ("name", name.to_json()),
+    ("kind", Json("SCALAR")),
+    ("name", Json(name)),
     ("description", Json::null()),
     ("fields", Json::null()),
     ("interfaces", Json::null()),
@@ -442,9 +442,9 @@ fn Exec::introspection_type_by_name(self : Exec, name : String) -> Json {
 /// The three standard built-in directives, materialised as `__Directive`s.
 fn Exec::directives_json(self : Exec) -> Json {
   let field_locs : Array[Json] = [
-    "FIELD".to_json(),
-    "FRAGMENT_SPREAD".to_json(),
-    "INLINE_FRAGMENT".to_json(),
+    Json("FIELD"),
+    Json("FRAGMENT_SPREAD"),
+    Json("INLINE_FRAGMENT"),
   ]
   let bool_if : Array[Json] = [
     self.input_value_json("if", NonNull(Scalar("Boolean"))),
@@ -453,7 +453,7 @@ fn Exec::directives_json(self : Exec) -> Json {
     self.input_value_json(
       "reason",
       Scalar("String"),
-      default="No longer supported".to_json(),
+      default=Json("No longer supported"),
     ),
   ]
   let directive = fn(
@@ -462,11 +462,11 @@ fn Exec::directives_json(self : Exec) -> Json {
     args : Array[Json],
   ) -> Json {
     jobj([
-      ("name", name.to_json()),
+      ("name", Json(name)),
       ("description", Json::null()),
-      ("locations", locs.to_json()),
-      ("args", args.to_json()),
-      ("isRepeatable", false.to_json()),
+      ("locations", Json(locs)),
+      ("args", Json(args)),
+      ("isRepeatable", Json(false)),
     ])
   }
   let out : Array[Json] = [
@@ -475,14 +475,14 @@ fn Exec::directives_json(self : Exec) -> Json {
     directive(
       "deprecated",
       [
-        "FIELD_DEFINITION".to_json(),
-        "ARGUMENT_DEFINITION".to_json(),
-        "INPUT_FIELD_DEFINITION".to_json(),
-        "ENUM_VALUE".to_json(),
+        Json("FIELD_DEFINITION"),
+        Json("ARGUMENT_DEFINITION"),
+        Json("INPUT_FIELD_DEFINITION"),
+        Json("ENUM_VALUE"),
       ],
       deprecated_reason,
     ),
-    directive("specifiedBy", ["SCALAR".to_json()], [
+    directive("specifiedBy", [Json("SCALAR")], [
       self.input_value_json("url", NonNull(Scalar("String"))),
     ]),
   ]
@@ -490,7 +490,7 @@ fn Exec::directives_json(self : Exec) -> Json {
   for d in self.schema.directive_defs {
     let locs : Array[Json] = []
     for l in d.locations {
-      locs.push(l.to_json())
+      locs.push(Json(l))
     }
     let args : Array[Json] = []
     for a in d.args {
@@ -498,15 +498,15 @@ fn Exec::directives_json(self : Exec) -> Json {
     }
     out.push(
       jobj([
-        ("name", d.name.to_json()),
+        ("name", Json(d.name)),
         ("description", Json::null()),
-        ("locations", locs.to_json()),
-        ("args", args.to_json()),
-        ("isRepeatable", d.is_repeatable.to_json()),
+        ("locations", Json(locs)),
+        ("args", Json(args)),
+        ("isRepeatable", Json(d.is_repeatable)),
       ]),
     )
   }
-  out.to_json()
+  Json(out)
 }
 
 ///|
@@ -564,7 +564,7 @@ fn Exec::introspection_schema(self : Exec) -> Json {
     ("queryType", self.named_type_ref(self.schema.query)),
     ("mutationType", mutation),
     ("subscriptionType", subscription),
-    ("types", types.to_json()),
+    ("types", Json(types)),
     ("directives", self.directives_json()),
   ])
 }

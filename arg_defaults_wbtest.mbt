@@ -8,7 +8,7 @@ fn greet_schema() -> (Schema, Resolvers) {
     "greet",
     [("greeting", Scalar("String"))],
     NonNull(Scalar("String")),
-    defaults=[("greeting", "Hello".to_json())],
+    defaults=[("greeting", Json("Hello"))],
   )
   let r = Resolvers::new()
   r.field("Query", "greet", info => {
@@ -17,7 +17,7 @@ fn greet_schema() -> (Schema, Resolvers) {
       Null => "null"
       _ => "?"
     }
-    (g + ", world").to_json()
+    Json(g + ", world")
   })
   (s, r)
 }

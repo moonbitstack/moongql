@@ -5,7 +5,7 @@
 ///|
 /// The line and column of the first location on the first error, or `(0, 0)` when
 /// the response carries none.
-fn first_location(res : Json) -> (Int, Int) {
+fn first_location(res : Json) -> (Int32, Int32) {
   guard res is Object(m) else { return (0, 0) }
   guard m.get("errors") is Some(Array(errs)) else { return (0, 0) }
   guard errs[0] is Object(e) else { return (0, 0) }
@@ -53,7 +53,7 @@ test "a resolver error with extensions names its field" {
   schema.object("Query").field("boom", Scalar("String"))
   let resolvers = Resolvers::new()
   resolvers.field("Query", "boom", _info => {
-    raise ResolverErrorExt("kaboom", Map([("code", "qwq".to_json())]))
+    raise ResolverErrorExt("kaboom", Map([("code", Json("qwq"))]))
   })
   let res = execute(
     schema,
@@ -73,7 +73,7 @@ test "a resolver error with extensions names its field" {
 test "a subscription source error with extensions names the root field" {
   let subs = Subscribers::new()
   subs.field("Subscription", "ticks", _info => {
-    raise ResolverErrorExt("no stream", Map([("code", "hhh".to_json())]))
+    raise ResolverErrorExt("no stream", Map([("code", Json("hhh"))]))
   })
   let payloads = execute_subscription(
     sub_schema(),
@@ -163,14 +163,14 @@ test "a syntax error names where the parse stopped" {
 ///|
 /// The first location of the first error whose message mentions `needle`, so a
 /// test can name the rule it is about when several errors come back at once.
-fn location_of(res : Json, needle : String) -> (Int, Int) {
+fn location_of(res : Json, needle : String) -> (Int32, Int32) {
   guard res is Object(m) else { return (0, 0) }
   guard m.get("errors") is Some(Array(errs)) else { return (0, 0) }
   for e in errs {
     guard e is Object(eo) else { continue }
     guard eo.get("message") is Some(String(msg)) else { continue }
     if msg.contains(needle) {
-      return first_location(jobj([("errors", [e].to_json())]))
+      return first_location(jobj([("errors", Json([e]))]))
     }
   }
   (0, 0)

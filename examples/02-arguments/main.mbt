@@ -13,7 +13,7 @@ fn main {
     "greet",
     [("name", @moongql.Scalar("String"))],
     @moongql.NonNull(@moongql.Scalar("String")),
-    defaults=[("name", "lfanke".to_json())],
+    defaults=[("name", Json("lfanke"))],
   )
   let r = @moongql.Resolvers::new()
   r.field("Query", "greet", fn(info) {
@@ -22,7 +22,7 @@ fn main {
       Null => "nobody"
       _ => "?"
     }
-    ("qwq, " + who).to_json()
+    Json("qwq, " + who)
   })
   println(@moongql.execute(s, r, "{ greet }").stringify())
   println(@moongql.execute(s, r, "{ greet(name: \"heke1228\") }").stringify())

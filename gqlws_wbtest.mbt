@@ -1,35 +1,29 @@
 ///|
 /// A client control frame `{ type }` as a text message.
 fn ctrl_frame(type_ : String) -> @moonasgi.WsMessage {
-  @ws.Text(jobj([("type", type_.to_json())]).stringify())
+  @ws.Text(jobj([("type", Json(type_))]).stringify())
 }
 
 ///|
 /// A `connection_init` frame carrying connection parameters.
 fn init_frame(payload : Json) -> @moonasgi.WsMessage {
   @ws.Text(
-    jobj([("type", "connection_init".to_json()), ("payload", payload)]).stringify(),
+    jobj([("type", Json("connection_init")), ("payload", payload)]).stringify(),
   )
 }
 
 ///|
 /// A client `complete` frame `{ id, type }` as a text message.
 fn complete_frame(id : String) -> @moonasgi.WsMessage {
-  @ws.Text(
-    jobj([("id", id.to_json()), ("type", "complete".to_json())]).stringify(),
-  )
+  @ws.Text(jobj([("id", Json(id)), ("type", Json("complete"))]).stringify())
 }
 
 ///|
 /// A `subscribe` frame `{ id, type, payload: { query } }` as a text message.
 fn subscribe_frame(id : String, query : String) -> @moonasgi.WsMessage {
-  let payload = jobj([("query", query.to_json())])
+  let payload = jobj([("query", Json(query))])
   @ws.Text(
-    jobj([
-      ("id", id.to_json()),
-      ("type", "subscribe".to_json()),
-      ("payload", payload),
-    ]).stringify(),
+    jobj([("id", Json(id)), ("type", Json("subscribe")), ("payload", payload)]).stringify(),
   )
 }
 
@@ -48,7 +42,7 @@ fn sent_texts(sends : Array[@moonasgi.WsSend]) -> Array[String] {
 
 ///|
 /// The close code in a handler's reply, or -1 if it did not close.
-fn close_code(sends : Array[@moonasgi.WsSend]) -> Int {
+fn close_code(sends : Array[@moonasgi.WsSend]) -> Int32 {
   for s in sends {
     if s is @ws.Close(code~, ..) {
       return code
@@ -204,15 +198,15 @@ test "graphql-transport-ws passes connection_init params to the context" {
           Some(Object(p)) =>
             match p.get("token") {
               Some(t) => t
-              None => "no token".to_json()
+              None => Json("no token")
             }
-          _ => "no params".to_json()
+          _ => Json("no params")
         }
-      _ => "no context".to_json()
+      _ => Json("no context")
     }
   })
   let ws = GqlWs::new(sub_schema(), r, sub_subscribers())
-  ws.recv(init_frame(jobj([("token", "heke1228".to_json())]))) |> ignore
+  ws.recv(init_frame(jobj([("token", Json("heke1228"))]))) |> ignore
   assert_eq(
     sent_texts(ws.recv(subscribe_frame("q1", "{ ok }")))[0],
     "{\"id\":\"q1\",\"type\":\"next\",\"payload\":{\"data\":{\"ok\":\"heke1228\"}}}",
@@ -229,9 +223,9 @@ test "graphql-transport-ws merges init params into a context object" {
     sub_schema(),
     r,
     sub_subscribers(),
-    context=jobj([("tenant", "qwq".to_json())]),
+    context=jobj([("tenant", Json("qwq"))]),
   )
-  ws.recv(init_frame(jobj([("token", "heke1228".to_json())]))) |> ignore
+  ws.recv(init_frame(jobj([("token", Json("heke1228"))]))) |> ignore
   assert_eq(
     sent_texts(ws.recv(subscribe_frame("q1", "{ ok }")))[0],
     "{\"id\":\"q1\",\"type\":\"next\",\"payload\":{\"data\":{\"ok\":{\"tenant\":\"qwq\",\"connectionParams\":{\"token\":\"heke1228\"}}}}}",
@@ -244,13 +238,8 @@ test "graphql-transport-ws merges init params into a context object" {
 test "graphql-transport-ws leaves a non-object context alone" {
   let r = Resolvers::new()
   r.field("Query", "ok", info => info.ctx)
-  let ws = GqlWs::new(
-    sub_schema(),
-    r,
-    sub_subscribers(),
-    context="plain".to_json(),
-  )
-  ws.recv(init_frame(jobj([("token", "heke1228".to_json())]))) |> ignore
+  let ws = GqlWs::new(sub_schema(), r, sub_subscribers(), context=Json("plain"))
+  ws.recv(init_frame(jobj([("token", Json("heke1228"))]))) |> ignore
   assert_eq(
     sent_texts(ws.recv(subscribe_frame("q1", "{ ok }")))[0],
     "{\"id\":\"q1\",\"type\":\"next\",\"payload\":{\"data\":{\"ok\":\"plain\"}}}",
@@ -263,12 +252,7 @@ test "graphql-transport-ws leaves a non-object context alone" {
 test "graphql-transport-ws leaves the context alone without init params" {
   let r = Resolvers::new()
   r.field("Query", "ok", info => info.ctx)
-  let ws = GqlWs::new(
-    sub_schema(),
-    r,
-    sub_subscribers(),
-    context="plain".to_json(),
-  )
+  let ws = GqlWs::new(sub_schema(), r, sub_subscribers(), context=Json("plain"))
   ws.recv(ctrl_frame("connection_init")) |> ignore
   assert_eq(
     sent_texts(ws.recv(subscribe_frame("q1", "{ ok }")))[0],
@@ -284,7 +268,7 @@ test "graphql-transport-ws answers ping with pong, echoing the payload" {
     "{\"type\":\"pong\"}",
   )
   let ping = @ws.Text(
-    jobj([("type", "ping".to_json()), ("payload", jobj([("n", (1).to_json())]))]).stringify(),
+    jobj([("type", Json("ping")), ("payload", jobj([("n", Json(1))]))]).stringify(),
   )
   assert_eq(
     sent_texts((h.on_receive)(ping))[0],
@@ -312,7 +296,7 @@ test "graphql-transport-ws sends an error message for a request that cannot star
 ///|
 test "graphql-transport-ws runs a query over the subscribe transport (single next + complete)" {
   let r = Resolvers::new()
-  r.field("Query", "ok", _info => "yes".to_json())
+  r.field("Query", "ok", _info => Json("yes"))
   let h = graphql_ws_handler(sub_schema(), r, sub_subscribers())
   (h.on_receive)(ctrl_frame("connection_init")) |> ignore
   let out = sent_texts((h.on_receive)(subscribe_frame("q1", "{ ok }")))

@@ -32,12 +32,12 @@ fn main {
       _ => ""
     }
     [
-      { "id": "1", "body": "hello", "channel": ch.to_json() },
-      { "id": "2", "body": "world", "channel": ch.to_json() },
-      { "id": "3", "body": "bye", "channel": ch.to_json() },
+      { "id": "1", "body": "hello", "channel": Json(ch) },
+      { "id": "2", "body": "world", "channel": Json(ch) },
+      { "id": "3", "body": "bye", "channel": Json(ch) },
     ]
   })
-  subs.field("Subscription", "ticks", _info => [(1).to_json(), (2).to_json()])
+  subs.field("Subscription", "ticks", _info => [Json(1), Json(2)])
   let r = @moongql.Resolvers::new()
   let feed =
     #|subscription Feed($c: String!) {

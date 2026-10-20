@@ -14,14 +14,14 @@ fn prefix_setup(register : Bool) -> (Schema, Resolvers) {
       args=[("text", NonNull(Scalar("String")))],
       on_field=(v, args) => {
         match (v, args.get("text")) {
-          (String(x), Some(String(p))) => (p + x).to_json()
+          (String(x), Some(String(p))) => Json(p + x)
           _ => v
         }
       },
     )
   }
   let r = Resolvers::new()
-  r.field("Query", "greeting", _info => "world".to_json())
+  r.field("Query", "greeting", _info => Json("world"))
   (s, r)
 }
 
@@ -136,7 +136,7 @@ test "directive repeatability is enforced" {
   s.directive("once", locations=["FIELD"])
   s.directive("many", locations=["FIELD"], is_repeatable=true)
   let r = Resolvers::new()
-  r.field("Query", "greeting", _info => "world".to_json())
+  r.field("Query", "greeting", _info => Json("world"))
   let non_repeat = execute(
     s,
     r,

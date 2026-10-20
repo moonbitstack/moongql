@@ -13,7 +13,7 @@ fn rep_str(rep : Json, key : String) -> String {
 
 ///|
 /// Read an integer field off a representation object, or 0.
-fn rep_int(rep : Json, key : String) -> Int {
+fn rep_int(rep : Json, key : String) -> Int32 {
   match rep {
     Object(m) =>
       match m.get(key) {
@@ -53,7 +53,7 @@ fn main {
   let fed = @moongql.Federation::new(v2=true)
   fed.entity(name="User", key="id", resolve=(rep, _ctx) => {
     let id = rep_str(rep, "id")
-    { "id": id.to_json(), "name": ("User#" + id).to_json() }
+    { "id": Json(id), "name": Json("User#" + id) }
   })
   fed.entity(name="Product", key="upc", extends=true, external=["weight"], resolve=(
     rep,
@@ -61,7 +61,7 @@ fn main {
   ) => {
     let upc = rep_str(rep, "upc")
     let weight = rep_int(rep, "weight")
-    { "upc": upc.to_json(), "shippingEstimate": (weight * 2).to_json() }
+    { "upc": Json(upc), "shippingEstimate": Json(weight * 2) }
   })
   fed.shareable("Product", "name")
   fed.override_("Product", "price", from="legacy")
@@ -75,7 +75,7 @@ fn main {
     { "__typename": "User", "id": "7" },
     { "__typename": "Product", "upc": "abc", "weight": 10 },
   ]
-  let vars : Map[String, Json] = { "reps": reps.to_json() }
+  let vars : Map[String, Json] = { "reps": Json(reps) }
   let query =
     #|query ($reps: [_Any!]!) {
     #|  _entities(representations: $reps) {

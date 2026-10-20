@@ -10,7 +10,7 @@
 /// A syntax error raised by the lexer or parser, carrying a message and the
 /// 1-based line/column where the offending token starts.
 pub suberror GqlSyntaxError {
-  GqlSyntaxError(String, Int, Int)
+  GqlSyntaxError(String, Int32, Int32)
 }
 
 ///|
@@ -59,8 +59,8 @@ pub(all) enum TokenKind {
 pub(all) struct Token {
   kind : TokenKind
   value : String
-  line : Int
-  col : Int
+  line : Int32
+  col : Int32
 }
 
 ///|
@@ -83,7 +83,7 @@ fn is_digit(c : Char) -> Bool {
 
 ///|
 /// The value of a hex digit, or `None` if `c` is not `[0-9A-Fa-f]`.
-fn hex_value(c : Char) -> Int? {
+fn hex_value(c : Char) -> Int32? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
   } else if c >= 'a' && c <= 'f' {
@@ -100,9 +100,9 @@ fn hex_value(c : Char) -> Int? {
 /// 1-based line/column tracking for diagnostics.
 priv struct Lexer {
   chars : Array[Char]
-  mut pos : Int
-  mut line : Int
-  mut col : Int
+  mut pos : Int32
+  mut line : Int32
+  mut col : Int32
 }
 
 ///|
@@ -127,7 +127,7 @@ fn Lexer::peek(self : Lexer) -> Char? {
 
 ///|
 /// The character `n` positions ahead, or `None` past the end.
-fn Lexer::peek_at(self : Lexer, n : Int) -> Char? {
+fn Lexer::peek_at(self : Lexer, n : Int32) -> Char? {
   let i = self.pos + n
   if i < self.chars.length() {
     Some(self.chars[i])
@@ -183,7 +183,7 @@ fn Lexer::skip_ignored(self : Lexer) -> Unit {
 
 ///|
 /// Read a `Name` token starting at the cursor (cursor is on a name-start char).
-fn Lexer::read_name(self : Lexer, line : Int, col : Int) -> Token {
+fn Lexer::read_name(self : Lexer, line : Int32, col : Int32) -> Token {
   let sb = StringBuilder()
   for ;; {
     match self.peek() {
@@ -205,8 +205,8 @@ fn Lexer::read_name(self : Lexer, line : Int, col : Int) -> Token {
 /// and no name-start/`.`/digit immediately trailing the number.
 fn Lexer::read_number(
   self : Lexer,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Token raise GqlSyntaxError {
   let sb = StringBuilder()
   let mut is_float = false
@@ -301,8 +301,8 @@ fn not_digit_ahead(lex : Lexer) -> Bool {
 /// opening quote.
 fn Lexer::read_string(
   self : Lexer,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Token raise GqlSyntaxError {
   self.advance() |> ignore // opening quote
   let sb = StringBuilder()
@@ -329,8 +329,8 @@ fn Lexer::read_string(
 fn Lexer::read_escape(
   self : Lexer,
   sb : StringBuilder,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Unit raise GqlSyntaxError {
   match self.peek() {
     Some('"') => {
@@ -378,8 +378,8 @@ fn Lexer::read_escape(
 fn Lexer::read_unicode_escape(
   self : Lexer,
   sb : StringBuilder,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Unit raise GqlSyntaxError {
   if self.peek() is Some('{') {
     self.advance() |> ignore
@@ -431,12 +431,12 @@ fn Lexer::read_unicode_escape(
 fn Lexer::emit_code_point(
   self : Lexer,
   sb : StringBuilder,
-  code : Int,
-  line : Int,
-  col : Int,
+  code : Int32,
+  line : Int32,
+  col : Int32,
 ) -> Unit raise GqlSyntaxError {
   ignore(self)
-  match Int::to_char(code) {
+  match Int32::to_char(code) {
     Some(c) => sb.write_char(c)
     None => raise GqlSyntaxError("invalid unicode code point", line, col)
   }
@@ -448,8 +448,8 @@ fn Lexer::emit_code_point(
 /// of the three opening quotes.
 fn Lexer::read_block_string(
   self : Lexer,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Token raise GqlSyntaxError {
   self.advance() |> ignore
   self.advance() |> ignore
@@ -525,7 +525,7 @@ fn split_lines(s : String) -> Array[String] {
 
 ///|
 /// The number of leading space/tab characters in `line`.
-fn leading_whitespace(line : String) -> Int {
+fn leading_whitespace(line : String) -> Int32 {
   let mut n = 0
   for c in line {
     if c == ' ' || c == '\t' {
@@ -545,7 +545,7 @@ fn is_blank(line : String) -> Bool {
 
 ///|
 /// Drop the first `n` characters of `s` (used to strip common indentation).
-fn drop_prefix(s : String, n : Int) -> String {
+fn drop_prefix(s : String, n : Int32) -> String {
   if n >= s.length() {
     ""
   } else {
@@ -559,7 +559,7 @@ fn drop_prefix(s : String, n : Int) -> String {
 /// lines, joining with `\n`.
 fn dedent_block_string(raw : String) -> String {
   let lines = split_lines(raw)
-  let mut common : Int? = None
+  let mut common : Int32? = None
   for i, line in lines {
     if i == 0 {
       continue
@@ -632,8 +632,8 @@ fn Lexer::next_token(self : Lexer) -> Token raise GqlSyntaxError {
 /// Read a single-character punctuator or the three-character `...` spread.
 fn Lexer::read_punctuator(
   self : Lexer,
-  line : Int,
-  col : Int,
+  line : Int32,
+  col : Int32,
 ) -> Token raise GqlSyntaxError {
   let c = self.advance()
   let kind = match c {
