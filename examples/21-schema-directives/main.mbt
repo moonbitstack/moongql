@@ -11,15 +11,15 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("me", @moongql.Named("User"))
+  q.field("me", Named("User"))
   let u = s.object("User")
-  u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  u.field("email", @moongql.NonNull(@moongql.Scalar("String")))
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("email", NonNull(Scalar("String")))
   s.enum_("Role", ["ADMIN", "USER"])
   s.union("Actor", ["User"])
   s.scalar("DateTime")
   s.directive("tag", locations=["OBJECT", "FIELD_DEFINITION"], args=[
-    ("name", @moongql.NonNull(@moongql.Scalar("String"))),
+    ("name", NonNull(Scalar("String"))),
   ])
   s.apply_schema_directive(
     @moongql.AppliedDirective::new("link", args=[

@@ -1,0 +1,4 @@
+// Batching and caching of resolver lookups, so a list of N items costs one
+// fetch instead of N. Depends on nothing else here.
+import {
+}

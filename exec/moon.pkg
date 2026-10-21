@@ -1,0 +1,8 @@
+// Execution: resolving a validated document against a schema, subscriptions,
+// and the introspection fields.
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/valid",
+  "moonbitlang/core/json",
+}

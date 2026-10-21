@@ -12,19 +12,19 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("ok", @moongql.NonNull(@moongql.Scalar("String")))
+  q.field("ok", NonNull(Scalar("String")))
   s.set_subscription("Subscription")
   let sub = s.object("Subscription")
   sub.field_args(
     "messageAdded",
-    [("channel", @moongql.NonNull(@moongql.Scalar("String")))],
-    @moongql.NonNull(@moongql.Named("Message")),
+    [("channel", NonNull(Scalar("String")))],
+    NonNull(Named("Message")),
   )
-  sub.field("ticks", @moongql.NonNull(@moongql.Scalar("Int")))
+  sub.field("ticks", NonNull(Scalar("Int")))
   let msg = s.object("Message")
-  msg.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  msg.field("body", @moongql.NonNull(@moongql.Scalar("String")))
-  msg.field("channel", @moongql.NonNull(@moongql.Scalar("String")))
+  msg.field("id", NonNull(Scalar("ID")))
+  msg.field("body", NonNull(Scalar("String")))
+  msg.field("channel", NonNull(Scalar("String")))
   let subs = @moongql.Subscribers::new()
   subs.field("Subscription", "messageAdded", info => {
     let ch = match info.arg("channel") {
@@ -52,14 +52,13 @@ fn main {
   }
   match
     @moongql.create_source_event_stream(s, r, subs, "subscription { ticks }") {
-    @moongql.EventStream(events) => println("source events: \{events.length()}")
-    @moongql.RequestError(errs) =>
-      println("request error count: \{errs.length()}")
+    EventStream(events) => println("source events: \{events.length()}")
+    RequestError(errs) => println("request error count: \{errs.length()}")
   }
   let multi = "subscription { messageAdded(channel: \"x\") { id } ticks }"
   match @moongql.create_source_event_stream(s, r, subs, multi) {
-    @moongql.EventStream(events) => println("source events: \{events.length()}")
-    @moongql.RequestError(errs) =>
+    EventStream(events) => println("source events: \{events.length()}")
+    RequestError(errs) =>
       for e in errs {
         println("rejected: " + e.message)
       }

@@ -11,8 +11,8 @@ fn main {
   let q = s.object("Query")
   q.field_args(
     "greet",
-    [("name", @moongql.Scalar("String"))],
-    @moongql.NonNull(@moongql.Scalar("String")),
+    [("name", Scalar("String"))],
+    NonNull(Scalar("String")),
     defaults=[("name", Json("lfanke"))],
   )
   let r = @moongql.Resolvers::new()

@@ -5,380 +5,114 @@ import {
   "moonbitstack/moonasgi/http",
   "moonbitstack/moonasgi/spec",
   "moonbitstack/moonasgi/ws",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/federation",
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/loader",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/server",
 }
 
 // Values
-pub fn create_source_event_stream(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> SubscriptionResult
+pub fn create_source_event_stream(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> @exec.SubscriptionResult
 
-pub fn execute(Schema, Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
+pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
 
-pub fn execute_subscription(Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
+pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
 
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(Schema, Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
-pub fn graphql_handler(Schema, Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
+pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
 
-pub fn graphql_ws_handler(Schema, Resolvers, Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
+pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
 
-pub fn parse(String) -> Document raise GqlSyntaxError
+pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
 
-pub fn tokenize(String) -> Array[Token] raise GqlSyntaxError
+pub fn tokenize(String) -> Array[@lang.Token] raise @lang.GqlSyntaxError
 
-pub fn validate(Schema, Document) -> Array[GqlError]
+pub fn validate(@schema.Schema, @lang.Document) -> Array[@lang.GqlError]
 
 // Errors
-pub suberror GqlSyntaxError {
-  GqlSyntaxError(String, Int32, Int32)
-}
-pub fn GqlSyntaxError::output(Self, &Logger) -> Unit
-pub fn GqlSyntaxError::to_string(Self) -> String
-pub impl Show for GqlSyntaxError
-
-pub(all) suberror ResolverError {
-  ResolverError(String)
-  ResolverErrorExt(String, Map[String, Json])
-}
 
 // Types and methods
-pub(all) struct AppliedDirective {
-  name : String
-  args : Array[(String, Json)]
-}
-pub fn AppliedDirective::new(String, args? : Array[(String, Json)]) -> Self
-
-pub(all) struct Argument {
-  name : String
-  value : Value
-  pos : Pos
-}
-
-pub struct DataLoader[K, V] {
-  batch_load : (Array[K]) -> Array[V]
-  key : (K) -> String
-  cache : Map[String, V]
-  queue : Array[K]
-  queued : Map[String, Bool]
-}
-pub fn[K, V] DataLoader::clear(Self[K, V], K) -> Unit
-pub fn[K, V] DataLoader::clear_all(Self[K, V]) -> Unit
-pub fn[K, V] DataLoader::dispatch(Self[K, V]) -> Unit
-pub fn[K, V] DataLoader::get(Self[K, V], K) -> V?
-pub fn[K, V] DataLoader::load(Self[K, V], K) -> Unit
-pub fn[K, V] DataLoader::load_many(Self[K, V], Array[K]) -> Unit
-pub fn[K, V] DataLoader::load_now(Self[K, V], K) -> V?
-pub fn[K, V] DataLoader::new((Array[K]) -> Array[V], (K) -> String) -> Self[K, V]
-pub fn[K, V] DataLoader::prime(Self[K, V], K, V) -> Unit
-
-pub(all) enum Definition {
-  OperationDef(OperationDefinition)
-  FragmentDef(FragmentDefinition)
-}
-
-pub(all) struct Directive {
-  name : String
-  arguments : Array[Argument]
-  pos : Pos
-}
-
-pub(all) struct DirectiveDef {
-  name : String
-  locations : Array[String]
-  args : Array[(String, GqlType)]
-  is_repeatable : Bool
-  on_field : ((Json, Map[String, Json]) -> Json)?
-}
-
-pub(all) struct Document {
-  definitions : Array[Definition]
-}
-pub fn Document::to_query(Self) -> String
-
-pub(all) struct EntityDef {
-  name : String
-  key : String
-  extends : Bool
-  external : Array[String]
-  resolve : (Json, Json) -> Json raise ResolverError
-}
-
-pub(all) struct EnumType {
-  name : String
-  values : Array[String]
-  deprecations : Map[String, String]
-  description : String?
-  value_descriptions : Map[String, String]
-}
-
-pub struct Federation {
-  entities : Array[EntityDef]
-  v2 : Bool
-  field_dirs : Array[(String, String, AppliedDirective)]
-}
-pub fn Federation::apply(Self, Schema, Resolvers) -> Unit
-pub fn Federation::entity(Self, name~ : String, key~ : String, resolve~ : (Json, Json) -> Json raise ResolverError, extends? : Bool, external? : Array[String]) -> Unit
-pub fn Federation::inaccessible(Self, String, String) -> Unit
-pub fn Federation::new(v2? : Bool) -> Self
-pub fn Federation::override_(Self, String, String, from~ : String) -> Unit
-pub fn Federation::provides(Self, String, String, fields~ : String) -> Unit
-pub fn Federation::requires(Self, String, String, fields~ : String) -> Unit
-pub fn Federation::sdl(Self, Schema) -> String
-pub fn Federation::shareable(Self, String, String) -> Unit
-
-pub(all) struct Field {
-  name : String
-  args : Array[(String, GqlType)]
-  typ : GqlType
-  arg_defaults : Map[String, Json]
-  deprecation_reason : String?
-  description : String?
-}
-
-pub(all) struct FragmentDefinition {
-  name : String
-  type_condition : String
-  directives : Array[Directive]
-  selection_set : Array[Selection]
-  pos : Pos
-}
-
-pub(all) struct GqlError {
-  message : String
-  path : Array[Json]
-  locations : Array[Pos]
-  extensions : Map[String, Json]
-}
-
-pub(all) enum GqlType {
-  Scalar(String)
-  Named(String)
-  NonNull(GqlType)
-  ListOf(GqlType)
-} derive(Eq)
-pub fn GqlType::equal(Self, Self) -> Bool
-pub fn GqlType::named_base(Self) -> String
-pub fn GqlType::not_equal(Self, Self) -> Bool
-
-pub struct GqlWs {
-  schema : Schema
-  resolvers : Resolvers
-  subscribers : Subscribers
-  root_value : Json
-  context : Json
-  init_timeout : Int64
-  ping_interval : Int64
-  mut initialized : Bool
-  mut params : Json
-  mut opened : Int64?
-  mut pinged : Int64
-  active : Map[String, Unit]
-}
-pub fn GqlWs::claim(Self, String) -> Bool
-pub fn GqlWs::handler(Self) -> @ws.WebSocketHandler
-pub fn GqlWs::new(Schema, Resolvers, Subscribers, root_value? : Json, context? : Json, init_timeout? : Int64, ping_interval? : Int64) -> Self
-pub fn GqlWs::recv(Self, @ws.WsMessage) -> Array[@ws.WsSend]
-pub fn GqlWs::release(Self, String) -> Unit
-pub fn GqlWs::tick(Self, Int64) -> Array[@ws.WsSend]
-
-pub(all) struct ObjectType {
-  name : String
-  fields : Array[Field]
-  kind : TypeKind
-  interfaces : Array[String]
-  description : String?
-}
-pub fn ObjectType::field(Self, String, GqlType, deprecation_reason? : String, description? : String) -> Unit
-pub fn ObjectType::field_args(Self, String, Array[(String, GqlType)], GqlType, defaults? : Array[(String, Json)], deprecation_reason? : String, description? : String) -> Unit
-pub fn ObjectType::field_by_name(Self, String) -> Field?
-pub fn ObjectType::implements(Self, String) -> Unit
-
-pub(all) struct OperationDefinition {
-  operation : OperationType
-  name : String?
-  variable_definitions : Array[VariableDefinition]
-  directives : Array[Directive]
-  selection_set : Array[Selection]
-  pos : Pos
-}
-
-pub(all) enum OperationType {
-  Query
-  Mutation
-  Subscription
-} derive(Eq)
-pub fn OperationType::equal(Self, Self) -> Bool
-pub fn OperationType::not_equal(Self, Self) -> Bool
-
-pub(all) struct Pos {
-  line : Int32
-  col : Int32
-} derive(Eq)
-pub fn Pos::equal(Self, Self) -> Bool
-pub fn Pos::not_equal(Self, Self) -> Bool
-
-pub(all) struct QueryField {
-  alias_ : String?
-  name : String
-  arguments : Array[Argument]
-  directives : Array[Directive]
-  selection_set : Array[Selection]
-  pos : Pos
-}
-
-pub(all) struct ResolveInfo {
-  parent : Json
-  args : Map[String, Json]
-  ctx : Json
-  field_name : String
-}
-pub fn ResolveInfo::arg(Self, String) -> Json
-
-pub struct Resolvers {
-  map : Map[String, (ResolveInfo) -> Json raise ResolverError]
-}
-pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> Json raise ResolverError) -> Unit
-pub fn Resolvers::new() -> Self
-
-pub(all) struct ScalarType {
-  name : String
-  serialize : (Json) -> Json
-  parse_value : (Json) -> Json
-  spec_url : String?
-}
-
-pub struct Schema {
-  types : Array[ObjectType]
-  enums : Array[EnumType]
-  unions : Array[UnionType]
-  scalars : Array[ScalarType]
-  query : String
-  mut mutation : String?
-  mut subscription : String?
-  field_directives : Map[String, Array[AppliedDirective]]
-  type_directives : Map[String, Array[AppliedDirective]]
-  schema_directives : Array[AppliedDirective]
-  directive_defs : Array[DirectiveDef]
-}
-pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
-pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
-pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
-pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json) -> Unit
-pub fn Schema::directive_def_by_name(Self, String) -> DirectiveDef?
-pub fn Schema::enum_(Self, String, Array[String], deprecated? : Array[(String, String)], description? : String, descriptions? : Array[(String, String)]) -> Unit
-pub fn Schema::enum_by_name(Self, String) -> EnumType?
-pub fn Schema::field_applied_directives(Self, String, String) -> Array[AppliedDirective]
-pub fn Schema::field_has_directive(Self, String, String, String) -> Bool
-pub fn Schema::input(Self, String, description? : String) -> ObjectType
-pub fn Schema::interface(Self, String, description? : String) -> ObjectType
-pub fn Schema::new(query? : String) -> Self
-pub fn Schema::object(Self, String, description? : String) -> ObjectType
-pub fn Schema::scalar(Self, String, serialize? : (Json) -> Json, parse_value? : (Json) -> Json, spec_url? : String) -> Unit
-pub fn Schema::scalar_by_name(Self, String) -> ScalarType?
-pub fn Schema::set_mutation(Self, String) -> Unit
-pub fn Schema::set_subscription(Self, String) -> Unit
-pub fn Schema::to_sdl(Self) -> String
-pub fn Schema::type_applied_directives(Self, String) -> Array[AppliedDirective]
-pub fn Schema::type_by_name(Self, String) -> ObjectType?
-pub fn Schema::type_has_directive(Self, String, String) -> Bool
-pub fn Schema::union(Self, String, Array[String]) -> Unit
-pub fn Schema::union_by_name(Self, String) -> UnionType?
-
-pub(all) enum Selection {
-  FieldSel(QueryField)
-  FragmentSpreadSel(String, Array[Directive], Pos)
-  InlineFragmentSel(String?, Array[Directive], Array[Selection], Pos)
-}
-
-pub struct Subscribers {
-  map : Map[String, (ResolveInfo) -> Array[Json] raise ResolverError]
-}
-pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[Json] raise ResolverError) -> Unit
-pub fn Subscribers::new() -> Self
-
-pub(all) enum SubscriptionResult {
-  RequestError(Array[GqlError])
-  EventStream(Array[Json])
-}
-
-pub(all) struct Token {
-  kind : TokenKind
-  value : String
-  line : Int32
-  col : Int32
-}
-
-pub(all) enum TokenKind {
-  Name
-  IntVal
-  FloatVal
-  StringVal
-  BlockStringVal
-  Bang
-  Dollar
-  Amp
-  ParenL
-  ParenR
-  Spread
-  Colon
-  Equals
-  At
-  BracketL
-  BracketR
-  BraceL
-  BraceR
-  Pipe
-  Eof
-} derive(Eq)
-pub fn TokenKind::equal(Self, Self) -> Bool
-pub fn TokenKind::not_equal(Self, Self) -> Bool
-
-pub(all) enum TypeKind {
-  Object
-  Input
-  Interface
-} derive(Eq)
-pub fn TypeKind::equal(Self, Self) -> Bool
-pub fn TypeKind::not_equal(Self, Self) -> Bool
-
-pub(all) enum TypeRef {
-  NamedType(String)
-  ListType(TypeRef)
-  NonNullType(TypeRef)
-} derive(Eq)
-pub fn TypeRef::equal(Self, Self) -> Bool
-pub fn TypeRef::not_equal(Self, Self) -> Bool
-pub fn TypeRef::to_query(Self) -> String
-
-pub(all) struct UnionType {
-  name : String
-  members : Array[String]
-}
-
-pub(all) enum Value {
-  Variable(String)
-  IntValue(String)
-  FloatValue(String)
-  StringValue(String, Bool)
-  BooleanValue(Bool)
-  NullValue
-  EnumValue(String)
-  ListValue(Array[Value])
-  ObjectValue(Array[(String, Value)])
-}
-pub fn Value::to_query(Self) -> String
-
-pub(all) struct VariableDefinition {
-  variable : String
-  typ : TypeRef
-  default_value : Value?
-  directives : Array[Directive]
-  pos : Pos
-}
 
 // Type aliases
-pub type EntityResolver = (Json, Json) -> Json raise ResolverError
+pub using @schema {type AppliedDirective}
+
+pub using @lang {type Argument}
+
+pub using @loader {type DataLoader}
+
+pub using @lang {type Definition}
+
+pub using @lang {type Directive}
+
+pub using @schema {type DirectiveDef}
+
+pub using @lang {type Document}
+
+pub using @federation {type EntityDef}
+
+pub type EntityResolver = (Json, Json) -> Json raise @exec.ResolverError
+
+pub using @schema {type EnumType}
+
+pub using @federation {type Federation}
+
+pub using @schema {type Field}
 
 pub type FieldDirectiveHook = (Json, Map[String, Json]) -> Json
+
+pub using @lang {type FragmentDefinition}
+
+pub using @lang {type GqlError}
+
+pub using @lang {type GqlSyntaxError}
+
+pub using @schema {type GqlType}
+
+pub using @server {type GqlWs}
+
+pub using @schema {type ObjectType}
+
+pub using @lang {type OperationDefinition}
+
+pub using @lang {type OperationType}
+
+pub using @lang {type Pos}
+
+pub using @lang {type QueryField}
+
+pub using @exec {type ResolveInfo}
+
+pub using @exec {type ResolverError}
+
+pub using @exec {type Resolvers}
+
+pub using @schema {type ScalarType}
+
+pub using @schema {type Schema}
+
+pub using @lang {type Selection}
+
+pub using @exec {type Subscribers}
+
+pub using @exec {type SubscriptionResult}
+
+pub using @lang {type Token}
+
+pub using @lang {type TokenKind}
+
+pub using @schema {type TypeKind}
+
+pub using @lang {type TypeRef}
+
+pub using @schema {type UnionType}
+
+pub using @lang {type Value}
+
+pub using @lang {type VariableDefinition}
 
 // Traits

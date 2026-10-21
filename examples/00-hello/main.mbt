@@ -7,8 +7,8 @@
 fn main {
   let schema = @moongql.Schema::new()
   let query = schema.object("Query")
-  query.field("greeting", @moongql.NonNull(@moongql.Scalar("String")))
-  query.field("luckyNumber", @moongql.NonNull(@moongql.Scalar("Int")))
+  query.field("greeting", NonNull(Scalar("String")))
+  query.field("luckyNumber", NonNull(Scalar("Int")))
   let resolvers = @moongql.Resolvers::new()
   resolvers.field("Query", "greeting", fn(_info) { Json("qwq from moongql") })
   resolvers.field("Query", "luckyNumber", fn(_info) { Json(233) })

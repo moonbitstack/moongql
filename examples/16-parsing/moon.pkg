@@ -1,5 +1,6 @@
 import {
   "moonbitstack/moongql",
+  "moonbitstack/moongql/lang",
 }
 
 pkgtype(kind: "executable")

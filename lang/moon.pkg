@@ -1,0 +1,2 @@
+// The GraphQL language: source text to a document, and the error shape every
+// later stage reports in. Depends on nothing else here.

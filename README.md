@@ -20,13 +20,13 @@
 let s = @moongql.Schema::new()
 
 let q = s.object("Query")
-q.field("hello", @moongql.NonNull(@moongql.Scalar("String")))
-q.field("user", @moongql.Named("User"))
+q.field("hello", NonNull(Scalar("String")))
+q.field("user", Named("User"))
 
 let u = s.object("User")
-u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-u.field("name", @moongql.NonNull(@moongql.Scalar("String")))
-u.field("tags", @moongql.ListOf(@moongql.NonNull(@moongql.Scalar("String"))))
+u.field("id", NonNull(Scalar("ID")))
+u.field("name", NonNull(Scalar("String")))
+u.field("tags", ListOf(NonNull(Scalar("String"))))
 
 let sdl = s.to_sdl()
 ```
@@ -52,6 +52,32 @@ type User {
 
 Verified across all backends (`wasm`, `wasm-gc`, `js`, `native`) in CI, 0 warnings under `--deny-warn`.
 
+## Packages
+
+Each stage of a request is its own subpackage, so a program links the stages it
+uses and no others. The root re-exports all of them, so `@moongql.Schema` and
+`@moongql.execute` work as they always did.
+
+|  Package  | What it holds | Depends on |
+|:--:|:--|:--|
+| `moongql/lang` | the document syntax tree, `tokenize`, `parse`, `GqlError` | nothing |
+| `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL | `lang` |
+| `moongql/valid` | `validate` | `lang`, `schema` |
+| `moongql/exec` | `execute`, subscriptions, introspection | `lang`, `schema`, `valid` |
+| `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
+| `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
+| `moongql/loader` | `DataLoader` | nothing |
+
+Running a query in-process needs nothing from `server`, so a test or a command
+line tool never links moonasgi.
+
+**Constructors are written without the package.** `pub using` re-exports types
+but not their constructors, so `@moongql.NonNull(...)` does not resolve.
+Wherever the expected type is known — a field's type, a match on a value — the
+bare name does, and reads better: `NonNull(Scalar("ID"))`. The one place it is
+not known is an error, because `raise` and `catch` work on any error; there the
+subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
+
 ## Roadmap (transliterating strawberry)
 
 The code-first schema and SDL are here, with **field arguments** (`field_args`), **input object types** (`Schema::input`), **enum types** (`Schema::enum_`), and **interfaces** (`Schema::interface` + object `implements`). The **query parser** now lands too — a hand-written lexer and a recursive-descent parser that turn a query string into a `Document` AST:
@@ -72,11 +98,11 @@ It covers operations (`query`/`mutation`/`subscription` and the `{ ... }` shorth
 ```moonbit
 let s = @moongql.Schema::new()
 let q = s.object("Query")
-q.field_args("user", [("id", @moongql.NonNull(@moongql.Scalar("ID")))],
-  @moongql.Named("User"))
+q.field_args("user", [("id", NonNull(Scalar("ID")))],
+  Named("User"))
 let u = s.object("User")
-u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-u.field("name", @moongql.NonNull(@moongql.Scalar("String")))
+u.field("id", NonNull(Scalar("ID")))
+u.field("name", NonNull(Scalar("String")))
 
 let r = @moongql.Resolvers::new()
 r.field("Query", "user", fn(info) {
@@ -119,21 +145,21 @@ Union types, custom scalars, subscriptions, a DataLoader, a GraphiQL HTTP endpoi
 let s = @moongql.Schema::new()
 
 let node = s.interface("Node")
-node.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
+node.field("id", NonNull(Scalar("ID")))
 
 let q = s.object("Query")
 q.field_args(
   "user",
-  [("id", @moongql.NonNull(@moongql.Scalar("ID")))],
-  @moongql.Named("User"),
+  [("id", NonNull(Scalar("ID")))],
+  Named("User"),
 )
 
 let u = s.object("User")
 u.implements("Node")
-u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
+u.field("id", NonNull(Scalar("ID")))
 
 let inp = s.input("UserFilter")
-inp.field("name", @moongql.Scalar("String"))
+inp.field("name", Scalar("String"))
 
 s.enum_("Role", ["ADMIN", "USER"])
 ```
@@ -284,7 +310,7 @@ Beyond `@skip` / `@include`, a schema can register its own directives. A directi
 ```moonbit
 s.directive("prefix",
   locations=["FIELD"],
-  args=[("text", @moongql.NonNull(@moongql.Scalar("String")))],
+  args=[("text", NonNull(Scalar("String")))],
   on_field=Some((value, args) => match (value, args.get("text")) {
     (String(x), Some(String(p))) => (p + x).to_json()
     _ => value

@@ -9,22 +9,19 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field(
-    "posts",
-    @moongql.NonNull(@moongql.ListOf(@moongql.NonNull(@moongql.Named("Post")))),
-  )
+  q.field("posts", NonNull(ListOf(NonNull(Named("Post")))))
   s.set_mutation("Mutation")
   let m = s.object("Mutation")
   m.field_args(
     "addPost",
-    [("input", @moongql.NonNull(@moongql.Named("PostInput")))],
-    @moongql.NonNull(@moongql.Named("Post")),
+    [("input", NonNull(Named("PostInput")))],
+    NonNull(Named("Post")),
   )
   let post = s.object("Post")
-  post.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  post.field("title", @moongql.NonNull(@moongql.Scalar("String")))
+  post.field("id", NonNull(Scalar("ID")))
+  post.field("title", NonNull(Scalar("String")))
   let input = s.input("PostInput")
-  input.field("title", @moongql.NonNull(@moongql.Scalar("String")))
+  input.field("title", NonNull(Scalar("String")))
   let store : Array[Json] = []
   let r = @moongql.Resolvers::new()
   r.field("Query", "posts", _info => Json(store))

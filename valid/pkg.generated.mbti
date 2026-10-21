@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/valid"
+
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn validate(@schema.Schema, @lang.Document) -> Array[@lang.GqlError]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

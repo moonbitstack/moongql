@@ -9,27 +9,25 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("me", @moongql.Named("User"))
+  q.field("me", Named("User"))
   q.field_args(
     "search",
-    [("filter", @moongql.Named("UserFilter"))],
-    @moongql.NonNull(
-      @moongql.ListOf(@moongql.NonNull(@moongql.Named("SearchResult"))),
-    ),
+    [("filter", Named("UserFilter"))],
+    NonNull(ListOf(NonNull(Named("SearchResult")))),
   )
   let node = s.interface("Node")
-  node.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
+  node.field("id", NonNull(Scalar("ID")))
   let user = s.object("User")
   user.implements("Node")
-  user.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  user.field("name", @moongql.NonNull(@moongql.Scalar("String")))
-  user.field("role", @moongql.Named("Role"))
-  user.field("joined", @moongql.Named("DateTime"))
+  user.field("id", NonNull(Scalar("ID")))
+  user.field("name", NonNull(Scalar("String")))
+  user.field("role", Named("Role"))
+  user.field("joined", Named("DateTime"))
   let post = s.object("Post")
-  post.field("title", @moongql.NonNull(@moongql.Scalar("String")))
+  post.field("title", NonNull(Scalar("String")))
   let filter = s.input("UserFilter")
-  filter.field("name", @moongql.Scalar("String"))
-  filter.field("role", @moongql.Named("Role"))
+  filter.field("name", Scalar("String"))
+  filter.field("role", Named("Role"))
   s.enum_("Role", ["ADMIN", "USER", "GUEST"])
   s.union("SearchResult", ["User", "Post"])
   s.scalar("DateTime")

@@ -10,9 +10,9 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("whoami", @moongql.NonNull(@moongql.Scalar("String")))
-  q.field("field", @moongql.NonNull(@moongql.Scalar("String")))
-  q.field("origin", @moongql.Scalar("String"))
+  q.field("whoami", NonNull(Scalar("String")))
+  q.field("field", NonNull(Scalar("String")))
+  q.field("origin", Scalar("String"))
   let r = @moongql.Resolvers::new()
   r.field("Query", "whoami", info => {
     match info.ctx {

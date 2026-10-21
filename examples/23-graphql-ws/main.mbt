@@ -55,10 +55,10 @@ fn close_code(sends : Array[@moonasgi.WsSend]) -> Int32 {
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("ok", @moongql.NonNull(@moongql.Scalar("String")))
+  q.field("ok", NonNull(Scalar("String")))
   s.set_subscription("Subscription")
   let sub = s.object("Subscription")
-  sub.field("ticks", @moongql.NonNull(@moongql.Scalar("Int")))
+  sub.field("ticks", NonNull(Scalar("Int")))
   let subs = @moongql.Subscribers::new()
   subs.field("Subscription", "ticks", _info => [Json(1), Json(2)])
   let r = @moongql.Resolvers::new()

@@ -10,18 +10,14 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field_args(
-    "user",
-    [("id", @moongql.NonNull(@moongql.Scalar("ID")))],
-    @moongql.Named("User"),
-  )
-  q.field("hello", @moongql.NonNull(@moongql.Scalar("String")))
+  q.field_args("user", [("id", NonNull(Scalar("ID")))], Named("User"))
+  q.field("hello", NonNull(Scalar("String")))
   let u = s.object("User")
-  u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  u.field("name", @moongql.NonNull(@moongql.Scalar("String")))
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("name", NonNull(Scalar("String")))
   let report = fn(label : String, query : String) -> Unit {
     let doc = @moongql.parse(query) catch {
-      @moongql.GqlSyntaxError(msg, _, _) => {
+      @lang.GqlSyntaxError(msg, _, _) => {
         println(label + ": syntax error: " + msg)
         return
       }

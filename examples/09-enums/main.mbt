@@ -7,7 +7,7 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("role", @moongql.Named("Role"))
+  q.field("role", Named("Role"))
   s.enum_("Role", ["ADMIN", "USER", "GUEST"])
   let r = @moongql.Resolvers::new()
   r.field("Query", "role", fn(_info) { Json("ADMIN") })

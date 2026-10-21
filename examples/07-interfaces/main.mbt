@@ -9,13 +9,13 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("node", @moongql.Named("Node"))
+  q.field("node", Named("Node"))
   let node = s.interface("Node")
-  node.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
+  node.field("id", NonNull(Scalar("ID")))
   let user = s.object("User")
   user.implements("Node")
-  user.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  user.field("name", @moongql.NonNull(@moongql.Scalar("String")))
+  user.field("id", NonNull(Scalar("ID")))
+  user.field("name", NonNull(Scalar("String")))
   let r = @moongql.Resolvers::new()
   r.field("Query", "node", fn(_info) {
     { "__typename": "User", "id": "1", "name": "emm" }

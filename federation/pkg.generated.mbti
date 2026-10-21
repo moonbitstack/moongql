@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/federation"
+
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct EntityDef {
+  name : String
+  key : String
+  extends : Bool
+  external : Array[String]
+  resolve : (Json, Json) -> Json raise @exec.ResolverError
+}
+
+pub struct Federation {
+  entities : Array[EntityDef]
+  v2 : Bool
+  field_dirs : Array[(String, String, @schema.AppliedDirective)]
+}
+pub fn Federation::apply(Self, @schema.Schema, @exec.Resolvers) -> Unit
+pub fn Federation::entity(Self, name~ : String, key~ : String, resolve~ : (Json, Json) -> Json raise @exec.ResolverError, extends? : Bool, external? : Array[String]) -> Unit
+pub fn Federation::inaccessible(Self, String, String) -> Unit
+pub fn Federation::new(v2? : Bool) -> Self
+pub fn Federation::override_(Self, String, String, from~ : String) -> Unit
+pub fn Federation::provides(Self, String, String, fields~ : String) -> Unit
+pub fn Federation::requires(Self, String, String, fields~ : String) -> Unit
+pub fn Federation::sdl(Self, @schema.Schema) -> String
+pub fn Federation::shareable(Self, String, String) -> Unit
+
+// Type aliases
+pub type EntityResolver = (Json, Json) -> Json raise @exec.ResolverError
+
+// Traits

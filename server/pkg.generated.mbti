@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/server"
+
+import {
+  "moonbitstack/moonasgi/http",
+  "moonbitstack/moonasgi/spec",
+  "moonbitstack/moonasgi/ws",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn graphiql_html(endpoint? : String) -> String
+
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+
+pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
+
+pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
+
+// Errors
+
+// Types and methods
+pub struct GqlWs {
+  schema : @schema.Schema
+  resolvers : @exec.Resolvers
+  subscribers : @exec.Subscribers
+  root_value : Json
+  context : Json
+  init_timeout : Int64
+  ping_interval : Int64
+  mut initialized : Bool
+  mut params : Json
+  mut opened : Int64?
+  mut pinged : Int64
+  active : Map[String, Unit]
+}
+pub fn GqlWs::claim(Self, String) -> Bool
+pub fn GqlWs::handler(Self) -> @ws.WebSocketHandler
+pub fn GqlWs::new(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json, init_timeout? : Int64, ping_interval? : Int64) -> Self
+pub fn GqlWs::recv(Self, @ws.WsMessage) -> Array[@ws.WsSend]
+pub fn GqlWs::release(Self, String) -> Unit
+pub fn GqlWs::tick(Self, Int64) -> Array[@ws.WsSend]
+
+// Type aliases
+
+// Traits

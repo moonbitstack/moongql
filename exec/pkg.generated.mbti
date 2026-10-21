@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/exec"
+
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn build_response(Json?, Array[@lang.GqlError], extensions? : Map[String, Json]) -> Json
+
+pub fn create_source_event_stream(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> SubscriptionResult
+
+pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
+
+pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
+
+pub fn operation_type(@schema.Schema, @lang.Document, String?) -> Result[@lang.OperationType, @lang.GqlError]
+
+// Errors
+pub(all) suberror ResolverError {
+  ResolverError(String)
+  ResolverErrorExt(String, Map[String, Json])
+}
+
+// Types and methods
+pub(all) struct ResolveInfo {
+  parent : Json
+  args : Map[String, Json]
+  ctx : Json
+  field_name : String
+}
+pub fn ResolveInfo::arg(Self, String) -> Json
+
+pub struct Resolvers {
+  map : Map[String, (ResolveInfo) -> Json raise ResolverError]
+}
+pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> Json raise ResolverError) -> Unit
+pub fn Resolvers::new() -> Self
+
+pub struct Subscribers {
+  map : Map[String, (ResolveInfo) -> Array[Json] raise ResolverError]
+}
+pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[Json] raise ResolverError) -> Unit
+pub fn Subscribers::new() -> Self
+
+pub(all) enum SubscriptionResult {
+  RequestError(Array[@lang.GqlError])
+  EventStream(Array[Json])
+}
+
+// Type aliases
+
+// Traits

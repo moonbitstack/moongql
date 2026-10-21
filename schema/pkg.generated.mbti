@@ -1,0 +1,141 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/schema"
+
+// Values
+pub fn applied_directive_sdl(AppliedDirective) -> String
+
+pub fn applied_directives_sdl(Array[AppliedDirective]) -> String
+
+pub fn builtin_exec_directive(String) -> DirectiveDef?
+
+pub fn field_sdl(Field) -> String
+
+pub fn introspection_type_def(String) -> ObjectType?
+
+pub fn is_builtin_scalar(String) -> Bool
+
+pub fn is_meta_field(String) -> Bool
+
+pub fn json_to_gql_literal(Json) -> String
+
+pub fn kind_keyword(TypeKind) -> String
+
+pub fn type_sdl(GqlType) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct AppliedDirective {
+  name : String
+  args : Array[(String, Json)]
+}
+pub fn AppliedDirective::new(String, args? : Array[(String, Json)]) -> Self
+
+pub(all) struct DirectiveDef {
+  name : String
+  locations : Array[String]
+  args : Array[(String, GqlType)]
+  is_repeatable : Bool
+  on_field : ((Json, Map[String, Json]) -> Json)?
+}
+
+pub(all) struct EnumType {
+  name : String
+  values : Array[String]
+  deprecations : Map[String, String]
+  description : String?
+  value_descriptions : Map[String, String]
+}
+
+pub(all) struct Field {
+  name : String
+  args : Array[(String, GqlType)]
+  typ : GqlType
+  arg_defaults : Map[String, Json]
+  deprecation_reason : String?
+  description : String?
+}
+
+pub(all) enum GqlType {
+  Scalar(String)
+  Named(String)
+  NonNull(GqlType)
+  ListOf(GqlType)
+} derive(Eq)
+pub fn GqlType::equal(Self, Self) -> Bool
+pub fn GqlType::named_base(Self) -> String
+pub fn GqlType::not_equal(Self, Self) -> Bool
+
+pub(all) struct ObjectType {
+  name : String
+  fields : Array[Field]
+  kind : TypeKind
+  interfaces : Array[String]
+  description : String?
+}
+pub fn ObjectType::field(Self, String, GqlType, deprecation_reason? : String, description? : String) -> Unit
+pub fn ObjectType::field_args(Self, String, Array[(String, GqlType)], GqlType, defaults? : Array[(String, Json)], deprecation_reason? : String, description? : String) -> Unit
+pub fn ObjectType::field_by_name(Self, String) -> Field?
+pub fn ObjectType::implements(Self, String) -> Unit
+
+pub(all) struct ScalarType {
+  name : String
+  serialize : (Json) -> Json
+  parse_value : (Json) -> Json
+  spec_url : String?
+}
+
+pub struct Schema {
+  types : Array[ObjectType]
+  enums : Array[EnumType]
+  unions : Array[UnionType]
+  scalars : Array[ScalarType]
+  query : String
+  mut mutation : String?
+  mut subscription : String?
+  field_directives : Map[String, Array[AppliedDirective]]
+  type_directives : Map[String, Array[AppliedDirective]]
+  schema_directives : Array[AppliedDirective]
+  directive_defs : Array[DirectiveDef]
+}
+pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
+pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
+pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
+pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json) -> Unit
+pub fn Schema::directive_def_by_name(Self, String) -> DirectiveDef?
+pub fn Schema::enum_(Self, String, Array[String], deprecated? : Array[(String, String)], description? : String, descriptions? : Array[(String, String)]) -> Unit
+pub fn Schema::enum_by_name(Self, String) -> EnumType?
+pub fn Schema::field_applied_directives(Self, String, String) -> Array[AppliedDirective]
+pub fn Schema::field_has_directive(Self, String, String, String) -> Bool
+pub fn Schema::input(Self, String, description? : String) -> ObjectType
+pub fn Schema::interface(Self, String, description? : String) -> ObjectType
+pub fn Schema::new(query? : String) -> Self
+pub fn Schema::object(Self, String, description? : String) -> ObjectType
+pub fn Schema::scalar(Self, String, serialize? : (Json) -> Json, parse_value? : (Json) -> Json, spec_url? : String) -> Unit
+pub fn Schema::scalar_by_name(Self, String) -> ScalarType?
+pub fn Schema::set_mutation(Self, String) -> Unit
+pub fn Schema::set_subscription(Self, String) -> Unit
+pub fn Schema::to_sdl(Self) -> String
+pub fn Schema::type_applied_directives(Self, String) -> Array[AppliedDirective]
+pub fn Schema::type_by_name(Self, String) -> ObjectType?
+pub fn Schema::type_has_directive(Self, String, String) -> Bool
+pub fn Schema::union(Self, String, Array[String]) -> Unit
+pub fn Schema::union_by_name(Self, String) -> UnionType?
+
+pub(all) enum TypeKind {
+  Object
+  Input
+  Interface
+} derive(Eq)
+pub fn TypeKind::equal(Self, Self) -> Bool
+pub fn TypeKind::not_equal(Self, Self) -> Bool
+
+pub(all) struct UnionType {
+  name : String
+  members : Array[String]
+}
+
+// Type aliases
+pub type FieldDirectiveHook = (Json, Map[String, Json]) -> Json
+
+// Traits

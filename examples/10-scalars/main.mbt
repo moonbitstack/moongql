@@ -10,12 +10,8 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field_args(
-    "echo",
-    [("v", @moongql.NonNull(@moongql.Named("Tag")))],
-    @moongql.NonNull(@moongql.Named("Tag")),
-  )
-  q.field("now", @moongql.Named("DateTime"))
+  q.field_args("echo", [("v", NonNull(Named("Tag")))], NonNull(Named("Tag")))
+  q.field("now", Named("DateTime"))
   s.scalar(
     "Tag",
     serialize=fn(j) {

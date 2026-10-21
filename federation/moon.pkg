@@ -1,0 +1,6 @@
+// Apollo Federation, versions 1 and 2: entities, the _service SDL, and the
+// _entities resolver.
+import {
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/exec",
+}

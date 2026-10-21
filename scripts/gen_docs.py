@@ -6,70 +6,82 @@ import re, html, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SECTIONS = [
-    ("schema", "schema.mbt", "Schema & SDL",
+    ("schema", "schema/schema.mbt", "Schema & SDL",
      "Code-first GraphQL: build object types and fields, then to_sdl emits the "
      "schema SDL. GqlType covers scalars, named refs, NonNull and List wrappers."),
-    ("lexer", "lexer.mbt", "Query Lexer",
+    ("lexer", "lang/lexer.mbt", "Query Lexer",
      "Hand-written GraphQL lexer: turns a query string into names, punctuators, "
      "int/float/string tokens (block strings dedented per spec), ignoring "
      "whitespace, commas and comments. Pure logic, no core/lexbuf dependency."),
-    ("ast", "ast.mbt", "Document AST",
+    ("ast", "lang/ast.mbt", "Document AST",
      "The executable-document AST (operations, selection sets, fields, "
      "arguments, variables, fragments, directives, input values), with to_query "
      "printers that render each node back to canonical GraphQL."),
-    ("parser", "parser.mbt", "Query Parser",
+    ("parser", "lang/parser.mbt", "Query Parser",
      "Recursive-descent parser: parse(source) builds a Document from operations "
      "(query/mutation/subscription and the { ... } shorthand), fields with "
      "aliases/arguments/directives, variable definitions, and named/inline "
      "fragments — the front half of the executor."),
-    ("validate", "validate.mbt", "Validator",
+    ("error", "lang/error.mbt", "Errors",
+     "GqlError, the error shape the specification's response section defines: "
+     "a message, the path into the result and the source locations. Validation "
+     "and execution both report in it, which is why it sits with the language "
+     "rather than with either stage."),
+    ("fragments", "lang/fragments.mbt", "Fragments",
+     "collect_fragments gathers a document's fragment definitions by name; "
+     "validation and execution both resolve spreads against it."),
+    ("builtin", "schema/builtin.mbt", "Built-in Types",
+     "What the specification fixes for every schema: the five built-in scalars, "
+     "the meta-fields __typename, __schema and __type, and the introspection "
+     "object types those meta-fields return."),
+    ("validate", "valid/validate.mbt", "Validator",
      "Validate a Document against the Schema before execution: fields and "
      "arguments exist, leaf vs composite selection sets, fragment spreads and "
      "type conditions resolve, and referenced variables are defined. Errors are "
      "collected, not raised."),
-    ("validate_rules", "validate_rules.mbt", "Validation Rules (spec §5)",
+    ("validate_rules", "valid/validate_rules.mbt", "Validation Rules (spec §5)",
      "The document-level slice of the GraphQL validation table: operation-name "
      "uniqueness and lone anonymous operation, fragment-name uniqueness, "
      "no-unused-fragments, fragment-spread cycle detection, and the variable-use "
      "collector behind the all-variables-used rule."),
-    ("directives", "directives.mbt", "Directives",
+    ("directives", "schema/directives.mbt", "Directives",
      "The directive extension points: AppliedDirective records a directive use on "
      "a schema element (federation's @key / @shareable / @inaccessible / "
      "@override live here); DirectiveDef declares a custom directive with valid "
      "locations, args, repeatability and an optional on_field execution hook that "
      "transforms a resolved field value."),
-    ("execute", "execute.mbt", "Executor",
+    ("execute", "exec/execute.mbt", "Executor",
      "execute() runs a query end to end: parse, validate, then walk the document "
      "with a resolver map ((ResolveInfo) -> Json keyed by \"Type.field\"), "
      "supporting variables, aliases, fragments, @skip/@include, non-null error "
      "propagation and list/object results — returning { data, errors } as JSON."),
-    ("introspection", "introspection.mbt", "Introspection",
+    ("introspection", "exec/introspection.mbt", "Introspection",
      "Answer __schema / __type / __typename from the schema: the introspection "
      "type system materialised as JSON that the executor walks like any object, "
      "with ofType wrapper chains, fields, interfaces, possibleTypes and enum "
      "values."),
-    ("subscribe", "subscribe.mbt", "Subscriptions",
+    ("subscribe", "exec/subscribe.mbt", "Subscriptions",
      "execute_subscription runs a single-root-field subscription against a source "
      "stream (a pull source returning Array[Json]) and returns the ordered "
      "{ data, errors } payloads a client receives — the sync core the async "
      "WebSocket variant wraps."),
-    ("dataloader", "dataloader.mbt", "DataLoader",
+    ("dataloader", "loader/dataloader.mbt", "DataLoader",
      "Batch-and-cache loader for the N+1 problem: keys requested in a resolution "
      "pass are queued and deduped, then one dispatch runs the batch function over "
      "the distinct keys and fills a per-loader cache. Includes prime, clear and "
      "load_many/load_now."),
-    ("server", "server.mbt", "HTTP Endpoint",
+    ("server", "server/server.mbt", "HTTP Endpoint",
      "graphql_handler / graphql_app wire a schema onto the moonasgi seam: GET "
      "serves the GraphiQL IDE, POST reads a { query, variables, operationName } "
      "body and returns { data, errors }. Plugs into mooncat and runs on every "
      "backend through moonasgi's TestClient."),
-    ("federation", "federation.mbt", "Apollo Federation",
+    ("federation", "federation/federation.mbt", "Apollo Federation",
      "Federation v1 and v2 subgraph support: register @key entities and their "
      "reference resolvers, then apply installs _service { sdl }, the _Any scalar, "
      "the _Entity union and the _entities(representations) resolver. v2 opts in "
      "with @link and adds @shareable / @inaccessible / @override / @requires / "
      "@provides on fields, rendered into the subgraph SDL."),
-    ("gqlws", "gqlws.mbt", "graphql-transport-ws",
+    ("gqlws", "server/gqlws.mbt", "graphql-transport-ws",
      "The WebSocket subprotocol a subscription client speaks: connection_init and "
      "its ack, ping/pong, subscribe with single-use operation ids, and the next / "
      "error / complete messages a running operation produces."),

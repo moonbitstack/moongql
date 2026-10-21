@@ -8,9 +8,9 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  q.field("name", @moongql.NonNull(@moongql.Scalar("String")))
-  q.field("age", @moongql.Scalar("Int"))
+  q.field("id", NonNull(Scalar("ID")))
+  q.field("name", NonNull(Scalar("String")))
+  q.field("age", Scalar("Int"))
   let r = @moongql.Resolvers::new()
   r.field("Query", "id", fn(_info) { Json("1") })
   r.field("Query", "name", fn(_info) { Json("lfanke") })

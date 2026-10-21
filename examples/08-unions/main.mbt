@@ -9,15 +9,10 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field(
-    "search",
-    @moongql.NonNull(
-      @moongql.ListOf(@moongql.NonNull(@moongql.Named("SearchResult"))),
-    ),
-  )
+  q.field("search", NonNull(ListOf(NonNull(Named("SearchResult")))))
   s.union("SearchResult", ["Book", "Author"])
-  s.object("Book").field("title", @moongql.NonNull(@moongql.Scalar("String")))
-  s.object("Author").field("name", @moongql.NonNull(@moongql.Scalar("String")))
+  s.object("Book").field("title", NonNull(Scalar("String")))
+  s.object("Author").field("name", NonNull(Scalar("String")))
   let r = @moongql.Resolvers::new()
   r.field("Query", "search", fn(_info) {
     [

@@ -1,0 +1,13 @@
+// Serving over HTTP and over the graphql-ws protocol, through moonasgi. A
+// subpackage because it is the only half that needs moonasgi: running a query
+// in-process does not.
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/valid",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moonasgi",
+  "moonbitstack/moonasgi/ws",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}

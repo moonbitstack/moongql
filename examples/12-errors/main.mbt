@@ -9,16 +9,14 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("mustFail", @moongql.NonNull(@moongql.Scalar("String")))
-  q.field("boom", @moongql.Scalar("String"))
-  q.field("kaboom", @moongql.Scalar("String"))
+  q.field("mustFail", NonNull(Scalar("String")))
+  q.field("boom", Scalar("String"))
+  q.field("kaboom", Scalar("String"))
   let r = @moongql.Resolvers::new()
   r.field("Query", "mustFail", fn(_info) { Json::null() })
-  r.field("Query", "boom", _info => {
-    raise @moongql.ResolverError("plain failure")
-  })
+  r.field("Query", "boom", _info => raise @exec.ResolverError("plain failure"))
   r.field("Query", "kaboom", _info => {
-    raise @moongql.ResolverErrorExt("with extensions", {
+    raise @exec.ResolverErrorExt("with extensions", {
       "code": "qwq",
       "status": 233,
     })

@@ -9,11 +9,11 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("greeting", @moongql.NonNull(@moongql.Scalar("String")))
+  q.field("greeting", NonNull(Scalar("String")))
   s.directive(
     "prefix",
     locations=["FIELD"],
-    args=[("text", @moongql.NonNull(@moongql.Scalar("String")))],
+    args=[("text", NonNull(Scalar("String")))],
     on_field=(value, args) => {
       match (value, args.get("text")) {
         (String(x), Some(String(p))) => Json(p + x)

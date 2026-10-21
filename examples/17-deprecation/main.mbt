@@ -10,9 +10,9 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field("alive", @moongql.NonNull(@moongql.Scalar("String")))
-  q.field("old", @moongql.Scalar("String"), deprecation_reason="use alive")
-  q.field("color", @moongql.Named("Color"))
+  q.field("alive", NonNull(Scalar("String")))
+  q.field("old", Scalar("String"), deprecation_reason="use alive")
+  q.field("color", Named("Color"))
   s.enum_("Color", ["RED", "GREEN", "OLD"], deprecated=[("OLD", "use RED")])
   let r = @moongql.Resolvers::new()
   println(

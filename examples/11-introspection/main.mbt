@@ -9,18 +9,11 @@
 fn main {
   let s = @moongql.Schema::new()
   let q = s.object("Query")
-  q.field_args(
-    "user",
-    [("id", @moongql.NonNull(@moongql.Scalar("ID")))],
-    @moongql.Named("User"),
-  )
-  q.field(
-    "users",
-    @moongql.NonNull(@moongql.ListOf(@moongql.NonNull(@moongql.Named("User")))),
-  )
+  q.field_args("user", [("id", NonNull(Scalar("ID")))], Named("User"))
+  q.field("users", NonNull(ListOf(NonNull(Named("User")))))
   let u = s.object("User")
-  u.field("id", @moongql.NonNull(@moongql.Scalar("ID")))
-  u.field("name", @moongql.NonNull(@moongql.Scalar("String")))
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("name", NonNull(Scalar("String")))
   let r = @moongql.Resolvers::new()
   println(@moongql.execute(s, r, "{ __typename }").stringify())
   println(

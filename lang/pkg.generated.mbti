@@ -1,0 +1,165 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/lang"
+
+// Values
+pub fn collect_fragments(Document) -> Map[String, FragmentDefinition]
+
+pub fn escape_string(String) -> String
+
+pub fn parse(String) -> Document raise GqlSyntaxError
+
+pub fn tokenize(String) -> Array[Token] raise GqlSyntaxError
+
+// Errors
+pub suberror GqlSyntaxError {
+  GqlSyntaxError(String, Int32, Int32)
+}
+pub fn GqlSyntaxError::output(Self, &Logger) -> Unit
+pub fn GqlSyntaxError::to_string(Self) -> String
+pub impl Show for GqlSyntaxError
+
+// Types and methods
+pub(all) struct Argument {
+  name : String
+  value : Value
+  pos : Pos
+}
+
+pub(all) enum Definition {
+  OperationDef(OperationDefinition)
+  FragmentDef(FragmentDefinition)
+}
+
+pub(all) struct Directive {
+  name : String
+  arguments : Array[Argument]
+  pos : Pos
+}
+
+pub(all) struct Document {
+  definitions : Array[Definition]
+}
+pub fn Document::to_query(Self) -> String
+
+pub(all) struct FragmentDefinition {
+  name : String
+  type_condition : String
+  directives : Array[Directive]
+  selection_set : Array[Selection]
+  pos : Pos
+}
+
+pub(all) struct GqlError {
+  message : String
+  path : Array[Json]
+  locations : Array[Pos]
+  extensions : Map[String, Json]
+}
+pub fn GqlError::at(String, Pos) -> Self
+pub fn GqlError::msg(String) -> Self
+pub fn GqlError::to_json(Self) -> Json
+
+pub(all) struct OperationDefinition {
+  operation : OperationType
+  name : String?
+  variable_definitions : Array[VariableDefinition]
+  directives : Array[Directive]
+  selection_set : Array[Selection]
+  pos : Pos
+}
+
+pub(all) enum OperationType {
+  Query
+  Mutation
+  Subscription
+} derive(Eq)
+pub fn OperationType::equal(Self, Self) -> Bool
+pub fn OperationType::not_equal(Self, Self) -> Bool
+
+pub(all) struct Pos {
+  line : Int32
+  col : Int32
+} derive(Eq)
+pub fn Pos::equal(Self, Self) -> Bool
+pub fn Pos::not_equal(Self, Self) -> Bool
+
+pub(all) struct QueryField {
+  alias_ : String?
+  name : String
+  arguments : Array[Argument]
+  directives : Array[Directive]
+  selection_set : Array[Selection]
+  pos : Pos
+}
+
+pub(all) enum Selection {
+  FieldSel(QueryField)
+  FragmentSpreadSel(String, Array[Directive], Pos)
+  InlineFragmentSel(String?, Array[Directive], Array[Selection], Pos)
+}
+
+pub(all) struct Token {
+  kind : TokenKind
+  value : String
+  line : Int32
+  col : Int32
+}
+
+pub(all) enum TokenKind {
+  Name
+  IntVal
+  FloatVal
+  StringVal
+  BlockStringVal
+  Bang
+  Dollar
+  Amp
+  ParenL
+  ParenR
+  Spread
+  Colon
+  Equals
+  At
+  BracketL
+  BracketR
+  BraceL
+  BraceR
+  Pipe
+  Eof
+} derive(Eq)
+pub fn TokenKind::equal(Self, Self) -> Bool
+pub fn TokenKind::not_equal(Self, Self) -> Bool
+
+pub(all) enum TypeRef {
+  NamedType(String)
+  ListType(TypeRef)
+  NonNullType(TypeRef)
+} derive(Eq)
+pub fn TypeRef::equal(Self, Self) -> Bool
+pub fn TypeRef::not_equal(Self, Self) -> Bool
+pub fn TypeRef::to_query(Self) -> String
+
+pub(all) enum Value {
+  Variable(String)
+  IntValue(String)
+  FloatValue(String)
+  StringValue(String, Bool)
+  BooleanValue(Bool)
+  NullValue
+  EnumValue(String)
+  ListValue(Array[Value])
+  ObjectValue(Array[(String, Value)])
+}
+pub fn Value::to_query(Self) -> String
+
+pub(all) struct VariableDefinition {
+  variable : String
+  typ : TypeRef
+  default_value : Value?
+  directives : Array[Directive]
+  pos : Pos
+}
+
+// Type aliases
+
+// Traits

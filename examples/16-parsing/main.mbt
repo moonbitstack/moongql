@@ -11,7 +11,7 @@ fn main {
   let query = "query GetUser($id: ID! = \"7\") { user(id: $id) { name } }"
   let names : Array[String] = []
   for t in (@moongql.tokenize(query) catch { _ => [] }) {
-    if t.kind == @moongql.Name {
+    if t.kind == Name {
       names.push(t.value)
     }
   }
@@ -19,7 +19,7 @@ fn main {
   let doc = @moongql.parse(query) catch { _ => return }
   println("round-trip: " + doc.to_query())
   match doc.definitions[0] {
-    @moongql.OperationDef(op) => {
+    OperationDef(op) => {
       let vd = op.variable_definitions[0]
       println("var type: " + vd.typ.to_query())
       match vd.default_value {
@@ -27,15 +27,14 @@ fn main {
         None => ()
       }
       match op.selection_set[0] {
-        @moongql.FieldSel(f) =>
-          println("arg value: " + f.arguments[0].value.to_query())
+        FieldSel(f) => println("arg value: " + f.arguments[0].value.to_query())
         _ => ()
       }
     }
     _ => ()
   }
   let _ = @moongql.parse("{ oops") catch {
-    @moongql.GqlSyntaxError(msg, line, col) => {
+    @lang.GqlSyntaxError(msg, line, col) => {
       println("syntax error @ \{line}:\{col}: " + msg)
       return
     }

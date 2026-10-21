@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/loader"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct DataLoader[K, V] {
+  batch_load : (Array[K]) -> Array[V]
+  key : (K) -> String
+  cache : Map[String, V]
+  queue : Array[K]
+  queued : Map[String, Bool]
+}
+pub fn[K, V] DataLoader::clear(Self[K, V], K) -> Unit
+pub fn[K, V] DataLoader::clear_all(Self[K, V]) -> Unit
+pub fn[K, V] DataLoader::dispatch(Self[K, V]) -> Unit
+pub fn[K, V] DataLoader::get(Self[K, V], K) -> V?
+pub fn[K, V] DataLoader::load(Self[K, V], K) -> Unit
+pub fn[K, V] DataLoader::load_many(Self[K, V], Array[K]) -> Unit
+pub fn[K, V] DataLoader::load_now(Self[K, V], K) -> V?
+pub fn[K, V] DataLoader::new((Array[K]) -> Array[V], (K) -> String) -> Self[K, V]
+pub fn[K, V] DataLoader::prime(Self[K, V], K, V) -> Unit
+
+// Type aliases
+
+// Traits

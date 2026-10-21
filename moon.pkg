@@ -1,11 +1,11 @@
-// moongql (<- strawberry-graphql). The code-first schema (schema.mbt) plus the
-// executable pipeline: lexer -> parser -> AST -> validator -> executor with a
-// resolver map, variables, aliases, fragments, @skip/@include and introspection.
-// Pure logic, all backends; JSON in/out via core/json, literal coercion via
-// core/strconv.
+// moongql (<- strawberry-graphql). The root is only the façade; each stage is
+// a subpackage, so a program links the stages it uses and no others.
 import {
-  "moonbitlang/core/json",
-  "moonbitlang/core/encoding/utf8",
-  "moonbitstack/moonasgi",
-  "moonbitstack/moonasgi/ws",
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/valid",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/federation",
+  "moonbitstack/moongql/server",
+  "moonbitstack/moongql/loader",
 }

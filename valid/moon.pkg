@@ -1,0 +1,5 @@
+// Validation of a document against a schema, before anything runs.
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+}
