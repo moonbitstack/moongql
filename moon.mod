@@ -15,3 +15,5 @@ description = "moongql — a code-first GraphQL library for MoonBit (← strawbe
 import {
   "moonbitstack/moonasgi@0.10.0",
 }
+
+source = "src"
