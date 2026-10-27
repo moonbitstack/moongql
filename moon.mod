@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 keywords = [ "graphql", "strawberry", "schema", "sdl", "code-first", "moonbit" ]
 
-description = "moongql — a code-first GraphQL library for MoonBit (← strawberry-graphql): define object types and fields in code, emit the schema SDL."
+description = "Code-first GraphQL for MoonBit."
 
 import {
   "moonbitstack/moonasgi@0.10.0",
