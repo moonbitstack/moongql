@@ -1,0 +1,6 @@
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moonasgi",
+}
+
+pkgtype(kind: "executable")

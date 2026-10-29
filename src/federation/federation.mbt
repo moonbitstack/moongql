@@ -222,6 +222,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
     if extends {
       out = out + "extend "
     }
+    out = out + @schema.description_sdl(obj.description)
     out = out + @schema.kind_keyword(obj.kind) + " " + obj.name
     if obj.interfaces.length() > 0 {
       out = out + " implements "
@@ -242,7 +243,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
         (f.name == "_service" || f.name == "_entities") {
         continue
       }
-      out = out + @schema.field_sdl(f)
+      out = out + @schema.description_sdl(f.description) + @schema.field_sdl(f)
       if str_in(external, f.name) {
         out = out + " @external"
       }
@@ -255,8 +256,11 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
     out = out + "}\n\n"
   }
   for en in schema.enums {
+    out = out + @schema.description_sdl(en.description)
     out = out + "enum " + en.name + " {\n"
     for v in en.values {
+      out = out +
+        @schema.description_sdl(en.value_descriptions.get(v), indent=1)
       out = out + "  " + v + "\n"
     }
     out = out + "}\n\n"
@@ -265,6 +269,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
     if is_federation_internal(un.name) {
       continue
     }
+    out = out + @schema.description_sdl(un.description)
     out = out + "union " + un.name + " = "
     for i, m in un.members {
       if i > 0 {
@@ -278,6 +283,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
     if is_federation_internal(sc.name) {
       continue
     }
+    out = out + @schema.description_sdl(sc.description)
     out = out + "scalar " + sc.name + "\n\n"
   }
   out

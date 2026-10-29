@@ -8,8 +8,10 @@
 
 ///|
 /// A syntax error raised by the lexer or parser, carrying a message and the
-/// 1-based line/column where the offending token starts.
-pub suberror GqlSyntaxError {
+/// 1-based line/column where the offending token starts. It is `pub(all)` so
+/// that any stage reading GraphQL text — the SDL reader included — raises the
+/// same error, with the same shape, as the parser.
+pub(all) suberror GqlSyntaxError {
   GqlSyntaxError(String, Int32, Int32)
 }
 

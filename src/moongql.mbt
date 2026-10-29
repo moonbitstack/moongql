@@ -70,10 +70,16 @@ pub using @federation {type EntityDef, type EntityResolver, type Federation}
 ///|
 pub using @server {
   type GqlWs,
+  type Ide,
+  type IdeKind,
+  altair,
+  apollo_sandbox,
+  graphiql,
   graphiql_html,
   graphql_app,
   graphql_handler,
   graphql_ws_handler,
+  off,
 }
 
 ///|

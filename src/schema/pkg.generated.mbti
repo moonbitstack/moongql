@@ -1,12 +1,20 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moongql/schema"
 
+import {
+  "moonbitstack/moongql/lang",
+}
+
 // Values
 pub fn applied_directive_sdl(AppliedDirective) -> String
 
 pub fn applied_directives_sdl(Array[AppliedDirective]) -> String
 
 pub fn builtin_exec_directive(String) -> DirectiveDef?
+
+pub fn description_sdl(String?, indent? : Int32) -> String
+
+pub fn directive_def_sdl(DirectiveDef) -> String
 
 pub fn field_sdl(Field) -> String
 
@@ -83,6 +91,7 @@ pub(all) struct ScalarType {
   serialize : (Json) -> Json
   parse_value : (Json) -> Json
   spec_url : String?
+  description : String?
 }
 
 pub struct Schema {
@@ -90,7 +99,7 @@ pub struct Schema {
   enums : Array[EnumType]
   unions : Array[UnionType]
   scalars : Array[ScalarType]
-  query : String
+  mut query : String
   mut mutation : String?
   mut subscription : String?
   field_directives : Map[String, Array[AppliedDirective]]
@@ -111,7 +120,8 @@ pub fn Schema::input(Self, String, description? : String) -> ObjectType
 pub fn Schema::interface(Self, String, description? : String) -> ObjectType
 pub fn Schema::new(query? : String) -> Self
 pub fn Schema::object(Self, String, description? : String) -> ObjectType
-pub fn Schema::scalar(Self, String, serialize? : (Json) -> Json, parse_value? : (Json) -> Json, spec_url? : String) -> Unit
+pub fn Schema::of_sdl(String) -> Self raise @lang.GqlSyntaxError
+pub fn Schema::scalar(Self, String, serialize? : (Json) -> Json, parse_value? : (Json) -> Json, spec_url? : String, description? : String) -> Unit
 pub fn Schema::scalar_by_name(Self, String) -> ScalarType?
 pub fn Schema::set_mutation(Self, String) -> Unit
 pub fn Schema::set_subscription(Self, String) -> Unit
@@ -119,7 +129,7 @@ pub fn Schema::to_sdl(Self) -> String
 pub fn Schema::type_applied_directives(Self, String) -> Array[AppliedDirective]
 pub fn Schema::type_by_name(Self, String) -> ObjectType?
 pub fn Schema::type_has_directive(Self, String, String) -> Bool
-pub fn Schema::union(Self, String, Array[String]) -> Unit
+pub fn Schema::union(Self, String, Array[String], description? : String) -> Unit
 pub fn Schema::union_by_name(Self, String) -> UnionType?
 
 pub(all) enum TypeKind {
@@ -133,6 +143,7 @@ pub fn TypeKind::not_equal(Self, Self) -> Bool
 pub(all) struct UnionType {
   name : String
   members : Array[String]
+  description : String?
 }
 
 // Type aliases

@@ -12,7 +12,7 @@
 
 > Moved on mooncakes from `Lfan-ke/moongql` to `moonbitstack/moongql`.
 
-`moongql` defines a GraphQL schema **in code** — object types and fields — the way `strawberry-graphql` does for Python, and emits the schema SDL. `v0` ships the code-first schema and SDL printer; it's pure logic with no runtime dependencies, so it runs on every backend.
+`moongql` is a code-first GraphQL library for MoonBit — define a schema in code the way `strawberry-graphql` does for Python, then execute queries, validate them against the spec, and serve them over HTTP with a built-in browser IDE. It prints **and parses** GraphQL SDL (print-then-parse yields the same schema), runs subscriptions and Apollo Federation subgraphs, batches with a `DataLoader`, and turns your own types into a schema with `#gql` annotations. It is pure MoonBit with no runtime dependencies, so it runs on every backend (`wasm`, `wasm-gc`, `js`, `native`).
 
 ## Quickstart
 
@@ -51,6 +51,34 @@ type User {
 ```
 
 Verified across all backends (`wasm`, `wasm-gc`, `js`, `native`) in CI, 0 warnings under `--deny-warn`.
+
+## SDL, both ways
+
+`to_sdl` prints a schema; `Schema::of_sdl` parses one back. The two are a round
+trip — print a schema, parse the result, print it again, and the second print is
+byte-for-byte the same as the first (descriptions, `@deprecated(reason:)`,
+argument defaults, custom and built-in directives, `implements`, and the
+`schema { ... }` root block all survive the trip):
+
+```moonbit
+let s = @moongql.Schema::of_sdl(
+  #|type Query {
+  #|  "The user with this id."
+  #|  user(id: ID!): User
+  #|}
+  #|type User {
+  #|  id: ID!
+  #|  name: String!
+  #|  "Use `fullName` instead."
+  #|  legacyName: String! @deprecated(reason: "use name")
+  #|}
+  #|,
+)
+s.to_sdl()  // the same SDL, normalised
+```
+
+A definition that stops mid-way reports where it stopped (`2:1 expected a type
+system definition`), so a bad document is reported, not silently dropped.
 
 ## Packages
 
@@ -154,7 +182,7 @@ dev_build(rule: "gql", input: "schema.mbt", output: "schema.g.mbt")
 formatter(ignore: [ "schema.g.mbt" ])
 ```
 
-## Roadmap (transliterating strawberry)
+## Parser and execution
 
 The code-first schema and SDL are here, with **field arguments** (`field_args`), **input object types** (`Schema::input`), **enum types** (`Schema::enum_`), and **interfaces** (`Schema::interface` + object `implements`). The **query parser** now lands too — a hand-written lexer and a recursive-descent parser that turn a query string into a `Document` AST:
 
@@ -215,7 +243,7 @@ let res = @moongql.execute(s, r, "{ user(id: \"1\") { name } }",
 
 MoonBit has no runtime reflection, so where strawberry discovers resolvers and schema from Python classes, `moongql` uses **explicit** values: resolvers are functions registered by `"Type.field"` (like Rust/Go GraphQL servers), and a field's declared return type drives leaf-vs-composite completion exactly as `graphql-core`'s `complete_value` does. Fields with no registered resolver read their value off the parent JSON object — the equivalent of `graphql-core`'s `default_field_resolver`.
 
-Union types, custom scalars, subscriptions, a DataLoader, a GraphiQL HTTP endpoint, and Apollo Federation all land too (below).
+Union types, custom scalars, subscriptions, a DataLoader, a built-in HTTP endpoint with a browser IDE, and Apollo Federation are all part of the library and documented above.
 
 ```moonbit
 let s = @moongql.Schema::new()
@@ -304,7 +332,15 @@ let handler = @moongql.graphql_handler(schema, resolvers)      // path defaults 
 let app = @moongql.graphql_app(schema, resolvers)              // the same, lifted onto an AsgiApp
 ```
 
-A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the GraphiQL IDE.
+A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — **GraphiQL** by default, or **Apollo Sandbox** / **Altair** through the `ide~` argument, or nothing at all with `off`:
+
+```moonbit
+let app = @moongql.graphql_app(schema, resolvers)                    // GraphiQL
+let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.apollo_sandbox)
+let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.off)  // no IDE, GET without ?query= is 405
+```
+
+Each IDE is a single HTML page whose CDN assets are pinned to an exact version, and each derives its subscription socket from the page's own location unless one is configured. The page is also available on its own: `@moongql.graphiql.html(endpoint="/graphql")`.
 
 `Accept` picks the response media type. Ask for `application/graphql-response+json` and the status carries meaning — 400 for a request error, where the document never ran, and 200 for an operation that ran whatever its field errors say. Ask for `application/json`, or send no `Accept` at all, and every GraphQL response is a 200 with the errors in the body, which is what pre-specification clients expect. A client that accepts neither gets a 406.
 

@@ -11,7 +11,7 @@ pub fn parse(String) -> Document raise GqlSyntaxError
 pub fn tokenize(String) -> Array[Token] raise GqlSyntaxError
 
 // Errors
-pub suberror GqlSyntaxError {
+pub(all) suberror GqlSyntaxError {
   GqlSyntaxError(String, Int32, Int32)
 }
 pub fn GqlSyntaxError::output(Self, &Logger) -> Unit

@@ -1,5 +1,5 @@
 ///|
-/// The HTTP surface: a GraphiQL IDE page plus the GraphQL endpoint, wired as a
+/// The HTTP surface: an in-browser IDE page plus the GraphQL endpoint, wired as a
 /// `moonasgi` handler so moongql plugs straight into `mooncat` (or any server that
 /// binds the ASGI seam). It follows the GraphQL-over-HTTP specification: a `POST`
 /// carries an `application/json` request body, a `GET` carries the same fields in
@@ -9,66 +9,10 @@
 /// backend through `TestClient` without an async runtime.
 
 ///|
-/// The GraphiQL IDE page, wired to fetch against `endpoint`. This is the same
-/// standalone GraphiQL build strawberry serves: React and GraphiQL load from a
-/// CDN via an import map, and a fetcher points at the GraphQL endpoint. Splitting
-/// the template around the endpoint keeps it a plain string with no interpolation
-/// machinery.
+/// The GraphiQL IDE page, wired to fetch against `endpoint`. This is what
+/// `graphiql` (the default `Ide`) serves; the page itself is built in `ide.mbt`.
 pub fn graphiql_html(endpoint~ : String = "/graphql") -> String {
-  graphiql_head() + endpoint + graphiql_tail()
-}
-
-///|
-/// Everything in the GraphiQL page up to the fetcher URL literal.
-fn graphiql_head() -> String {
-  let head =
-    #|<!DOCTYPE html>
-    #|<html lang="en">
-    #|<head>
-    #|  <meta charset="utf-8" />
-    #|  <title>GraphiQL</title>
-    #|  <meta name="viewport" content="width=device-width, initial-scale=1" />
-    #|  <style>
-    #|    body { margin: 0; }
-    #|    #graphiql { height: 100dvh; }
-    #|    .loading { height: 100dvh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
-    #|  </style>
-    #|  <link rel="stylesheet" href="https://esm.sh/graphiql@3/dist/style.css" />
-    #|  <script type="importmap">
-    #|    {
-    #|      "imports": {
-    #|        "react": "https://esm.sh/react@18",
-    #|        "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
-    #|        "react-dom": "https://esm.sh/react-dom@18",
-    #|        "react-dom/client": "https://esm.sh/react-dom@18/client",
-    #|        "graphiql": "https://esm.sh/graphiql@3?standalone&external=react,react-dom",
-    #|        "@graphiql/toolkit": "https://esm.sh/@graphiql/toolkit?standalone&external=graphql"
-    #|      }
-    #|    }
-    #|  </script>
-    #|</head>
-    #|<body>
-    #|  <div id="graphiql"><div class="loading">Loading GraphiQL…</div></div>
-    #|  <script type="module">
-    #|    import React from 'react';
-    #|    import ReactDOM from 'react-dom/client';
-    #|    import { GraphiQL } from 'graphiql';
-    #|    import { createGraphiQLFetcher } from '@graphiql/toolkit';
-    #|    const fetcher = createGraphiQLFetcher({ url: '
-  head
-}
-
-///|
-/// Everything in the GraphiQL page after the fetcher URL literal.
-fn graphiql_tail() -> String {
-  let tail =
-    #|' });
-    #|    const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-    #|    root.render(React.createElement(GraphiQL, { fetcher }));
-    #|  </script>
-    #|</body>
-    #|</html>
-  tail
+  graphiql.html(endpoint~)
 }
 
 ///|
@@ -402,16 +346,17 @@ fn post_request(
 /// A `POST` on `path` executes an `application/json` body — one request object, or
 /// an array of them for a batch. A `GET` with a `?query=` executes a query
 /// operation (only a query: a mutation there is a 405); a `GET` without one serves
-/// the GraphiQL IDE when `graphiql` is true. The response media type is negotiated
-/// from `Accept`: a client asking for `application/graphql-response+json` gets it,
-/// and with it the status codes that separate a request error (400) from a field
-/// error (200); anything else gets `application/json` and a 200. Lift it onto an
-/// `AsgiApp` with `graphql_app`, or drive it directly with moonasgi's `TestClient`.
+/// the IDE `ide` names (GraphiQL by default, or `off` for a 405). The response
+/// media type is negotiated from `Accept`: a client asking for
+/// `application/graphql-response+json` gets it, and with it the status codes that
+/// separate a request error (400) from a field error (200); anything else gets
+/// `application/json` and a 200. Lift it onto an `AsgiApp` with `graphql_app`, or
+/// drive it directly with moonasgi's `TestClient`.
 pub fn graphql_handler(
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
   path~ : String = "/graphql",
-  graphiql~ : Bool = true,
+  ide~ : Ide = graphiql,
 ) -> @moonasgi.Handler {
   fn(req : @moonasgi.Request) -> @moonasgi.Response {
     if req.path != path {
@@ -430,14 +375,14 @@ pub fn graphql_handler(
         match params.get("query") {
           Some(q) => get_request(schema, resolvers, wire, params, q)
           None =>
-            if graphiql {
+            if ide.is_off() {
+              error_response(405, "Method Not Allowed")
+            } else {
               @moonasgi.Response::new(
                 200,
                 [("content-type", "text/html; charset=utf-8")],
-                @utf8.encode(graphiql_html(endpoint=path)),
+                @utf8.encode(ide.html(endpoint=path)),
               )
-            } else {
-              error_response(405, "Method Not Allowed")
             }
         }
       }
@@ -456,7 +401,7 @@ pub fn graphql_app(
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
   path~ : String = "/graphql",
-  graphiql~ : Bool = true,
+  ide~ : Ide = graphiql,
 ) -> @moonasgi.AsgiApp {
-  @moonasgi.to_asgi(graphql_handler(schema, resolvers, path~, graphiql~))
+  @moonasgi.to_asgi(graphql_handler(schema, resolvers, path~, ide~))
 }

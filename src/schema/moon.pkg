@@ -1,5 +1,6 @@
 // The type system: object, enum, union and scalar types, directives, the
-// built-in scalars and meta-fields, and SDL printing.
+// built-in scalars and meta-fields, SDL printing, and reading SDL back.
 import {
   "moonbitstack/moongql/lang",
+  "moonbitlang/core/json",
 }

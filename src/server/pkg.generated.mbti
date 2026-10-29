@@ -10,13 +10,21 @@ import {
 }
 
 // Values
+pub let altair : Ide
+
+pub let apollo_sandbox : Ide
+
+pub let graphiql : Ide
+
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : Ide) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
-pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
+pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : Ide) -> (@http.Request) -> @http.Response
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
+
+pub let off : Ide
 
 // Errors
 
@@ -41,6 +49,23 @@ pub fn GqlWs::new(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value
 pub fn GqlWs::recv(Self, @ws.WsMessage) -> Array[@ws.WsSend]
 pub fn GqlWs::release(Self, String) -> Unit
 pub fn GqlWs::tick(Self, Int64) -> Array[@ws.WsSend]
+
+pub(all) struct Ide {
+  kind : IdeKind
+  subscription_endpoint : String?
+}
+pub fn Ide::html(Self, endpoint? : String) -> String
+pub fn Ide::is_off(Self) -> Bool
+pub fn Ide::title(Self) -> String
+
+pub(all) enum IdeKind {
+  GraphiQL
+  ApolloSandbox
+  Altair
+  Off
+} derive(Eq)
+pub fn IdeKind::equal(Self, Self) -> Bool
+pub fn IdeKind::not_equal(Self, Self) -> Bool
 
 // Type aliases
 

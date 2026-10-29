@@ -33,7 +33,10 @@ pub(all) struct Field {
 }
 
 ///|
-/// Render a single field to SDL, including its argument list when non-empty.
+/// Render a single field to SDL, including its argument list when non-empty,
+/// each argument's default value (`= v`), and its `@deprecated(reason:)`. The
+/// description and the applied directives live on the schema, so they are the
+/// printer's job (see `description_sdl` and `Schema::to_sdl`), not this one's.
 pub fn field_sdl(f : Field) -> String {
   let mut out = "  " + f.name
   if f.args.length() > 0 {
@@ -44,10 +47,37 @@ pub fn field_sdl(f : Field) -> String {
         out = out + ", "
       }
       out = out + an + ": " + type_sdl(at)
+      match f.arg_defaults.get(an) {
+        Some(v) => out = out + " = " + json_to_gql_literal(v)
+        None => ()
+      }
     }
     out = out + ")"
   }
-  out + ": " + type_sdl(f.typ)
+  out = out + ": " + type_sdl(f.typ)
+  match f.deprecation_reason {
+    Some(r) => out + " @deprecated(reason: \"" + @lang.escape_string(r) + "\")"
+    None => out
+  }
+}
+
+///|
+/// Render a description as the SDL string literal that precedes the element it
+/// describes, followed by a newline — or the empty string when there is none (an
+/// empty description is the same thing as no description, which is how
+/// introspection reports it too). `indent` is the element's own indentation, in
+/// levels of two spaces.
+pub fn description_sdl(description : String?, indent~ : Int32 = 0) -> String {
+  match description {
+    None | Some("") => ""
+    Some(d) => {
+      let pad = StringBuilder()
+      for _ in 0..<(indent * 2) {
+        pad.write_char(' ')
+      }
+      pad.to_string() + "\"" + @lang.escape_string(d) + "\"\n"
+    }
+  }
 }
 
 ///|
@@ -140,6 +170,7 @@ pub(all) struct EnumType {
 pub(all) struct UnionType {
   name : String
   members : Array[String]
+  description : String?
 }
 
 ///|
@@ -152,6 +183,7 @@ pub(all) struct ScalarType {
   serialize : (Json) -> Json
   parse_value : (Json) -> Json
   spec_url : String?
+  description : String?
 }
 
 ///|
@@ -164,7 +196,7 @@ pub struct Schema {
   enums : Array[EnumType]
   unions : Array[UnionType]
   scalars : Array[ScalarType]
-  query : String
+  mut query : String
   mut mutation : String?
   mut subscription : String?
   // Applied directives (directive uses) recorded against a "Type.field" key, a
@@ -231,13 +263,14 @@ pub fn Schema::enum_by_name(self : Schema, name : String) -> EnumType? {
 
 ///|
 /// Declare a union type over the named member object types. Renders as
-/// `union Name = A | B`.
+/// `union Name = A | B`, preceded by `description` when one is given.
 pub fn Schema::union(
   self : Schema,
   name : String,
   members : Array[String],
+  description? : String,
 ) -> Unit {
-  self.unions.push({ name, members, })
+  self.unions.push({ name, members, description, })
 }
 
 ///|
@@ -261,8 +294,9 @@ pub fn Schema::scalar(
   serialize~ : (Json) -> Json = fn(x) { x },
   parse_value~ : (Json) -> Json = fn(x) { x },
   spec_url? : String,
+  description? : String,
 ) -> Unit {
-  self.scalars.push({ name, serialize, parse_value, spec_url, })
+  self.scalars.push({ name, serialize, parse_value, spec_url, description, })
 }
 
 ///|
@@ -388,23 +422,63 @@ pub fn kind_keyword(k : TypeKind) -> String {
 }
 
 ///|
+/// Render a directive definition to SDL: `directive @name(a: A) repeatable on
+/// LOCATION | LOCATION`. A definition is what a `Schema::directive` call
+/// registers; the places a directive is *used* are `AppliedDirective`s, which
+/// `applied_directive_sdl` renders.
+pub fn directive_def_sdl(d : DirectiveDef) -> String {
+  let mut out = "directive @" + d.name
+  if d.args.length() > 0 {
+    out = out + "("
+    for i, a in d.args {
+      if i > 0 {
+        out = out + ", "
+      }
+      out = out + a.0 + ": " + type_sdl(a.1)
+    }
+    out = out + ")"
+  }
+  if d.is_repeatable {
+    out = out + " repeatable"
+  }
+  out = out + " on "
+  for i, loc in d.locations {
+    if i > 0 {
+      out = out + " | "
+    }
+    out = out + loc
+  }
+  out
+}
+
+///|
 /// Emit the schema as GraphQL SDL: a `schema { query: ... }` block, then one
-/// block per composite type (`type` / `input` / `interface`, with `implements`
-/// and field arguments), then one block per enum type.
+/// block per directive definition, then one block per composite type
+/// (`type` / `input` / `interface`, with `implements` and field arguments), then
+/// one block per enum, union and scalar type. Every element carries its
+/// description, its `@deprecated(reason:)`, its arguments' default values and
+/// its applied directives, so that `Schema::of_sdl` reading this text back
+/// yields the same schema (§3).
 pub fn Schema::to_sdl(self : Schema) -> String {
-  let roots = StringBuilder()
-  roots.write_string("schema {\n  query: " + self.query + "\n")
+  let mut out = "schema" +
+    applied_directives_sdl(self.schema_directives) +
+    " {\n  query: " +
+    self.query +
+    "\n"
   // A schema that sets a mutation or subscription root has to say so, or its SDL
   // describes a different schema from the one that runs.
   if self.mutation is Some(m) {
-    roots.write_string("  mutation: " + m + "\n")
+    out = out + "  mutation: " + m + "\n"
   }
   if self.subscription is Some(sub) {
-    roots.write_string("  subscription: " + sub + "\n")
+    out = out + "  subscription: " + sub + "\n"
   }
-  roots.write_string("}\n\n")
-  let mut out = roots.to_string()
+  out = out + "}\n\n"
+  for d in self.directive_defs {
+    out = out + directive_def_sdl(d) + "\n\n"
+  }
   for obj in self.types {
+    out = out + description_sdl(obj.description)
     out = out + kind_keyword(obj.kind) + " " + obj.name
     if obj.interfaces.length() > 0 {
       out = out + " implements "
@@ -415,21 +489,43 @@ pub fn Schema::to_sdl(self : Schema) -> String {
         out = out + iface
       }
     }
+    out = out + applied_directives_sdl(self.type_applied_directives(obj.name))
     out = out + " {\n"
     for f in obj.fields {
-      out = out + field_sdl(f) + "\n"
+      out = out + description_sdl(f.description, indent=1)
+      out = out +
+        field_sdl(f) +
+        applied_directives_sdl(self.field_applied_directives(obj.name, f.name)) +
+        "\n"
     }
     out = out + "}\n\n"
   }
   for en in self.enums {
-    out = out + "enum " + en.name + " {\n"
+    out = out + description_sdl(en.description)
+    out = out +
+      "enum " +
+      en.name +
+      applied_directives_sdl(self.type_applied_directives(en.name)) +
+      " {\n"
     for v in en.values {
-      out = out + "  " + v + "\n"
+      out = out + description_sdl(en.value_descriptions.get(v), indent=1)
+      out = out + "  " + v
+      match en.deprecations.get(v) {
+        Some(r) =>
+          out = out + " @deprecated(reason: \"" + @lang.escape_string(r) + "\")"
+        None => ()
+      }
+      out = out + "\n"
     }
     out = out + "}\n\n"
   }
   for un in self.unions {
-    out = out + "union " + un.name + " = "
+    out = out + description_sdl(un.description)
+    out = out +
+      "union " +
+      un.name +
+      applied_directives_sdl(self.type_applied_directives(un.name)) +
+      " = "
     for i, m in un.members {
       if i > 0 {
         out = out + " | "
@@ -439,7 +535,17 @@ pub fn Schema::to_sdl(self : Schema) -> String {
     out = out + "\n\n"
   }
   for sc in self.scalars {
-    out = out + "scalar " + sc.name + "\n\n"
+    out = out + description_sdl(sc.description)
+    out = out +
+      "scalar " +
+      sc.name +
+      applied_directives_sdl(self.type_applied_directives(sc.name))
+    match sc.spec_url {
+      Some(u) =>
+        out = out + " @specifiedBy(url: \"" + @lang.escape_string(u) + "\")"
+      None => ()
+    }
+    out = out + "\n\n"
   }
   out
 }

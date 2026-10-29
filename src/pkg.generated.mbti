@@ -14,6 +14,10 @@ import {
 }
 
 // Values
+pub let altair : @server.Ide
+
+pub let apollo_sandbox : @server.Ide
+
 pub fn create_source_event_stream(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> @exec.SubscriptionResult
 
 pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
@@ -22,13 +26,17 @@ pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, 
 
 pub fn field_error(Error) -> @exec.ResolverError
 
+pub let graphiql : @server.Ide
+
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
-pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> (@http.Request) -> @http.Response
+pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> (@http.Request) -> @http.Response
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
+
+pub let off : @server.Ide
 
 pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
 
@@ -78,6 +86,10 @@ pub using @lang {type GqlSyntaxError}
 pub using @schema {type GqlType}
 
 pub using @server {type GqlWs}
+
+pub using @server {type Ide}
+
+pub using @server {type IdeKind}
 
 pub using @schema {type ObjectType}
 
