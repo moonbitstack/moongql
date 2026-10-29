@@ -50,6 +50,8 @@ pub using @valid {validate}
 
 ///|
 pub using @exec {
+  trait FromGql,
+  trait ToGql,
   type ResolveInfo,
   type ResolverError,
   type Resolvers,
@@ -58,6 +60,8 @@ pub using @exec {
   create_source_event_stream,
   execute,
   execute_subscription,
+  field_error,
+  read,
 }
 
 ///|

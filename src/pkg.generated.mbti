@@ -20,6 +20,8 @@ pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String,
 
 pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
 
+pub fn field_error(Error) -> @exec.ResolverError
+
 pub fn graphiql_html(endpoint? : String) -> String
 
 pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, graphiql? : Bool) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
@@ -29,6 +31,8 @@ pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, graphiql
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
 
 pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
+
+pub fn[T : @exec.FromGql] read(Json, String) -> T raise @exec.ResolverError
 
 pub fn tokenize(String) -> Array[@lang.Token] raise @lang.GqlSyntaxError
 
@@ -114,5 +118,9 @@ pub using @schema {type UnionType}
 pub using @lang {type Value}
 
 pub using @lang {type VariableDefinition}
+
+pub using @exec {trait FromGql}
+
+pub using @exec {trait ToGql}
 
 // Traits

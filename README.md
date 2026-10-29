@@ -67,6 +67,7 @@ uses and no others. The root re-exports all of them, so `@moongql.Schema` and
 | `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
 | `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
 | `moongql/loader` | `DataLoader` | nothing |
+| `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
 
 Running a query in-process needs nothing from `server`, so a test or a command
 line tool never links moonasgi.
@@ -77,6 +78,81 @@ Wherever the expected type is known — a field's type, a match on a value — t
 bare name does, and reads better: `NonNull(Scalar("ID"))`. The one place it is
 not known is an error, because `raise` and `catch` work on any error; there the
 subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
+
+## Annotations
+
+`#gql` annotations write the schema and the resolvers from your own types, the
+way strawberry's decorators do. The generator emits `register(schema,
+resolvers)`:
+
+```moonbit
+#gql.type(description="Someone who writes books")
+pub struct Author {
+  id : Int64
+  name : String
+  #gql.skip
+  email : String
+}
+
+#gql.enum
+pub enum Status { Draft; Published }
+
+#gql.input
+pub struct NewBook { title : String; author_id : Int64; status : Status? }
+
+#gql.field(description="Their books, at most `first`")
+fn Author::books(self : Author, first? : Int) -> Array[Book] { ... }
+
+#gql.query
+fn author(id : Int64) -> Author? { ... }
+
+#gql.mutation
+fn add_book(input : NewBook) -> Book raise { ... }
+```
+
+```moonbit
+let s = @moongql.Schema::new()
+let r = @moongql.Resolvers::new()
+register(s, r)
+let app = @moongql.graphql_app(s, r)
+```
+
+A struct's fields become the type's fields, named in camelCase; `#gql.field`
+renames, describes, deprecates or gives a `kind`, and `#gql.skip` keeps a field
+out of the schema. A method marked `#gql.field` is a field resolved from the value
+it is asked on, and free functions marked `#gql.query` and `#gql.mutation` are
+root fields. A parameter is a field argument; one of type `ResolveInfo` receives
+the request instead. A resolver that raises gives a field error, and a
+`ResolverError` keeps its message.
+
+| MoonBit | GraphQL |
+|:--:|:--:|
+| `String` | `String!` |
+| `Int` | `Int!` |
+| `Double` | `Float!` |
+| `Bool` | `Boolean!` |
+| `Int64` | `Int64!`, a scalar written as a string |
+| `T?` | `T` |
+| `Array[T]` | `[T]!` |
+| an annotated type | its name |
+
+Values cross as `ToGql` and `FromGql`, which the generator writes for each
+annotated type; a type of the program's own takes `#gql.field(kind="...")` and
+implements both. [`24-annotations`](src/examples/24-annotations/) checks the
+generated schema against the same schema written by hand.
+
+Wire the generator into the build once. In `moon.mod`:
+
+```
+rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.1 -C \"$mod_dir\" \"$input\" -o \"$output\"")
+```
+
+and in the `moon.pkg` of the package holding the declarations:
+
+```
+dev_build(rule: "gql", input: "schema.mbt", output: "schema.g.mbt")
+formatter(ignore: [ "schema.g.mbt" ])
+```
 
 ## Roadmap (transliterating strawberry)
 

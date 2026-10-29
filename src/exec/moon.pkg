@@ -5,4 +5,5 @@ import {
   "moonbitstack/moongql/schema",
   "moonbitstack/moongql/valid",
   "moonbitlang/core/json",
+  "moonbitlang/core/string",
 }

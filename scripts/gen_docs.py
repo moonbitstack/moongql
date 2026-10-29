@@ -55,6 +55,11 @@ SECTIONS = [
      "with a resolver map ((ResolveInfo) -> Json keyed by \"Type.field\"), "
      "supporting variables, aliases, fragments, @skip/@include, non-null error "
      "propagation and list/object results — returning { data, errors } as JSON."),
+    ("convert", "exec/convert.mbt", "Conversions",
+     "ToGql and FromGql carry a MoonBit value into a result and back out of an "
+     "argument or a parent value; ResolveInfo::read reads an argument as any "
+     "FromGql type, and field_error turns any error a resolver raised into a "
+     "field error. The #gql generator writes both traits for each annotated type."),
     ("introspection", "exec/introspection.mbt", "Introspection",
      "Answer __schema / __type / __typename from the schema: the introspection "
      "type system materialised as JSON that the executor walks like any object, "

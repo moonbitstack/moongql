@@ -54,6 +54,9 @@ jobs:
             fi
           done
 
+      - name: generated annotations are fresh
+        run: moon run src/cmd/gql --target native -- -C . src/examples/24-annotations/library.mbt -o src/examples/24-annotations/library.g.mbt --check
+
       - name: lint (fmt is clean)
         run: |
           moon fmt && git diff --exit-code

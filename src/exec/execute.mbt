@@ -688,7 +688,13 @@ fn Exec::execute_field(
       Json::null()
     }
     Some(ftype) => {
+      let recorded = self.errors.length()
       let raw = self.resolve_raw(obj, first, parent, path)
+      // A resolver that raised has its error recorded already; the null it
+      // leaves behind propagates without a second one, as in graphql-js.
+      if raw is Null && ftype is NonNull(_) && self.errors.length() > recorded {
+        raise NullBubble
+      }
       let value = self.complete(ftype, raw, fields, path) catch {
         NullBubble =>
           if ftype is NonNull(_) {

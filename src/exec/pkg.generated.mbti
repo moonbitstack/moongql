@@ -15,13 +15,18 @@ pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, Json]
 
 pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
 
+pub fn field_error(Error) -> ResolverError
+
 pub fn operation_type(@schema.Schema, @lang.Document, String?) -> Result[@lang.OperationType, @lang.GqlError]
+
+pub fn[T : FromGql] read(Json, String) -> T raise ResolverError
 
 // Errors
 pub(all) suberror ResolverError {
   ResolverError(String)
   ResolverErrorExt(String, Map[String, Json])
 }
+pub fn ResolverError::expected(String, Json) -> Self
 
 // Types and methods
 pub(all) struct ResolveInfo {
@@ -31,6 +36,7 @@ pub(all) struct ResolveInfo {
   field_name : String
 }
 pub fn ResolveInfo::arg(Self, String) -> Json
+pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise ResolverError
 
 pub struct Resolvers {
   map : Map[String, (ResolveInfo) -> Json raise ResolverError]
@@ -52,3 +58,26 @@ pub(all) enum SubscriptionResult {
 // Type aliases
 
 // Traits
+pub(open) trait FromGql {
+  fn from_gql(Json) -> Self raise ResolverError
+}
+pub impl FromGql for Bool
+pub impl FromGql for Int32
+pub impl FromGql for Int64
+pub impl FromGql for Double
+pub impl FromGql for String
+pub impl[T : FromGql] FromGql for T?
+pub impl[T : FromGql] FromGql for Array[T]
+pub impl FromGql for Json
+
+pub(open) trait ToGql {
+  fn to_gql(Self) -> Json
+}
+pub impl ToGql for Bool
+pub impl ToGql for Int32
+pub impl ToGql for Int64
+pub impl ToGql for Double
+pub impl ToGql for String
+pub impl[T : ToGql] ToGql for T?
+pub impl[T : ToGql] ToGql for Array[T]
+pub impl ToGql for Json

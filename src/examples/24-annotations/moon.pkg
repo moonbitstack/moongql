@@ -1,0 +1,12 @@
+// A schema written as `#gql` annotations, checked against the same schema
+// written by hand. `library.g.mbt` comes from `cmd/gql`; a project wires it as a
+// dev_build rule.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+  "moonbitlang/core/string",
+}
+
+pkgtype(kind: "executable")
+
+formatter(ignore: [ "library.g.mbt" ])

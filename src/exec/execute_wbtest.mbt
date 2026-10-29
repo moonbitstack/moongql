@@ -289,3 +289,23 @@ test "a missing required variable is a request error" {
   assert_eq(reached.length(), 1)
   assert_eq(ok.stringify().contains("\"errors\""), false)
 }
+
+///|
+/// A resolver that raises on a non-null field leaves its own error and nulls
+/// the parent; the null does not add a second error.
+test "a raising non-null field reports its error once" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("boom", NonNull(Scalar("String")))
+  q.field("fine", Scalar("String"))
+  let r = Resolvers::new()
+  r.field("Query", "boom", _ => raise ResolverError("broke"))
+  r.field("Query", "fine", _ => Json::null())
+  assert_eq(
+    execute(s, r, "{ boom }").stringify(),
+    (
+      #|{"data":null,"errors":[{"message":"broke","locations":[{"line":1,"column":3}],"path":["boom"]}]}
+    ),
+  )
+  assert_eq(execute(s, r, "{ fine }").stringify(), "{\"data\":{\"fine\":null}}")
+}

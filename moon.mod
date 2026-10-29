@@ -1,6 +1,6 @@
 name = "moonbitstack/moongql"
 
-version = "0.10.0"
+version = "0.10.1"
 
 readme = "README.md"
 
@@ -14,6 +14,9 @@ description = "Code-first GraphQL for MoonBit."
 
 import {
   "moonbitstack/moonasgi@0.10.0",
+  "moonbitstack/moonast@0.2.1",
+  "moonbitlang/parser@0.4.6",
+  "moonbitlang/async@0.22.5",
 }
 
 source = "src"

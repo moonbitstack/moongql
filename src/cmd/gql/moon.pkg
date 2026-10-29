@@ -1,0 +1,19 @@
+// The generator behind `#gql.type`, `#gql.input`, `#gql.enum`, `#gql.field`,
+// `#gql.query` and `#gql.mutation`: the schema and resolvers of a package's
+// annotated declarations, registered in one call. moonx runs it as a dev_build
+// rule; see the README.
+supported_targets = "+native+wasm"
+
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moonast/quote",
+  "moonbitstack/moonast/attr",
+  "moonbitstack/moonast/gen",
+  "moonbitstack/moonast/cli",
+  "moonbitlang/parser/attribute",
+  "moonbitlang/parser/syntax",
+  "moonbitlang/async",
+  "moonbitlang/core/env",
+  "moonbitlang/core/list",
+}
