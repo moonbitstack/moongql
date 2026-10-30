@@ -174,7 +174,10 @@ header.bar{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--gold-h
 .bar .wrap{display:flex;align-items:center;gap:1.1rem;height:64px}
 .brand{display:flex;align-items:center;gap:.6rem;font-family:var(--caps);font-size:.95rem;
   letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
-.brand:hover{color:var(--ink)}
+.brand{text-decoration:none}
+/* the wordmark answers on its own; the subtitle keeps its colour, so hovering
+   the lockup does not light two things at once */
+.brand:hover{color:var(--gold-hi);text-decoration:none}
 .brand .mark{width:22px;height:22px;flex:none}
 .brand .sub{font-family:var(--sans);font-size:.66rem;letter-spacing:.14em;color:var(--faint);
   text-transform:uppercase;border-left:1px solid var(--gold-hair);padding-left:.6rem;margin-left:.2rem}

@@ -87,10 +87,10 @@
 .graph{width:100%;max-width:230px;margin:.1rem auto 0}
 /* the wire is drawn at rest and the animation only *undoes* that first, so a
    reader who asked for reduced motion still gets the whole graph */
-.graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:130;
+.graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:1;
   animation:wire 1s ease 1.9s backwards}
 .graph .wire.dim{opacity:.14;animation-delay:2.1s}
-@keyframes wire{from{stroke-dashoffset:130}to{stroke-dashoffset:0}}
+@keyframes wire{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 .graph .node :is(circle,rect){fill:color-mix(in oklab,var(--abyss) 70%,transparent);stroke:var(--gold);
   stroke-width:1;transition:fill .25s,stroke .25s}
 .graph .node text{font-family:var(--mono);font-size:10.5px;fill:var(--ink);text-anchor:middle;
@@ -105,6 +105,7 @@
   background:repeating-linear-gradient(90deg,var(--gold-dim) 0 3px,transparent 3px 7px)}
 
 .chamber .req{margin-bottom:.9rem}
+.chamber pre.res{display:flex;flex-direction:column}
 .chamber .thread{height:1px;margin:.2rem 0 .85rem;position:relative;
   background:repeating-linear-gradient(90deg,var(--gold-dim) 0 4px,transparent 4px 9px)}
 .chamber .thread::after{content:"";position:absolute;left:50%;top:-2px;width:5px;height:5px;
@@ -131,7 +132,7 @@
 /* hovering the leaf lights the whole way down: Post stays half-lit behind it */
 .plate[data-focus="title"] #n-post{opacity:.72}
 .plate[data-focus="title"] #n-title{opacity:1}
-.plate[data-focus="title"] #n-title .box{fill:color-mix(in oklab,var(--gold) 26%,transparent);
+.plate[data-focus="title"] #n-title circle{fill:color-mix(in oklab,var(--gold) 26%,transparent);
   stroke:var(--gold-hi)}
 .plate[data-focus="title"] #w-up{opacity:.62;stroke:var(--azure)}
 .plate[data-focus="title"] #w-pt{opacity:1;stroke:var(--azure)}
@@ -290,11 +291,11 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
             <div class="chamber mid">
               <div class="plate-title"><i></i>one endpoint</div>
               <svg class="graph" viewBox="0 0 230 386" role="img" aria-label="The schema as a graph: Query points at User, User points at two Posts, and this request walks to the title of one of them">
-                <path class="wire" id="w-qu" d="M115 63 L115 139"/>
-                <path class="wire" id="w-up" d="M104 175 C 94 200, 82 228, 73 254"/>
-                <path class="wire dim" id="w-up2" d="M126 175 L155 254"/>
-                <path class="wire dim" d="M134 56 C 222 118, 220 220, 180 262"/>
-                <path class="wire" id="w-pt" d="M66 290 L66 336"/>
+                <path class="wire" id="w-qu" pathLength="1" d="M115 63 L115 139"/>
+                <path class="wire" id="w-up" pathLength="1" d="M104 175 C 94 200, 82 228, 73 254"/>
+                <path class="wire dim" id="w-up2" pathLength="1" d="M126 175 L155 254"/>
+                <path class="wire dim" pathLength="1" d="M134 56 C 222 118, 220 220, 180 262"/>
+                <path class="wire" id="w-pt" pathLength="1" d="M66 290 L66 330"/>
                 <g class="node" id="n-query" data-f="query">
                   <circle cx="115" cy="46" r="17"/><text x="115" y="47">Query</text>
                 </g>
@@ -308,11 +309,10 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
                   <circle cx="164" cy="272" r="18"/><text x="164" y="273">Post</text>
                 </g>
                 <g class="node leaf" id="n-title" data-f="title">
-                  <rect class="box" x="42" y="337" width="48" height="26" rx="2"/>
-                  <text x="66" y="351">title</text>
+                  <circle cx="66" cy="349" r="17"/><text x="66" y="350">title</text>
                 </g>
               </svg>
-              <p class="caption"><i></i>ask once &middot; walk every edge</p>
+              <p class="caption"><i></i>ask once &middot;<br>walk every edge</p>
             </div>
 
             <div class="chamber">

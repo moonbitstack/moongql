@@ -32,7 +32,6 @@ html{scroll-behavior:smooth}
 body{margin:0;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;
   background:var(--dome-1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:var(--query);text-decoration:none}
-a:hover{text-decoration:underline}
 
 
 /* ---------- page ---------- */
@@ -64,6 +63,10 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
   text-transform:none;color:var(--azure);opacity:0;transition:opacity .16s;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;max-width:58%}
 .pane .head .crumb.on{opacity:1}
+.pane .head .ann{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--azure);border:1px solid var(--gold-hair);border-radius:2px;padding:.03rem .34rem;
+  opacity:0;transition:opacity .16s;white-space:nowrap}
+.pane .head .ann.on{opacity:1}
 .pane .head .hint{margin-left:auto;font-family:var(--sans);font-size:.62rem;letter-spacing:.06em;
   text-transform:none;color:var(--faint);white-space:nowrap}
 .pane .head .hint.bad{color:#e8837a}
@@ -136,11 +139,6 @@ html[data-theme=light] .src{background:color-mix(in oklab,#efe7d4 60%,transparen
 .ln.hot::before,.ln.anc::before{content:"";position:absolute;left:.2rem;top:.15em;
   bottom:.15em;width:1px;background:var(--gold-hi)}
 .ln.anc::before{background:var(--gold-hair)}
-.ln.hot::after{content:attr(data-ann);position:absolute;right:0;top:50%;
-  transform:translateY(-50%);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--azure);background:var(--panel-2);border:1px solid var(--gold-hair);
-  border-radius:2px;padding:.04rem .4rem;white-space:nowrap}
-.ln.hot[data-ann=""]::after{content:none}
 .play[data-focus] #out .ln,.play[data-focus] #dlines .ln{opacity:.3}
 .play[data-focus] #out .ln.anc,.play[data-focus] #dlines .ln.anc{opacity:.62}
 .play[data-focus] #out .ln.hot{opacity:1;background:color-mix(in oklab,var(--gold) 9%,transparent)}
@@ -366,7 +364,8 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     response: type, and the answer is recomputed as you go. Three panes, one path: the document,
     the answer it produces, and a payload you can paste over. Hovering a field lights it in all
     three and names the type the schema declares for it; <kbd>Run</kbd> walks the document the way
-    an executor does — every leaf, depth first — and then lets the plate go quiet again.</p>
+    an executor does — every field it asks for, depth first — lighting one token at a time and
+    whatever that path holds in the answer and the payload, then lets the plate go quiet again.</p>
 
     <div class="play" id="playground">
       <div class="pane q">
@@ -384,7 +383,7 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
       </div>
 
       <div class="pane out">
-        <div class="head"><span class="dot"></span>Response<span class="crumb" id="path"></span></div>
+        <div class="head"><span class="dot"></span>Response<span class="crumb" id="path"></span><span class="ann" id="ann"></span></div>
         <pre id="out" aria-live="polite">loading the engine…</pre>
       </div>
 
@@ -637,6 +636,7 @@ accept: application/json</span>
   var derr=document.getElementById("derr");
   var state=document.getElementById("state");
   var crumb=document.getElementById("path");
+  var ann=document.getElementById("ann");
   var engine=globalThis.moongqlRun;
 
   function esc(t){
@@ -660,7 +660,7 @@ accept: application/json</span>
       if(/[A-Za-z_]/.test(c)){
         j=i; while(j<n&&/[A-Za-z0-9_]/.test(text[j]))j++;
         var w=text.slice(i,j);
-        res+='<span class="f" data-f="'+esc(w)+'">'+esc(w)+"</span>"; i=j; continue;
+        res+='<span class="f" data-f="'+esc(w)+'" data-o="'+i+'">'+esc(w)+"</span>"; i=j; continue;
       }
       if(c==="$"){
         j=i+1; while(j<n&&/[A-Za-z0-9_]/.test(text[j]))j++;
@@ -683,9 +683,9 @@ accept: application/json</span>
   // dropping the leading `data.` is the whole join.
   var schemaRoot="Query", schemaTypes={};
   var respIndex={}, dataIndex={};
-  var steps=[], walkTimer=null, lastMs=0, seeded=false, lastBad=false;
+  var walkTimer=null, lastMs=0, seeded=false, lastBad=false;
 
-  function norm(p){ return (p||"").replace(/^data\./,"") }
+  function norm(p){ return (p||"").replace(/^data\./,"").replace(/\[\d+\]/g,"") }
 
   function declared(path){
     if(!path) return "";
@@ -709,8 +709,8 @@ accept: application/json</span>
   }
 
   function line(path,field,depth,html){
-    return '<div class="ln" data-path="'+esc(path)+'" data-f="'+esc(field)+'" data-ann="'+
-           esc(declared(norm(path)))+'" style="--d:'+depth+'">'+html+"</div>";
+    return '<div class="ln" data-path="'+esc(path)+'" data-f="'+esc(field)+
+           '" style="--d:'+depth+'">'+html+"</div>";
   }
 
   function render(value){
@@ -740,6 +740,60 @@ accept: application/json</span>
       rows.push(line(at,name,depth,'<span class="p">}</span>'+tail));
     })(value,null,"",0,"","");
     return {html:rows.join(""), leaves:found};
+  }
+
+  // Every field the document asks for, in the order an executor meets them,
+  // with the offset of the word in the source so one token can be lit.
+  function queryPaths(text){
+    var i=0,n=text.length,stack=[],marks=[],out=[],pending=null;
+    function skipSpace(){
+      while(i<n){
+        var c=text[i];
+        if(c==="#"){ while(i<n&&text[i]!=="\n")i++; }
+        else if(c===" "||c==="\n"||c==="\t"||c==="\r"||c===","){ i++; }
+        else break;
+      }
+    }
+    while(i<n){
+      var c=text[i];
+      if(c==="#"||c===" "||c==="\n"||c==="\t"||c==="\r"||c===","){ skipSpace(); continue; }
+      if(c==='"'||c==="'"){ var q=c; i++; while(i<n){ if(text[i]==="\\"){i+=2}else if(text[i]===q){i++;break}else{i++} } continue; }
+      if(c==="{"){ marks.push(pending); if(pending) stack.push(pending); pending=null; i++; continue; }
+      if(c==="}"){ if(marks.pop()) stack.pop(); pending=null; i++; continue; }
+      if(/[A-Za-z_]/.test(c)){
+        var s0=i;
+        while(i<n&&/[A-Za-z0-9_]/.test(text[i]))i++;
+        var name=text.slice(s0,i);
+        // arguments and directives belong to this field
+        for(;;){
+          var j=i; while(j<n&&/\s/.test(text[j]))j++;
+          if(text[j]==="("){
+            var d=0;
+            for(;j<n;j++){
+              if(text[j]==="(")d++;
+              else if(text[j]===")"){ d--; if(!d){ j++; break; } }
+            }
+            i=j; continue;
+          }
+          if(text[j]==="@"){
+            j++; while(j<n&&/[A-Za-z0-9_]/.test(text[j]))j++;
+            i=j; continue;
+          }
+          break;
+        }
+        var k=i; while(k<n&&/\s/.test(text[k]))k++;
+        var next=text[k];
+        // the operation keyword is not a field, and an alias is not one either
+        if(stack.length===0&&/^(query|mutation|subscription|fragment)$/.test(name)){ pending=null; continue; }
+        if(next===":"){ pending=null; continue; }
+        var full=stack.length?stack.join(".")+"."+name:name;
+        out.push({field:name,path:full,offset:s0,parent:next==="{"});
+        pending=next==="{"?name:null;
+        continue;
+      }
+      i++;
+    }
+    return out;
   }
 
   function buildIndex(pre){
@@ -777,6 +831,7 @@ accept: application/json</span>
   function rest(){
     play.removeAttribute("data-focus");
     if(crumb){ crumb.textContent=""; crumb.classList.remove("on"); }
+    if(ann){ ann.textContent=""; ann.classList.remove("on"); }
     Array.prototype.forEach.call(mirror.querySelectorAll(".f.hot"),function(e){ e.classList.remove("hot"); });
     [out,dlines].forEach(function(pre){
       Array.prototype.forEach.call(pre.querySelectorAll(".ln.hot,.ln.anc"),function(e){
@@ -786,13 +841,15 @@ accept: application/json</span>
   }
 
   // one field, lit in three places: the document, the answer, the payload
-  function focus(name,path,keepWalk){
+  function focus(name,path,keepWalk,offset){
     if(!keepWalk&&walkTimer) stopWalk();
     rest();
     if(!name) return;
     play.setAttribute("data-focus",name);
+    var at=offset===undefined||offset===null?null:String(offset);
     Array.prototype.forEach.call(mirror.querySelectorAll(".f"),function(el){
-      el.classList.toggle("hot",el.getAttribute("data-f")===name);
+      el.classList.toggle("hot", at!==null ? el.getAttribute("data-o")===at
+                                           : el.getAttribute("data-f")===name);
     });
     var key=path?norm(path):null;
     var a=key?(respIndex[key]||[]):byName(out,name);
@@ -802,6 +859,11 @@ accept: application/json</span>
       var shown=key||(a.length?norm(a[0].getAttribute("data-path")):"");
       crumb.textContent=shown;
       crumb.classList.toggle("on",!!shown);
+      if(ann){
+        var ty=shown?declared(shown):"";
+        ann.textContent=ty||"";
+        ann.classList.toggle("on",!!ty);
+      }
     }
   }
 
@@ -831,14 +893,15 @@ accept: application/json</span>
     setTimeout(function(){ out.classList.remove("flash-err"); },1700);
   }
 
-  // RUN walks the document the way an executor does: every leaf, depth first,
-  // lighting the same field in the answer and in the payload as it goes
+  // RUN walks the *document*: every field it asks for, depth first, lighting
+  // that one token and whatever the same path holds in the answer and the payload
   function walk(){
     if(!engine) return;
     fire();
     if(walkTimer){ clearTimeout(walkTimer); walkTimer=null; }
     rest();
     if(lastBad){ flashErrors(); return; }
+    var steps=queryPaths(editor.value);
     if(!steps.length) return;
     var i=0;
     state.className="state";
@@ -850,7 +913,7 @@ accept: application/json</span>
         return;
       }
       var s=steps[i++];
-      focus(s.field,s.path,true);
+      focus(s.field,s.path,true,s.offset);
       state.textContent="walking · "+i+"/"+steps.length;
       walkTimer=setTimeout(step,430);
     })();
@@ -875,10 +938,9 @@ accept: application/json</span>
     state.className="state "+(bad?"bad":"ok");
     var r=render(parsed);
     out.innerHTML=r.html;
-    steps=r.leaves;
     respIndex=buildIndex(out);
     out.classList.remove("flash-err");
-    if(bad){ steps=[]; flashErrors(); }
+    if(bad){ flashErrors(); }
     lastBad=bad;
     // the payload pane starts as the original data, and can be replaced wholesale
     if(!seeded&&!dataTa.value.trim()){
