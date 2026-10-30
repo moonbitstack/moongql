@@ -36,9 +36,8 @@ pub fn AppliedDirective::new(
 ///|
 /// The run-time hook a user directive may carry: given the resolved field value
 /// and the directive's coerced arguments, return the transformed value. This is
-/// how a custom executable directive (`@upper`, `@default(value:)`, ...) alters a
-/// resolved field, the moongql equivalent of a strawberry `SchemaDirective` with a
-/// resolver-side effect.
+/// how a custom executable directive (`@upper`, `@default(value:)`, ...) alters
+/// a field after its resolver has run.
 pub type FieldDirectiveHook = (Json, Map[String, Json]) -> Json
 
 ///|

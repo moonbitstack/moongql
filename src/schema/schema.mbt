@@ -174,10 +174,10 @@ pub(all) struct UnionType {
 }
 
 ///|
-/// A custom scalar type with the two coercion hooks strawberry's `Scalar` carries:
-/// `serialize` maps a resolved value to its output JSON, and `parse_value` maps an
-/// input JSON value (an argument or variable) to the value a resolver sees. Both
-/// default to identity when a scalar only renames an existing representation.
+/// A custom scalar type and its two coercion hooks: `serialize` maps a resolved
+/// value to its output JSON, and `parse_value` maps an input JSON value (an
+/// argument or a variable) to the value a resolver sees. Both default to identity
+/// when a scalar only renames an existing representation.
 pub(all) struct ScalarType {
   name : String
   serialize : (Json) -> Json

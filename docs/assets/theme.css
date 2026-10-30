@@ -240,7 +240,9 @@ footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
   .reveal{opacity:1;transform:none}
 }
 @media (width <= 860px){
-  .bar .wrap{height:auto;flex-wrap:wrap;padding:.55rem 0;row-gap:.5rem}
+  .bar .wrap{height:auto;flex-wrap:wrap;padding:.6rem 1.5rem;row-gap:.5rem;position:relative}
   .brand .sub{display:none}
-  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;gap:.55rem 1rem}
+  .brand{max-width:calc(100% - 5rem)}
+  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;gap:.5rem .95rem}
+  .theme{position:absolute;top:.6rem;right:1.5rem}
 }

@@ -98,8 +98,8 @@ pub fn[K, V] DataLoader::load_now(self : DataLoader[K, V], k : K) -> V? {
 }
 
 ///|
-/// Seed the cache with a known value so a later `load` for `k` never hits the
-/// backend (strawberry/Facebook DataLoader's `prime`).
+/// Seed the cache with a known value so a later `load` for `k` never reaches the
+/// batch function.
 pub fn[K, V] DataLoader::prime(self : DataLoader[K, V], k : K, v : V) -> Unit {
   let ks = (self.key)(k)
   if !self.cache.contains(ks) {
