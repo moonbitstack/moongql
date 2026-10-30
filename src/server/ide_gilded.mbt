@@ -33,6 +33,7 @@ fn gilded_head() -> String {
     #|      --ink:#e9e3d4; --muted:#9b917c; --faint:#6d6555;
     #|      --gold:#c9a84c; --gold-hi:#eed89b; --hair:rgba(201,168,76,.22);
     #|      --gold-dim:rgba(201,168,76,.34); --azure:#4a90d9; --crimson:#e8837a;
+    #|      --flash:rgba(238,216,155,.55); --flash-soft:rgba(238,216,155,.32);
     #|      --serif:"Cormorant Garamond",ui-serif,Georgia,serif;
     #|      --caps:"Cinzel",ui-serif,Georgia,serif;
     #|      --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -56,20 +57,77 @@ fn gilded_head() -> String {
     #|    .url{font-family:var(--mono);font-size:.75rem;color:var(--gold);
     #|      border:1px solid var(--hair);border-radius:2px;padding:.1rem .45rem;
     #|      max-width:20rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #|    .spacer{flex:1}
+    #|    /* the bar's empty middle carries one very faint rule, the way the plates
+    #|       separate a document from its answer */
+    #|    .acts{display:flex;align-items:center;gap:.85rem;flex:none}
+    #|    .spacer{flex:1;position:relative;align-self:stretch;margin:0 .7rem}
+    #|    .spacer::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;
+    #|      background:repeating-linear-gradient(90deg,var(--hair) 0 3px,transparent 3px 10px);
+    #|      opacity:.55}
     #|    .state{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
     #|    .state.ok{color:var(--gold-hi)} .state.bad{color:var(--crimson)}
     #|    .btn{background:none;border:1px solid var(--hair);border-radius:2px;color:var(--muted);
     #|      font-size:.8rem;padding:.34rem .7rem;cursor:pointer;
     #|      transition:color .15s,border-color .15s}
+    #|    /* every button wears the same mount the documentation uses: a hairline
+    #|       border, then a second line three pixels in */
     #|    .btn{position:relative}
-    #|    .btn::after{content:"";position:absolute;inset:3px;border:1px solid transparent;
+    #|    .btn::after{content:"";position:absolute;inset:3px;border:1px solid rgba(201,168,76,.13);
     #|      border-radius:1px;transition:border-color .25s;pointer-events:none}
     #|    .btn:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
-    #|    .btn:hover::after{border-color:var(--hair)}
+    #|    .btn:hover::after{border-color:var(--gold-dim)}
     #|    .btn.run{color:var(--ink);border-color:var(--gold-dim);
     #|      background:linear-gradient(180deg,rgba(201,168,76,.18),transparent)}
     #|    .btn.run:hover{color:var(--gold-hi);border-color:var(--gold)}
+    #|    /* Run is the one plate in the bar: corner brackets that overshoot it */
+    #|    .btn.run::before{content:"";position:absolute;inset:-3px;pointer-events:none;opacity:.85;
+    #|      background:
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) left top/9px 1px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) left top/1px 9px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) right top/9px 1px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) right top/1px 9px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/9px 1px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/1px 9px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/9px 1px no-repeat,
+    #|        linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/1px 9px no-repeat}
+    #|    /* and on a press it lets off one short breath: -- · -- ◆ -- · -- */
+    #|    .btn.run .fil{position:absolute;inset:0;pointer-events:none}
+    #|    .btn.run .fil .r{position:absolute;left:-7px;right:-7px;height:1px;opacity:0;
+    #|      background:
+    #|        repeating-linear-gradient(90deg,var(--gold-hi) 0 3px,transparent 3px 6px)
+    #|          left center/calc(50% - 6px) 1px no-repeat,
+    #|        repeating-linear-gradient(90deg,var(--gold-hi) 0 3px,transparent 3px 6px)
+    #|          right center/calc(50% - 6px) 1px no-repeat}
+    #|    .btn.run .fil .r.t{top:-5px}
+    #|    .btn.run .fil .r.b{top:calc(100% + 5px)}
+    #|    .btn.run .fil .k{position:absolute;left:50%;width:4px;height:4px;opacity:0;
+    #|      border:1px solid var(--gold-hi);transform:translate(-50%,-50%) rotate(45deg)}
+    #|    .btn.run .fil .k.t{top:-5px}
+    #|    .btn.run .fil .k.b{top:calc(100% + 5px)}
+    #|    .btn.run .fil .s{position:absolute;width:5px;height:5px;opacity:0;
+    #|      color:var(--gold-hi);transform:translate(-50%,-50%)}
+    #|    .btn.run .fil .s path{fill:none;stroke:currentColor;stroke-width:1.3}
+    #|    .btn.run .fil .s.tl{left:-7px;top:-5px}
+    #|    .btn.run .fil .s.tr{left:calc(100% + 7px);top:-5px}
+    #|    .btn.run .fil .s.bl{left:-7px;top:calc(100% + 5px)}
+    #|    .btn.run .fil .s.br{left:calc(100% + 7px);top:calc(100% + 5px)}
+    #|    .btn.run.firing{animation:runFlash .95s cubic-bezier(.2,0,.15,1) both}
+    #|    .btn.run.firing .fil .r,.btn.run.firing .fil .s{
+    #|      animation:filigree .95s cubic-bezier(.2,0,.15,1) both}
+    #|    .btn.run.firing .fil .k{animation:filigreeGem .95s cubic-bezier(.2,0,.15,1) both}
+    #|    @keyframes runFlash{
+    #|      0%{box-shadow:0 0 0 0 transparent}
+    #|      18%{box-shadow:0 0 0 2px var(--flash),0 0 14px var(--flash-soft)}
+    #|      55%{box-shadow:0 0 0 1px var(--flash-soft),0 0 6px transparent}
+    #|      100%{box-shadow:0 0 0 0 transparent}
+    #|    }
+    #|    @keyframes filigree{0%{opacity:0}16%{opacity:1}52%{opacity:.78}100%{opacity:0}}
+    #|    @keyframes filigreeGem{
+    #|      0%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.35)}
+    #|      20%{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(1.15)}
+    #|      42%{transform:translate(-50%,-50%) rotate(45deg) scale(1)}
+    #|      100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1)}
+    #|    }
     #|    kbd{font-family:var(--mono);font-size:.72em;color:var(--gold);margin-left:.35rem}
     #|    main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px;
     #|      background:var(--hair);background-clip:content-box;
@@ -119,6 +177,15 @@ fn gilded_head() -> String {
     #|    .code .f{transition:opacity .16s,background .16s}
     #|    .code .p{color:var(--faint)} .code .v{color:var(--azure)}
     #|    .code .n{color:var(--gold)} .code .c{color:var(--faint);font-style:italic}
+    #|    /* one scrollbar everywhere: a thin gold hairline, never a grey bar */
+    #|    #out,.types,.vars textarea,.doc input{scrollbar-width:thin;
+    #|      scrollbar-color:var(--gold-dim) transparent}
+    #|    #out::-webkit-scrollbar,.types::-webkit-scrollbar{width:10px;height:10px}
+    #|    #out::-webkit-scrollbar-track,.types::-webkit-scrollbar-track{background:transparent}
+    #|    #out::-webkit-scrollbar-thumb,.types::-webkit-scrollbar-thumb{
+    #|      background:rgba(201,168,76,.4);border:3px solid transparent;background-clip:content-box}
+    #|    #out::-webkit-scrollbar-thumb:hover,.types::-webkit-scrollbar-thumb:hover{
+    #|      background:var(--gold-dim);background-clip:content-box}
     #|    #out{margin:0;padding:1rem 1.1rem 2rem;overflow:auto;flex:1;min-height:0;
     #|      font-family:var(--mono);font-size:.82rem;line-height:1.75;white-space:pre;
     #|      color:var(--ink)}
@@ -183,6 +250,7 @@ fn gilded_head() -> String {
     #|      .url{max-width:9rem}
     #|      .spacer{display:none}
     #|      .state{margin-left:auto}
+    #|      .acts{margin-left:auto}
     #|      main{margin:.45rem;padding:6px}
     #|      main::before{inset:3px}
     #|      main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
@@ -194,15 +262,20 @@ fn gilded_head() -> String {
     #|        --ink:#211c14; --muted:#635a4c; --faint:#756a5a;
     #|        --gold:#856527; --gold-hi:#946d2c; --hair:rgba(133,101,39,.32);
     #|        --gold-dim:rgba(133,101,39,.42); --azure:#2f6ea8; --crimson:#b23b2e;
+    #|        --flash:rgba(133,101,39,.45); --flash-soft:rgba(133,101,39,.24);
     #|      }
     #|      .hd{color:rgba(133,101,39,.85)}
     #|      .vars label{color:rgba(133,101,39,.72)}
     #|      .s{color:#7a5a1f}
     #|      .play[data-focus] .code .f.hot{color:var(--ink);background:rgba(47,110,168,.18)}
     #|      .play[data-focus] #out .ln.hot{background:rgba(133,101,39,.10)}
+    #|      /* on parchment the dimmed rows need a little more ink than at night */
+    #|      .play[data-focus] #out .ln{opacity:.45}
+    #|      .play[data-focus] #out .ln.anc{opacity:.72}
+    #|      .play[data-focus] .code .f{opacity:.45}
     #|      .code textarea::selection{background:rgba(47,110,168,.2)}
     #|    }
-    #|    @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+    #|    @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
     #|  </style>
     #|</head>
     #|<body>
@@ -213,8 +286,10 @@ fn gilded_head() -> String {
     #|    <code class="url" id="url"></code>
     #|    <span class="spacer"></span>
     #|    <span class="state" id="state" aria-live="polite">ready</span>
+    #|    <span class="acts">
     #|    <button class="btn" id="docs" aria-expanded="false" aria-controls="doc">Schema</button>
-    #|    <button class="btn run" id="run">Run<kbd>⌘↵</kbd></button>
+    #|    <button class="btn run" id="run"><span class="fil" aria-hidden="true"><i class="r t"></i><i class="k t"></i><i class="r b"></i><i class="k b"></i><svg class="s tl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s tr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s bl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s br" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg></span>Run<kbd>⌘↵</kbd></button>
+    #|    </span>
     #|  </header>
     #|  <main>
     #|    <span class="knot t" aria-hidden="true"></span>
@@ -438,8 +513,20 @@ fn gilded_tail() -> String {
     #|    if(lastFocus) focus(lastFocus.name,lastFocus.path);
     #|  }
     #|
+    #|  // the button lets off one breath on every press
+    #|  function fire(){
+    #|    var b=document.getElementById("run");
+    #|    if(!b) return;
+    #|    b.classList.remove("firing");
+    #|    void b.offsetWidth;
+    #|    b.classList.add("firing");
+    #|    clearTimeout(b.fireT);
+    #|    b.fireT=setTimeout(function(){ b.classList.remove("firing") },950);
+    #|  }
+    #|
     #|  // ---------- running an operation ----------
     #|  function run(){
+    #|    fire();
     #|    var payload={query:q.value};
     #|    var raw=vars.value.trim();
     #|    if(raw&&raw!=="{}"){
