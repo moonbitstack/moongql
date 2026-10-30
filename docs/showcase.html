@@ -161,12 +161,12 @@ kbd{font-family:var(--mono);font-size:.82em;border:1px solid var(--line);border-
 /* exchanges */
 .exchange{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:1.6rem;margin-top:1.8rem}
 .picks{display:flex;flex-direction:column;gap:.35rem;margin:0;padding:0;list-style:none}
-.pick{text-align:left;background:none;border:1px solid transparent;border-radius:9px;
+.pick{text-align:left;background:none;border:1px solid transparent;border-radius:2px;
   color:var(--muted);font:inherit;font-size:.9rem;padding:.5rem .7rem;cursor:pointer;
   border-left-width:2px}
 .pick:hover{color:var(--ink);background:var(--panel)}
 .pick[aria-selected=true]{color:var(--ink);background:var(--panel);border-color:var(--line);
-  border-left-color:var(--bronze);border-radius:0 9px 9px 0}
+  border-left-color:var(--bronze);border-radius:2px}
 .pick .m{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;color:var(--bronze-dim);
   text-transform:uppercase;display:block}
 pre{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
@@ -215,7 +215,7 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
   #dlines{white-space:pre-wrap;overflow-wrap:anywhere}
   .exchange{grid-template-columns:minmax(0,1fr)}
   .picks{flex-direction:row;flex-wrap:wrap}
-  .pick{border-left-width:1px;border-radius:9px}
+  .pick{border-left-width:1px;border-radius:2px}
 }
 </style>
 </head>
