@@ -47,50 +47,87 @@ h2{font-family:var(--serif);font-weight:400;font-size:1.75rem;margin:.5rem 0 0;l
 h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 
 
-/* ---------- playground ---------- */
-.play{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,1fr);
-  grid-template-rows:auto minmax(0,1fr);gap:1rem;margin-top:1.8rem}
-.pane{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);overflow:hidden;
-  box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
-.pane.q{grid-column:1;grid-row:1}
-.pane.out{grid-column:1;grid-row:2}
-.pane.d{grid-column:2;grid-row:1 / span 2}
-.pane .head{display:flex;align-items:center;gap:.55rem;padding:.55rem .9rem;min-height:2.4rem;
-  border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.72rem;
-  letter-spacing:.16em;text-transform:uppercase;color:var(--bronze-dim)}
-.pane .head .dot{width:6px;height:6px;background:var(--gold);transform:rotate(45deg);flex:none}
+/* ---------- playground: three plates, one screen ----------
+   Query, Response and Data sit side by side at a height drawn from the
+   viewport, so the Run row underneath is never a scroll away. */
+.play{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;
+  margin-top:1.6rem;height:clamp(320px,54vh,480px)}
+.pane{border:1px solid var(--line);border-radius:2px;background:var(--panel-2);overflow:hidden;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0;min-height:0}
+.pane .head{display:flex;align-items:center;gap:.5rem;padding:.5rem .85rem;min-height:2.2rem;
+  flex:none;border-bottom:1px solid var(--line);font-family:var(--caps);font-size:.62rem;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:color-mix(in oklab,var(--gold) 72%,var(--muted))}
+.pane .head .dot{width:5px;height:5px;background:var(--gold);transform:rotate(45deg);flex:none}
 .pane.out .head .dot{background:var(--azure)}
-.pane .head .crumb{margin-left:auto;font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;
+.pane .head .crumb{margin-left:auto;font-family:var(--mono);font-size:.68rem;letter-spacing:.02em;
   text-transform:none;color:var(--azure);opacity:0;transition:opacity .16s;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:62%}
+  overflow:hidden;text-overflow:ellipsis;max-width:58%}
 .pane .head .crumb.on{opacity:1}
-.pane .head .hint{margin-left:auto;font-family:var(--sans);font-size:.68rem;letter-spacing:.04em;
-  text-transform:none;color:var(--faint)}
+.pane .head .hint{margin-left:auto;font-family:var(--sans);font-size:.62rem;letter-spacing:.06em;
+  text-transform:none;color:var(--faint);white-space:nowrap}
 .pane .head .hint.bad{color:#e8837a}
 
 /* the editor is a textarea with a painted copy behind it, so a field can be lit */
-.code{position:relative;flex:1;min-height:12rem}
-.code .mirror,.code textarea{margin:0;border:0;padding:1rem 1.1rem;font-family:var(--mono);
-  font-size:.9rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
-.code .mirror{display:block;min-height:12rem;color:var(--ink);pointer-events:none}
+.code{position:relative;flex:1;min-height:0}
+.code .mirror,.code textarea{margin:0;border:0;padding:.8rem 1rem;font-family:var(--mono);
+  font-size:.82rem;line-height:1.72;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
+.code .mirror{display:block;height:100%;overflow:auto;color:var(--ink);pointer-events:none;
+  background:none;box-shadow:none;border-radius:0;scrollbar-width:none}
+.code .mirror::-webkit-scrollbar{width:0;height:0}
 .code textarea{position:absolute;inset:0;width:100%;height:100%;resize:none;background:transparent;
-  color:transparent;caret-color:var(--ink);outline:none;overflow:hidden}
+  color:transparent;caret-color:var(--ink);outline:none;overflow:auto;scrollbar-width:none}
+.code textarea::-webkit-scrollbar{width:0;height:0}
 .code textarea::selection{background:color-mix(in oklab,var(--azure) 32%,transparent)}
 .code .f{transition:opacity .16s,background .16s}
 .code .p{color:var(--faint)} .code .v{color:var(--azure)}
 .code .n{color:var(--gold)} .code .c{color:var(--faint);font-style:italic}
 
-#out{margin:0;padding:.8rem 1.1rem 1.2rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
-  line-height:1.7;white-space:pre;color:var(--ink);flex:1;min-height:12rem;max-height:26rem}
-#dlines{margin:0;padding:.7rem 1rem 1rem;overflow:auto;font-family:var(--mono);font-size:.82rem;
-  line-height:1.7;white-space:pre;color:var(--ink);flex:1;min-height:8rem}
-#data{flex:none;height:5.6rem;resize:vertical;background:var(--panel);color:var(--ink);
-  border:0;border-bottom:1px solid var(--line);outline:none;padding:.6rem .9rem;
-  font-family:var(--mono);font-size:.78rem;line-height:1.6}
-#data:focus{box-shadow:inset 0 0 0 1px var(--gold-dim)}
+/* the two payload views lose the generic <pre> card: the pane is the card */
+#out,#dlines{margin:0;padding:.7rem .9rem 1rem;overflow:auto;font-family:var(--mono);
+  font-size:.78rem;line-height:1.68;white-space:pre;color:var(--ink);flex:1;min-height:0;
+  background:none;border:0;border-radius:0;box-shadow:none}
+
+/* the source of the payload, folded away at the foot of the pane: the answer is
+   what you read, the document it was matched against is what you paste */
+.src{flex:none;position:relative;background:color-mix(in oklab,var(--abyss) 55%,var(--panel-2))}
+.src::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+  background:repeating-linear-gradient(90deg,var(--gold-dim) 0 4px,transparent 4px 9px)}
+.src summary{display:flex;align-items:center;gap:.45rem;padding:.55rem .9rem;cursor:pointer;
+  list-style:none;font-family:var(--sans);font-size:.6rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+.src summary::-webkit-details-marker{display:none}
+.src summary i{width:4px;height:4px;background:var(--gold-dim);transform:rotate(45deg);flex:none}
+.src summary .k{flex:none;white-space:nowrap;color:var(--gold-dim)}
+.src summary b{flex:1 1 auto;min-width:0;font-weight:400;letter-spacing:.03em;text-transform:none;
+  font-size:.62rem;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src summary::after{content:"";flex:none;margin-left:auto;width:6px;height:6px;
+  border-right:1px solid var(--gold-dim);border-bottom:1px solid var(--gold-dim);
+  transform:rotate(45deg) translate(-1px,-1px);transition:transform .2s}
+.src[open] summary::after{transform:rotate(-135deg) translate(-1px,-1px)}
+.src summary:hover{color:var(--ink)}
+#data{display:block;width:100%;height:6.6rem;resize:none;border:0;background:transparent;
+  color:var(--ink);outline:none;padding:.1rem .9rem .6rem;font-family:var(--mono);
+  font-size:.74rem;line-height:1.55}
+#data::placeholder{color:var(--faint)}
+#data:focus{background:color-mix(in oklab,var(--gold) 5%,transparent)}
+
+/* one scrollbar, everywhere: a thin gold hairline on the plate, never a grey bar */
+#out,#dlines,#data,.code textarea{scrollbar-width:thin;
+  scrollbar-color:color-mix(in oklab,var(--gold) 45%,transparent) transparent}
+#out::-webkit-scrollbar,#dlines::-webkit-scrollbar,#data::-webkit-scrollbar,
+.code textarea::-webkit-scrollbar{width:10px;height:10px}
+#out::-webkit-scrollbar-track,#dlines::-webkit-scrollbar-track,#data::-webkit-scrollbar-track,
+.code textarea::-webkit-scrollbar-track{background:transparent}
+#out::-webkit-scrollbar-thumb,#dlines::-webkit-scrollbar-thumb,#data::-webkit-scrollbar-thumb,
+.code textarea::-webkit-scrollbar-thumb{background:color-mix(in oklab,var(--gold) 40%,transparent);
+  border:3px solid transparent;background-clip:content-box;border-radius:2px}
+#out::-webkit-scrollbar-thumb:hover,#dlines::-webkit-scrollbar-thumb:hover,
+#data::-webkit-scrollbar-thumb:hover{background:var(--gold-dim);background-clip:content-box}
+
 /* on parchment the panes need a little more body than the page behind them */
 html[data-theme=light] .pane{background:#fbf7ec;border-color:rgba(133,101,39,.3)}
-html[data-theme=light] #data{background:#fffdf8}
+html[data-theme=light] .src{background:color-mix(in oklab,#efe7d4 60%,transparent)}
 
 .ln{position:relative;display:block;padding-left:calc(var(--d,0) * 1.05em + 1rem);
   border-radius:2px;transition:opacity .16s,background .16s}
@@ -286,8 +323,10 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 p, li, figcaption, .note { overflow-wrap: anywhere; }
 
 @media (width <= 860px){
-  .play{grid-template-columns:minmax(0,1fr);grid-template-rows:none}
-  .pane.q,.pane.out,.pane.d{grid-column:1;grid-row:auto}
+  /* stacked, each plate keeps a workable body height instead of a vh one */
+  .play{grid-template-columns:minmax(0,1fr);height:auto}
+  .pane.q,.pane.out,.pane.d{grid-column:1;grid-row:auto;height:17rem}
+  .pane.d{height:20rem}
   #out{white-space:pre-wrap;overflow-wrap:anywhere}
   #dlines{white-space:pre-wrap;overflow-wrap:anywhere}
   .exchange{grid-template-columns:minmax(0,1fr)}
@@ -350,9 +389,14 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
       </div>
 
       <div class="pane d">
-        <div class="head"><span class="dot"></span>Data<span class="hint" id="derr">your own JSON</span></div>
-        <textarea id="data" spellcheck="false" aria-label="JSON data to match against"></textarea>
+        <div class="head"><span class="dot"></span>Data<span class="hint" id="derr">matched by path</span></div>
         <pre id="dlines"></pre>
+        <details class="src" id="src">
+          <summary><i></i><span class="k">your json</span><b>paste to re-match</b></summary>
+          <textarea id="data" spellcheck="false" aria-label="JSON data to match against"
+                    autocapitalize="off" autocomplete="off" autocorrect="off"
+                    placeholder="{ … }"></textarea>
+        </details>
       </div>
     </div>
     <div class="row">
@@ -630,6 +674,7 @@ accept: application/json</span>
       res+=esc(c); i++;
     }
     mirror.innerHTML=res+"\n";
+    if(typeof editor!=="undefined"&&editor) mirror.scrollTop=editor.scrollTop;
     rectsDirty=true;
   }
 
@@ -847,14 +892,14 @@ accept: application/json</span>
     var raw=dataTa.value.trim();
     if(!raw){
       dlines.innerHTML=""; dataIndex={};
-      derr.textContent="your own JSON"; derr.className="hint";
+      derr.textContent="paste json"; derr.className="hint";
       return;
     }
     var parsed;
     try{ parsed=JSON.parse(raw) }
     catch(e){
       dlines.innerHTML=""; dataIndex={};
-      derr.textContent="not JSON"; derr.className="hint bad";
+      derr.textContent="not json"; derr.className="hint bad";
       return;
     }
     var r=render(parsed);
@@ -905,6 +950,12 @@ accept: application/json</span>
       if(el) focus(el.getAttribute("data-f"),null); else if(!walkTimer) rest();
     });
     editor.addEventListener("mouseleave",function(){ if(!walkTimer) rest(); });
+    // the painted copy and the textarea are two layers of one document: they
+    // scroll together, or a lit token would drift away from the caret
+    editor.addEventListener("scroll",function(){
+      if(mirror) mirror.scrollTop=editor.scrollTop;
+      rectsDirty=true;
+    },{passive:true});
     addEventListener("resize",function(){rectsDirty=true},{passive:true});
     addEventListener("scroll",function(){rectsDirty=true},{passive:true});
   }
