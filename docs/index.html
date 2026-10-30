@@ -80,21 +80,27 @@
 .chamber .plate-title i{width:5px;height:5px;background:var(--gold);transform:rotate(45deg);flex:none}
 .chambers pre{margin:0;background:none;border:0;box-shadow:none;padding:0;font-size:.8rem}
 
-.chamber.mid{display:flex;flex-direction:column;align-items:center;
-  background:radial-gradient(80% 60% at 50% 30%, color-mix(in oklab,var(--azure) 7%,transparent), transparent 70%)}
-.graph{width:100%;max-width:208px;margin:.1rem auto 0}
+/* the middle column is a column: the graph takes the room it is given and the
+   caption sits on the floor of the plate, so the eye has somewhere to rest */
+.chamber.mid{display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+  background:radial-gradient(70% 55% at 50% 44%, color-mix(in oklab,var(--azure) 7%,transparent), transparent 72%)}
+.graph{width:100%;max-width:230px;margin:.1rem auto 0}
 .graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:130;stroke-dashoffset:130;
   animation:wire 1s ease 1.9s forwards}
 .graph .wire.dim{opacity:.14;animation-delay:2.1s}
 @keyframes wire{to{stroke-dashoffset:0}}
-.graph .node circle{fill:color-mix(in oklab,var(--abyss) 70%,transparent);stroke:var(--gold);stroke-width:1;
-  transition:fill .25s,stroke .25s}
+.graph .node :is(circle,rect){fill:color-mix(in oklab,var(--abyss) 70%,transparent);stroke:var(--gold);
+  stroke-width:1;transition:fill .25s,stroke .25s}
 .graph .node text{font-family:var(--mono);font-size:10.5px;fill:var(--ink);text-anchor:middle;
   dominant-baseline:middle;pointer-events:none}
 .graph .node{animation:rise .55s ease 2.2s backwards;transition:opacity .25s}
+/* a declared type the request never walks: dashed, and half asleep */
 .graph .node.dormant circle{stroke-dasharray:2 3;opacity:.6}
 .caption{font-family:var(--caps);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;
-  color:color-mix(in oklab,var(--gold) 58%,var(--faint));text-align:center;margin:.55rem 0 0;line-height:1.9}
+  color:color-mix(in oklab,var(--gold) 58%,var(--faint));text-align:center;margin:.55rem 0 0;
+  line-height:1.9;max-width:100%}
+.caption i{display:block;width:58px;height:1px;margin:0 auto .6rem;
+  background:repeating-linear-gradient(90deg,var(--gold-dim) 0 3px,transparent 3px 7px)}
 
 .chamber .req{margin-bottom:.9rem}
 .chamber .thread{height:1px;margin:.2rem 0 .85rem;position:relative;
@@ -114,12 +120,19 @@
   opacity:1;background:color-mix(in oklab,var(--gold) 10%,transparent)}
 .plate[data-focus] .node{opacity:.25}
 .plate[data-focus="user"] #n-user,.plate[data-focus="name"] #n-user,
-.plate[data-focus="posts"] #n-post,.plate[data-focus="title"] #n-post{opacity:1}
+.plate[data-focus="posts"] #n-post{opacity:1}
 .plate[data-focus="user"] #n-user circle,.plate[data-focus="name"] #n-user circle,
-.plate[data-focus="posts"] #n-post circle,.plate[data-focus="title"] #n-post circle{
+.plate[data-focus="posts"] #n-post circle{
   fill:color-mix(in oklab,var(--gold) 26%,transparent);stroke:var(--gold-hi)}
 .plate[data-focus="user"] #w-qu,.plate[data-focus="name"] #w-qu,
-.plate[data-focus="posts"] #w-up,.plate[data-focus="title"] #w-up{opacity:1;stroke:var(--azure)}
+.plate[data-focus="posts"] #w-up{opacity:1;stroke:var(--azure)}
+/* hovering the leaf lights the whole way down: Post stays half-lit behind it */
+.plate[data-focus="title"] #n-post{opacity:.72}
+.plate[data-focus="title"] #n-title{opacity:1}
+.plate[data-focus="title"] #n-title .box{fill:color-mix(in oklab,var(--gold) 26%,transparent);
+  stroke:var(--gold-hi)}
+.plate[data-focus="title"] #w-up{opacity:.62;stroke:var(--azure)}
+.plate[data-focus="title"] #w-pt{opacity:1;stroke:var(--azure)}
 
 .under{display:flex;flex-direction:column;align-items:center;gap:.4rem;margin-top:1.15rem;
   color:var(--faint);font-size:.78rem;letter-spacing:.02em}
@@ -274,25 +287,30 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
 
             <div class="chamber mid">
               <div class="plate-title"><i></i>one endpoint</div>
-              <svg class="graph" viewBox="0 0 220 250" role="img" aria-label="The schema as a graph: Query points at User, and User points at Post">
-                <path class="wire" id="w-qu" d="M110 54 L110 110"/>
-                <path class="wire" id="w-up" d="M97 140 L64 194"/>
-                <path class="wire" id="w-up2" d="M123 140 L156 194"/>
-                <path class="wire dim" d="M110 54 C 190 92, 190 168, 158 198"/>
+              <svg class="graph" viewBox="0 0 230 386" role="img" aria-label="The schema as a graph: Query points at User, User points at two Posts, and this request walks to the title of one of them">
+                <path class="wire" id="w-qu" d="M115 63 L115 139"/>
+                <path class="wire" id="w-up" d="M104 175 C 94 200, 82 228, 73 254"/>
+                <path class="wire dim" id="w-up2" d="M126 175 L155 254"/>
+                <path class="wire dim" d="M134 56 C 222 118, 220 220, 180 262"/>
+                <path class="wire" id="w-pt" d="M66 290 L66 336"/>
                 <g class="node" id="n-query" data-f="query">
-                  <circle cx="110" cy="40" r="15"/><text x="110" y="41">Query</text>
+                  <circle cx="115" cy="46" r="17"/><text x="115" y="47">Query</text>
                 </g>
                 <g class="node" id="n-user" data-f="user">
-                  <circle cx="110" cy="126" r="17"/><text x="110" y="127">User</text>
+                  <circle cx="115" cy="158" r="19"/><text x="115" y="159">User</text>
                 </g>
                 <g class="node" id="n-post" data-f="posts">
-                  <circle cx="54" cy="210" r="16"/><text x="54" y="211">Post</text>
+                  <circle cx="66" cy="272" r="18"/><text x="66" y="273">Post</text>
                 </g>
                 <g class="node dormant" id="n-post2">
-                  <circle cx="164" cy="210" r="16"/><text x="164" y="211">Post</text>
+                  <circle cx="164" cy="272" r="18"/><text x="164" y="273">Post</text>
+                </g>
+                <g class="node leaf" id="n-title" data-f="title">
+                  <rect class="box" x="42" y="337" width="48" height="26" rx="2"/>
+                  <text x="66" y="351">title</text>
                 </g>
               </svg>
-              <p class="caption">ask once &middot;<br>walk every edge</p>
+              <p class="caption"><i></i>ask once &middot; walk every edge</p>
             </div>
 
             <div class="chamber">
