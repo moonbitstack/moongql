@@ -165,7 +165,12 @@ html[data-theme=light] ::selection{background:color-mix(in oklab,var(--gold) 22%
 .btn:hover::after{border-color:var(--gold-hair)}
 .btn.solid{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 16%,transparent),transparent);
   border-color:var(--gold)}
-.btn .arrow{color:var(--gold);transition:transform .3s}
+/* the arrow is drawn, not typed: a glyph sits on the font's maths axis and reads
+   high next to letter-spaced capitals, so the chevron is a box we can centre */
+.btn .arrow{display:inline-flex;align-items:center;justify-content:center;
+  color:var(--gold);transition:transform .3s;margin-left:.1rem}
+.btn .arrow svg{display:block;width:.82em;height:.82em;fill:currentColor;
+  transform:translateY(.5px)}
 .btn:hover .arrow{transform:translateX(3px)}
 
 /* ---------- top bar ---------- */
