@@ -184,7 +184,7 @@ code,pre,.mono{font-family:var(--mono)}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 .layout{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1180px;margin:0 auto}
-.sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+.sidebar{position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);overflow-y:auto;
   border-right:1px solid var(--line);padding:1.6rem 1.1rem 2rem;background:var(--panel-2)}
 .brand{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-weight:600;
   font-size:1.2rem;letter-spacing:-.01em;color:var(--ink);margin-bottom:.15rem}
@@ -224,7 +224,7 @@ main{padding:2.6rem 2.4rem 5rem;min-width:0}
 .contract .k{color:var(--accent);font-weight:500}.contract .ty{color:var(--query)}.contract .op{color:var(--muted)}
 section.pkg{scroll-margin-top:1.2rem;padding-top:2.4rem;margin-top:2rem;border-top:1px solid var(--line)}
 section.pkg > h2{font-family:var(--display);font-weight:500;font-size:1.75rem;margin:0 0 .15rem;letter-spacing:-.01em}
-section.pkg > h2 .at{color:var(--accent)}
+section.pkg > h2 .at{color:var(--accent);margin-right:.45em}
 .pdesc{color:var(--muted);margin:.15rem 0 1.2rem;max-width:72ch}
 .item{background:var(--panel);border:1px solid var(--line);border-radius:13px;
   padding:1rem 1.2rem;margin:.85rem 0;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
@@ -242,13 +242,13 @@ footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);color
 /* ---------- top bar, the same five links on every page ---------- */
 .topbar{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
   background:color-mix(in oklab,var(--bg) 86%,transparent);border-bottom:1px solid var(--line)}
+.topbar .brand-link{display:flex;align-items:center;color:var(--accent)}
+.topbar .mark{width:20px;height:20px;display:block}
 .topbar .in{display:flex;align-items:center;gap:1rem;height:56px;max-width:1180px;margin:0 auto;
   padding:0 1.4rem}
-.topbar .oc{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--bronze);
-  box-shadow:0 0 0 3px color-mix(in oklab,var(--bronze) 16%,transparent)}
 .topbar .name{font-family:var(--caps);font-weight:500;font-size:.92rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
-.topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.1rem}
-.topbar nav a{color:var(--muted);font-size:.88rem}
+.topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.45rem}
+.topbar nav a{color:var(--muted);font-family:var(--caps);font-size:.76rem;letter-spacing:.2em;text-transform:uppercase}
 .topbar nav a:hover{color:var(--ink);text-decoration:none}
 .topbar nav a[aria-current]{color:var(--ink)}
 .theme-btn.top{width:auto;margin:0}
@@ -344,15 +344,17 @@ def main():
             '</script>'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<title>moongql — API reference</title>'
-            '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 32 32\'%3E%3Ccircle cx=\'16\' cy=\'16\' r=\'12\' fill=\'none\' stroke=\'%23c9a06a\' stroke-width=\'3\'/%3E%3Ccircle cx=\'16\' cy=\'16\' r=\'4\' fill=\'%23f0d070\'/%3E%3C/svg%3E">'
+            '<meta name="description" content="Every public interface of moongql, generated from the source: schema, lexer, parser, validator, executor, dataloader and the HTTP endpoint.">'
+            '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 32 32\'%3E%3Crect x=\'3.5\' y=\'3.5\' width=\'25\' height=\'25\' fill=\'none\' stroke=\'%23c9a84c\' stroke-width=\'1\'/%3E%3Crect x=\'7.5\' y=\'7.5\' width=\'17\' height=\'17\' fill=\'none\' stroke=\'%23c9a84c\' stroke-width=\'.6\' opacity=\'.6\'/%3E%3Ccircle cx=\'16\' cy=\'16\' r=\'4\' fill=\'%23e9e3d4\'/%3E%3C/svg%3E">'
             '<link rel="preconnect" href="https://fonts.googleapis.com">'
             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-            '<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&'
-            'family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
+            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&'
+            'family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&'
+            'family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">'
             '<style>' + CSS + '</style></head><body>')
 
     TOP = ('<header class="topbar"><div class="in">'
-           '<a href="index.html"><span class="oc" style="display:inline-block"></span></a>'
+           '<a href="index.html" class="brand-link"><svg class=\"mark\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"3.5\" width=\"25\" height=\"25\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\"1\"/><rect x=\"7.5\" y=\"7.5\" width=\"17\" height=\"17\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\".6\" opacity=\".55\"/><circle cx=\"16\" cy=\"16\" r=\"3.2\" fill=\"currentColor\"/><circle cx=\"16\" cy=\"16\" r=\"6.2\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\".5\" opacity=\".45\"/></svg></a>'
            '<a class="name" href="index.html">moongql</a>'
            '<nav><a href="index.html">Home</a><a href="guide.html">Guide</a>'
            '<a href="api.html" aria-current="page">API</a>'
