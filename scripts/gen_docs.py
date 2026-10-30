@@ -183,20 +183,34 @@ code,pre,.mono{font-family:var(--mono)}
 }
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
-.layout{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1180px;margin:0 auto}
-.sidebar{position:sticky;top:56px;align-self:start;height:calc(100vh - 56px);overflow-y:auto;
+.layout{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1120px;margin:0 auto}
+.sidebar{position:sticky;top:64px;align-self:start;height:calc(100vh - 64px);overflow-y:auto;
   border-right:1px solid var(--line);padding:1.6rem 1.1rem 2rem;background:var(--panel-2)}
 .brand{display:flex;align-items:center;gap:.55rem;font-family:var(--mono);font-weight:600;
   font-size:1.2rem;letter-spacing:-.01em;color:var(--ink);margin-bottom:.15rem}
 .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
 .brand-sub{color:var(--muted);font-size:.8rem;margin:0 0 1.3rem;padding-left:.15rem}
-.side-nav{display:flex;flex-direction:column;gap:.1rem}
-.side-nav a{color:var(--muted);font-size:.9rem;padding:.32rem .6rem;border-radius:8px;
-  font-family:var(--sans);display:flex;align-items:center;gap:.4rem;border-left:2px solid transparent}
+.side-nav{display:flex;flex-direction:column;gap:.1rem;position:relative}
+/* one dashed spine down the rail; the current section is the gem on it */
+.side-nav::before{content:"";position:absolute;left:.5rem;top:.35rem;bottom:.35rem;width:1px;
+  background:repeating-linear-gradient(180deg,var(--accent) 0 3px,transparent 3px 7px);
+  opacity:.26}
+.side-nav a{position:relative;color:var(--muted);font-size:.9rem;
+  padding:.32rem .6rem .32rem 1.3rem;border-radius:2px;
+  font-family:var(--sans);display:flex;align-items:center;gap:.4rem}
 .side-nav a .at{color:var(--accent);opacity:.6}
-.side-nav a:hover{background:var(--accent-soft);color:var(--ink);text-decoration:none}
-.side-nav a.active{color:var(--ink);background:var(--accent-soft);border-left-color:var(--accent);font-weight:500}
+.side-nav a:hover{color:var(--ink);text-decoration:none}
+.side-nav a::after{content:"";position:absolute;left:.5rem;top:50%;width:5px;height:5px;
+  background:var(--rule,var(--accent));transform:translate(-50%,-50%) rotate(45deg) scale(0);
+  transition:transform .18s ease;box-shadow:0 0 6px color-mix(in oklab,var(--rule,var(--accent)) 75%,transparent)}
+.side-nav a.active{color:var(--ink);font-weight:500}
+.side-nav a.active::after{transform:translate(-50%,-50%) rotate(45deg) scale(1)}
 .side-nav a.active .at{opacity:1}
+/* at night the rail is bronze and the current section is the violet one */
+:root[data-theme=dark] .side-nav a{color:color-mix(in oklab,var(--accent) 58%,var(--muted))}
+:root[data-theme=dark] .side-nav a:hover{color:var(--ink)}
+:root[data-theme=dark] .side-nav a.active{--rule:var(--query)}
+:root[data-theme=dark] .side-nav a.active .at{color:var(--query);opacity:1}
 .side-foot{margin-top:1.6rem;padding-top:1.1rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.4rem}
 .side-foot img{height:20px;display:block}
 .theme-btn{margin-top:1rem;background:none;border:1px solid var(--line);color:var(--muted);
@@ -243,12 +257,12 @@ footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);color
 .topbar{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
   background:color-mix(in oklab,var(--bg) 86%,transparent);border-bottom:1px solid var(--line)}
 .topbar .brand-link{display:flex;align-items:center;color:var(--accent)}
-.topbar .mark{width:20px;height:20px;display:block}
-.topbar .in{display:flex;align-items:center;gap:1rem;height:56px;max-width:1180px;margin:0 auto;
-  padding:0 1.4rem}
+.topbar .mark{width:22px;height:22px;display:block}
+.topbar .in{display:flex;align-items:center;gap:1.1rem;height:64px;max-width:1120px;margin:0 auto;
+  padding:0 1.5rem}
 .topbar .name{font-family:var(--caps);font-weight:500;font-size:.92rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
 .topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.45rem}
-.topbar nav a{color:var(--muted);font-family:var(--caps);font-size:.76rem;letter-spacing:.2em;text-transform:uppercase}
+.topbar nav a{color:var(--muted);font-family:var(--caps);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase}
 .topbar nav a:hover{color:var(--ink);text-decoration:none}
 .topbar nav a[aria-current]{color:var(--ink)}
 .theme-btn.top{width:auto;margin:0}
@@ -276,7 +290,7 @@ p, li, .doc { overflow-wrap: anywhere; }
 @media (max-width:820px){
   .layout{grid-template-columns:1fr}
   .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
-  .side-nav{flex-flow:row wrap}.side-nav a{border-left:none}.side-nav a.active{border-left:none}
+  .side-nav{flex-flow:row wrap}.side-nav::before{display:none}.side-nav a{padding-left:.55rem}.side-nav a::after{display:none}
   main{padding:1.8rem 1.2rem 4rem}.hero h1{font-size:2.2rem}
 }
 """

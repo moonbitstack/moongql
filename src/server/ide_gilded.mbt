@@ -122,8 +122,10 @@ fn gilded_head() -> String {
     #|    .doc{position:fixed;top:3.4rem;right:0;bottom:0;width:min(24rem,88vw);
     #|      background:var(--panel);border-left:1px solid var(--hair);z-index:5;
     #|      transform:translateX(101%);transition:transform .32s cubic-bezier(.3,0,.2,1);
-    #|      display:flex;flex-direction:column;box-shadow:-40px 0 70px -50px #000}
-    #|    .doc[data-open]{transform:none}
+    #|      display:flex;flex-direction:column}
+    #|    /* the shadow belongs to the open drawer: on a translated one it would smear
+    #|       a dark band down the right edge of the page */
+    #|    .doc[data-open]{transform:none;box-shadow:-40px 0 70px -50px #000}
     #|    .doc .hd{gap:.5rem}
     #|    .doc .hd .btn{margin-left:auto;font-size:.66rem;padding:.12rem .45rem;
     #|      font-family:var(--sans);letter-spacing:0;text-transform:none}
