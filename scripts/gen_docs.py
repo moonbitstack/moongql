@@ -157,6 +157,8 @@ CSS = r"""
   --bg:#07060a; --panel:#100d17; --panel-2:#151120; --ink:#e9e3d4;
   --muted:#9b917c; --line:rgba(201,168,76,.26); --accent:#c9a84c; --accent-soft:rgba(201,168,76,.14);
   --out:#eed89b; --code-bg:#0d0b12; --bronze:#c9a84c; --query:#4a90d9;
+  /* the names theme.css uses, so rules can be lifted across without renaming */
+  --gold:#c9a84c; --gold-hi:#eed89b; --gold-hair:rgba(201,168,76,.26); --gold-dim:rgba(201,168,76,.34);
   --serif:"Cormorant Garamond",ui-serif,Georgia,serif;
   --display:"Cormorant Garamond",ui-serif,Georgia,serif;
   --caps:"Cinzel",ui-serif,Georgia,serif;
@@ -168,6 +170,7 @@ CSS = r"""
   --bg:#efe9dc; --panel:#f6f1e5; --panel-2:#eee7d6; --ink:#211c14;
   --muted:#6b6153; --line:rgba(138,106,42,.3); --accent:#8a6a2a; --accent-soft:rgba(138,106,42,.12);
   --out:#a8823a; --code-bg:#e8e0cd; --bronze:#8a6a2a; --query:#2f6ea8;
+  --gold:#856527; --gold-hi:#946d2c; --gold-hair:rgba(133,101,39,.22); --gold-dim:rgba(133,101,39,.38);
   --shadow:0 1px 0 rgba(31,26,20,.06),0 24px 60px -40px rgba(31,26,20,.35);
 }
 *{box-sizing:border-box}
@@ -213,9 +216,12 @@ a:hover{text-decoration:underline}
 :root[data-theme=dark] .side-nav a.active .at{color:var(--query);opacity:1}
 .side-foot{margin-top:1.6rem;padding-top:1.1rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.4rem}
 .side-foot img{height:20px;display:block}
-.theme-btn{margin-top:1rem;background:none;border:1px solid var(--line);color:var(--muted);
-  border-radius:8px;padding:.35rem .6rem;font:inherit;font-size:.82rem;cursor:pointer;width:100%}
-.theme-btn:hover{border-color:var(--accent);color:var(--ink)}
+/* the toggle wears the same plate as the one on every other page */
+.theme-btn{margin-top:1rem;background:none;border:1px solid var(--gold-hair);color:var(--muted);
+  border-radius:2px;padding:.3rem .55rem;font-family:var(--caps);font-size:.64rem;
+  letter-spacing:.14em;text-transform:uppercase;cursor:pointer;width:100%;
+  transition:color .25s,border-color .25s}
+.theme-btn:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
 main{padding:2.6rem 2.4rem 5rem;min-width:0}
 .hero h1{font-family:var(--display);font-weight:500;font-size:2.9rem;letter-spacing:-.02em;margin:0}
 .hero .tag{color:var(--muted);font-size:1.12rem;max-width:62ch;margin:.5rem 0 1.1rem;text-wrap:balance}
@@ -260,11 +266,18 @@ footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);color
 .topbar .mark{width:22px;height:22px;display:block}
 .topbar .in{display:flex;align-items:center;gap:1.1rem;height:64px;max-width:1120px;margin:0 auto;
   padding:0 1.5rem}
+.topbar .sub{font-family:var(--sans);font-size:.66rem;letter-spacing:.14em;color:var(--muted);
+  text-transform:uppercase;border-left:1px solid var(--gold-hair);padding-left:.6rem;margin-left:.2rem}
 .topbar .name{font-family:var(--caps);font-weight:500;font-size:.92rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
-.topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.45rem}
-.topbar nav a{color:var(--muted);font-family:var(--caps);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase}
+/* the same nav as the other three pages: same rhythm, same sweeping rule */
+.topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.35rem}
+.topbar nav a{font-family:var(--caps);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);position:relative;padding:.2rem 0}
+.topbar nav a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;
+  background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s}
 .topbar nav a:hover{color:var(--ink);text-decoration:none}
-.topbar nav a[aria-current]{color:var(--ink)}
+.topbar nav a:hover::after,.topbar nav a[aria-current]::after{transform:scaleX(1)}
+.topbar nav a[aria-current]{color:var(--gold-hi)}
 .theme-btn.top{width:auto;margin:0}
 
 /* ---------- chrome shared by every page ---------- */
@@ -288,6 +301,12 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 p, li, .doc { overflow-wrap: anywhere; }
 
 @media (max-width:820px){
+  /* the bar wraps exactly the way it does on the other three pages */
+  .topbar .in{height:auto;flex-wrap:wrap;padding:.6rem 1.5rem;row-gap:.5rem;position:relative}
+  .topbar .sub{display:none}
+  .topbar .name{max-width:calc(100% - 5rem)}
+  .topbar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;gap:.5rem .95rem}
+  .theme-btn.top{position:absolute;top:.55rem;right:1.4rem;margin:0}
   .layout{grid-template-columns:1fr}
   .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
   .side-nav{flex-flow:row wrap}.side-nav::before{display:none}.side-nav a{padding-left:.55rem}.side-nav a::after{display:none}
@@ -303,10 +322,18 @@ document.addEventListener("DOMContentLoaded",()=>{
       setTimeout(()=>{btn.textContent=t;btn.classList.remove("ok");},1100);});}));
   const links=[...document.querySelectorAll(".side-nav a")];
   const map=Object.fromEntries(links.map(a=>[a.getAttribute("href").slice(1),a]));
-  const spy=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
-    links.forEach(a=>a.classList.remove("active"));const a=map[e.target.id];if(a)a.classList.add("active");}});},
-    {rootMargin:"-10% 0px -80% 0px"});
-  document.querySelectorAll("section.pkg").forEach(s=>spy.observe(s));
+  // the rail marks the last section whose heading has passed the top: the same
+  // rule at load, mid-scroll and at the foot of the page
+  const sections=[...document.querySelectorAll("section.pkg")];
+  const mark=()=>{
+    if(!sections.length)return;
+    let pick=sections[0].id;
+    sections.forEach(s=>{if(s.getBoundingClientRect().top<=140)pick=s.id;});
+    if(scrollY+innerHeight>=document.documentElement.scrollHeight-4)pick=sections[sections.length-1].id;
+    links.forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+pick));
+  };
+  mark();
+  addEventListener("scroll",mark,{passive:true});
   const root=document.documentElement;
   const syncTop=()=>root.classList.toggle("at-top",scrollY<=0);
   addEventListener("scroll",syncTop,{passive:true});syncTop();
@@ -370,6 +397,7 @@ def main():
     TOP = ('<header class="topbar"><div class="in">'
            '<a href="index.html" class="brand-link"><svg class=\"mark\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect x=\"3.5\" y=\"3.5\" width=\"25\" height=\"25\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\"1\"/><rect x=\"7.5\" y=\"7.5\" width=\"17\" height=\"17\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\".6\" opacity=\".55\"/><circle cx=\"16\" cy=\"16\" r=\"3.2\" fill=\"currentColor\"/><circle cx=\"16\" cy=\"16\" r=\"6.2\" fill=\"none\" stroke=\"var(--bronze)\" stroke-width=\".5\" opacity=\".45\"/></svg></a>'
            '<a class="name" href="index.html">moongql</a>'
+           '<span class="sub">GraphQL &middot; MoonBit</span>'
            '<nav><a href="index.html">Home</a><a href="guide.html">Guide</a>'
            '<a href="api.html" aria-current="page">API</a>'
            '<a href="showcase.html">Showcase</a>'
