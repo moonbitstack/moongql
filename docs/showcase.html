@@ -119,10 +119,87 @@ html[data-theme=light] .play[data-focus] .code .f.hot{color:var(--ink);
 #out.flash-err .ln .s,#out.flash-err .ln .k{color:#e8837a}
 
 .row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
-.run{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent);
+/* ---------- Run: a small plate, and a flourish the moment it fires ----------
+   idle it wears the same mount as every other card on the site — a hairlines
+   border, an inner line 3px in, and four corner brackets that overshoot. On
+   click the frame appears, thickens and settles thin again, while -- · -- runs
+   with a hollow diamond and tiny four-point stars live only for that breath. */
+.run{position:relative;--fil:var(--gold-hi);--glow:rgba(238,216,155,.55);
+  --glow-soft:rgba(238,216,155,.3);
+  background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent);
   border:1px solid color-mix(in oklab,var(--gold) 45%,var(--line));color:var(--ink);
-  border-radius:2px;padding:.55rem 1.05rem;font:inherit;font-weight:500;font-size:.94rem;cursor:pointer}
-.run:hover{border-color:var(--gold)}
+  border-radius:2px;padding:.55rem 1.25rem;font:inherit;font-weight:500;font-size:.94rem;
+  cursor:pointer;transition:border-color .25s,color .25s}
+html[data-theme=light] .run{--fil:#8a6a2a;--glow:rgba(138,106,42,.5);--glow-soft:rgba(138,106,42,.26)}
+.run:hover{border-color:var(--gold);color:#fff}
+html[data-theme=light] .run:hover{color:var(--ink)}
+.run::before{content:"";position:absolute;inset:3px;border:1px solid var(--gold-hair);
+  border-radius:1px;pointer-events:none;transition:border-color .25s}
+.run:hover::before{border-color:var(--gold-dim)}
+.run::after{content:"";position:absolute;inset:-3px;pointer-events:none;
+  background:
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/8px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left top/1px 8px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/8px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right top/1px 8px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/8px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) left bottom/1px 8px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/8px 1px no-repeat,
+    linear-gradient(var(--gold-dim),var(--gold-dim)) right bottom/1px 8px no-repeat}
+
+/* the filigree: invisible at rest, alive for one and a half seconds on click */
+.run .fil{position:absolute;inset:0;pointer-events:none}
+/* one run per edge, painted as two pieces with a gap at the centre so the
+   hollow diamond can float between them: -- · --  ◆  -- · -- */
+.run .fil .r{position:absolute;left:-18%;right:-18%;height:1px;opacity:0;
+  background:
+    repeating-linear-gradient(90deg,var(--fil) 0 3px,transparent 3px 7px)
+      left center/calc(50% - 8px) 1px no-repeat,
+    repeating-linear-gradient(90deg,var(--fil) 0 3px,transparent 3px 7px)
+      right center/calc(50% - 8px) 1px no-repeat}
+.run .fil .r.t{top:-7px}
+.run .fil .r.b{bottom:-7px}
+.run .fil .k{position:absolute;left:50%;width:5px;height:5px;border:1px solid var(--fil);
+  opacity:0;transform:translate(-50%,-50%) rotate(45deg)}
+.run .fil .k.t{top:-7px}
+.run .fil .k.b{top:auto;bottom:-7px}
+.run .fil .s{position:absolute;width:7px;height:7px;color:var(--fil);opacity:0;
+  transform:translate(-50%,-50%)}
+.run .fil .s path{fill:none;stroke:currentColor;stroke-width:1.1}
+.run .fil .s.tl{left:-18%;top:-7px}
+.run .fil .s.tr{left:calc(100% + 18%);top:-7px}
+.run .fil .s.bl{left:-18%;top:calc(100% + 7px)}
+.run .fil .s.br{left:calc(100% + 18%);top:calc(100% + 7px)}
+
+/* when the row wraps, the filigree needs room to sit in */
+@media (width <= 640px){
+  .row{row-gap:1.7rem}
+}
+
+.run.firing{animation:runFlash 1.5s cubic-bezier(.2,0,.15,1) both}
+.run.firing::before{border-color:var(--gold-dim)}
+.run.firing .fil .r{animation:filigree 1.5s cubic-bezier(.2,0,.15,1) both}
+.run.firing .fil .s{animation:filigree 1.5s cubic-bezier(.2,0,.15,1) both}
+.run.firing .fil .k{animation:filigreeGem 1.5s cubic-bezier(.2,0,.15,1) both}
+
+@keyframes runFlash{
+  0%{box-shadow:0 0 0 0 transparent}
+  15%{box-shadow:0 0 0 2px var(--glow),0 0 18px var(--glow-soft)}
+  50%{box-shadow:0 0 0 1px var(--glow-soft),0 0 9px transparent}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+@keyframes filigree{
+  0%{opacity:0}
+  14%{opacity:1}
+  52%{opacity:.8}
+  100%{opacity:0}
+}
+@keyframes filigreeGem{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(0deg) scale(.35)}
+  18%{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(1.18)}
+  40%{opacity:1;transform:translate(-50%,-50%) rotate(45deg) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(45deg) scale(1)}
+}
 .preset{background:none;border:1px solid var(--line);border-radius:2px;color:var(--muted);
   font:inherit;font-size:.84rem;padding:.35rem .7rem;cursor:pointer}
 .preset:hover{color:var(--ink);border-color:var(--bronze)}
@@ -279,7 +356,7 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
       </div>
     </div>
     <div class="row">
-      <button class="run" id="run">Run</button>
+      <button class="run" id="run"><span class="fil" aria-hidden="true"><i class="r t"></i><i class="k t"></i><i class="r b"></i><i class="k b"></i><svg class="s tl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s tr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s bl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s br" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg></span>Run</button>
       <button class="preset" data-q="{ sky { name stars { name label } } }">a query</button>
       <button class="preset" data-q="{ sky { brightest { name nope } } }">a field that is not there</button>
       <button class="preset" data-q="query ($id: ID!) { star(id: $id) { name label } }">a variable, with none supplied</button>
@@ -691,6 +768,18 @@ accept: application/json</span>
     }
   }
 
+  // the button lights its own filigree on every press — the runs, the hollow
+  // diamonds and the tiny four-point stars live for 1.5s and are gone
+  function fire(){
+    var b=document.getElementById("run");
+    if(!b) return;
+    b.classList.remove("firing");
+    void b.offsetWidth;
+    b.classList.add("firing");
+    clearTimeout(b._fire);
+    b._fire=setTimeout(function(){ b.classList.remove("firing"); },1500);
+  }
+
   // a document that did not validate is shown once, in red and bold, then released
   function flashErrors(){
     out.classList.add("flash-err");
@@ -701,6 +790,7 @@ accept: application/json</span>
   // lighting the same field in the answer and in the payload as it goes
   function walk(){
     if(!engine) return;
+    fire();
     if(walkTimer){ clearTimeout(walkTimer); walkTimer=null; }
     rest();
     if(lastBad){ flashErrors(); return; }
