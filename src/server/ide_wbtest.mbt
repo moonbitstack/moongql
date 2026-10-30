@@ -11,9 +11,9 @@ fn pinned(page : String) -> Bool {
 test "the gilded page is the default, with nothing fetched from a CDN" {
   assert_eq(gilded.kind == Gilded, true)
   assert_eq(gilded.is_off(), false)
-  assert_eq(gilded.title(), "moongql")
+  assert_eq(gilded.title(), "MoonQL")
   let page = gilded.html(endpoint="/api/graphql")
-  assert_eq(page.contains("<title>moongql</title>"), true)
+  assert_eq(page.contains("<title>MoonQL</title>"), true)
   assert_eq(page.contains("const ENDPOINT = '/api/graphql'"), true)
   assert_eq(page.contains("https://esm.sh"), false)
   assert_eq(page.contains("unpkg.com"), false)
@@ -101,7 +101,7 @@ test "off serves no IDE" {
 ///|
 /// The titles, so a page can be told apart in a browser tab.
 test "each IDE names itself" {
-  assert_eq(gilded.title(), "moongql")
+  assert_eq(gilded.title(), "MoonQL")
   assert_eq(graphiql.title(), "GraphiQL")
   assert_eq(apollo_sandbox.title(), "Apollo Sandbox")
   assert_eq(altair.title(), "Altair")

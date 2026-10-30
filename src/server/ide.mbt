@@ -79,7 +79,7 @@ pub fn Ide::is_off(self : Ide) -> Bool {
 /// The page title the IDE's HTML carries.
 pub fn Ide::title(self : Ide) -> String {
   match self.kind {
-    Gilded => "moongql"
+    Gilded => "MoonQL"
     GraphiQL => "GraphiQL"
     ApolloSandbox => "Apollo Sandbox"
     Altair => "Altair"
