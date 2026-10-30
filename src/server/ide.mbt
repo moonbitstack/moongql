@@ -1,9 +1,15 @@
 ///|
-/// The in-browser IDE a `GET` on the GraphQL endpoint serves. Three of them are
-/// on offer, each loaded from a CDN at a pinned version, and the whole thing can
-/// be turned off:
+/// The in-browser IDE a `GET` on the GraphQL endpoint serves. Four of them are on
+/// offer and the whole thing can be turned off:
 ///
-///   * **GraphiQL** (`graphiql`, the default) — the GraphQL Foundation's
+///   * **the gilded page** (`gilded`, the default) — the library's own IDE, built
+///     in `ide_gilded.mbt`. It is one HTML string with no CDN and no bundler: a
+///     document on the left, the answer on the right, a schema drawer, variables,
+///     and the same linking the documentation uses — a field lit on one side
+///     lights the same field on the other. An operation is sent when it is run,
+///     over the same `POST` every client uses.
+///
+///   * **GraphiQL** (`graphiql`) — the GraphQL Foundation's
 ///     reference IDE, MIT-licensed and the one kept current with the
 ///     specification. Version 5 carries the Monaco editor, a plugin system (the
 ///     explorer and history plugins are enabled here) and a fetcher that speaks
@@ -23,6 +29,7 @@
 ///|
 /// Which IDE the endpoint serves.
 pub(all) enum IdeKind {
+  Gilded
   GraphiQL
   ApolloSandbox
   Altair
@@ -40,7 +47,11 @@ pub(all) struct Ide {
 }
 
 ///|
-/// GraphiQL, the reference IDE — the default.
+/// The gilded page: the library's own IDE, and the default.
+pub let gilded : Ide = { kind: Gilded, subscription_endpoint: None, }
+
+///|
+/// GraphiQL, the reference IDE.
 pub let graphiql : Ide = { kind: GraphiQL, subscription_endpoint: None, }
 
 ///|
@@ -68,6 +79,7 @@ pub fn Ide::is_off(self : Ide) -> Bool {
 /// The page title the IDE's HTML carries.
 pub fn Ide::title(self : Ide) -> String {
   match self.kind {
+    Gilded => "moongql"
     GraphiQL => "GraphiQL"
     ApolloSandbox => "Apollo Sandbox"
     Altair => "Altair"
@@ -80,6 +92,7 @@ pub fn Ide::title(self : Ide) -> String {
 /// and answers the empty string.
 pub fn Ide::html(self : Ide, endpoint~ : String = "/graphql") -> String {
   match self.kind {
+    Gilded => gilded_page(endpoint)
     GraphiQL => graphiql_page(endpoint, self.subscription_endpoint)
     ApolloSandbox => apollo_page(endpoint)
     Altair => altair_page(endpoint, self.subscription_endpoint)

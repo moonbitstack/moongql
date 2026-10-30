@@ -10,7 +10,7 @@
 
 ///|
 /// The GraphiQL IDE page, wired to fetch against `endpoint`. This is what
-/// `graphiql` (the default `Ide`) serves; the page itself is built in `ide.mbt`.
+/// `gilded` (the default `Ide`) serves; the pages are built in `ide.mbt`.
 pub fn graphiql_html(endpoint~ : String = "/graphql") -> String {
   graphiql.html(endpoint~)
 }
@@ -346,7 +346,7 @@ fn post_request(
 /// A `POST` on `path` executes an `application/json` body — one request object, or
 /// an array of them for a batch. A `GET` with a `?query=` executes a query
 /// operation (only a query: a mutation there is a 405); a `GET` without one serves
-/// the IDE `ide` names (GraphiQL by default, or `off` for a 405). The response
+/// the IDE `ide` names (the gilded page by default, or `off` for a 405). The response
 /// media type is negotiated from `Accept`: a client asking for
 /// `application/graphql-response+json` gets it, and with it the status codes that
 /// separate a request error (400) from a field error (200); anything else gets
@@ -356,7 +356,7 @@ pub fn graphql_handler(
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
   path~ : String = "/graphql",
-  ide~ : Ide = graphiql,
+  ide~ : Ide = gilded,
 ) -> @moonasgi.Handler {
   fn(req : @moonasgi.Request) -> @moonasgi.Response {
     if req.path != path {
@@ -401,7 +401,7 @@ pub fn graphql_app(
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
   path~ : String = "/graphql",
-  ide~ : Ide = graphiql,
+  ide~ : Ide = gilded,
 ) -> @moonasgi.AsgiApp {
   @moonasgi.to_asgi(graphql_handler(schema, resolvers, path~, ide~))
 }

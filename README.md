@@ -327,15 +327,16 @@ let handler = @moongql.graphql_handler(schema, resolvers)      // path defaults 
 let app = @moongql.graphql_app(schema, resolvers)              // the same, lifted onto an AsgiApp
 ```
 
-A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — **GraphiQL** by default, or **Apollo Sandbox** / **Altair** through the `ide~` argument, or nothing at all with `off`:
+A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — the library's own **gilded page** by default, or **GraphiQL**, **Apollo Sandbox** and **Altair** through the `ide~` argument, or nothing at all with `off`:
 
 ```moonbit
-let app = @moongql.graphql_app(schema, resolvers)                    // GraphiQL
+let app = @moongql.graphql_app(schema, resolvers)                     // the gilded page
+let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.graphiql)
 let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.apollo_sandbox)
-let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.off)  // no IDE, GET without ?query= is 405
+let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.off)   // no IDE, GET without ?query= is 405
 ```
 
-Each IDE is a single HTML page whose CDN assets are pinned to an exact version, and each derives its subscription socket from the page's own location unless one is configured. The page is also available on its own: `@moongql.graphiql.html(endpoint="/graphql")`.
+The gilded page is built by the library — one HTML string, nothing fetched from a CDN: a document on the left, the answer on the right, a schema drawer, a variables box, and the field linking the documentation uses (a field lit on one side lights the same field on the other, and names its path and declared type). It speaks HTTP; subscriptions are GraphiQL's and Altair's, whose CDN assets are pinned to an exact version, and which derive their socket from the page's own location unless one is configured. Any page is available on its own: `@moongql.gilded.html(endpoint="/graphql")`.
 
 `Accept` picks the response media type. Ask for `application/graphql-response+json` and the status carries meaning — 400 for a request error, where the document never ran, and 200 for an operation that ran whatever its field errors say. Ask for `application/json`, or send no `Accept` at all, and every GraphQL response is a 200 with the errors in the body, which is what pre-specification clients expect. A client that accepts neither gets a 406.
 

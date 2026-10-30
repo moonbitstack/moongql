@@ -121,6 +121,7 @@ section{padding:5rem 0 0}
 .card p{color:var(--muted);font-size:.92rem;margin-top:.5rem;line-height:1.7}
 
 .ides{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:2.4rem}
+.ides .lead{grid-column:1/-1}
 .shot{padding:.55rem;position:relative}
 .shot img{display:block;width:100%;height:auto;border:1px solid var(--gold-hair);filter:saturate(.92) contrast(1.03)}
 .shot figcaption{display:flex;align-items:center;gap:.6rem;padding:.6rem .4rem .1rem;
@@ -384,19 +385,25 @@ section{padding:5rem 0 0}
         <h2>The IDE arrives at the same address.</h2>
         <div class="rule" aria-hidden="true"><i></i></div>
         <p class="lede" style="margin-inline:auto">A <code>GET</code> without a query returns a
-        page, not a 400. GraphiQL is the default; Apollo Sandbox and Altair are one argument
-        away, and so is serving nothing at all.</p>
+        page, not a 400. The library serves its own IDE by default — the same plate as this
+        site, with the document on the left and the answer on the right. GraphiQL, Apollo
+        Sandbox and Altair are one argument away, and so is serving nothing at all.</p>
       </div>
 
       <div class="ides">
+        <figure class="shot frame reveal lead" style="margin:0">
+          <img src="assets/ide-moongql.png" alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate">
+          <figcaption><i></i>moongql &middot; the default IDE</figcaption>
+          <span class="knot top"></span><span class="knot bottom"></span>
+        </figure>
         <figure class="shot frame reveal" style="margin:0">
           <img src="assets/ide-graphiql.png" alt="GraphiQL served by a moongql endpoint, with a query and its response">
-          <figcaption><i></i>GraphiQL &middot; the default</figcaption>
+          <figcaption><i></i>GraphiQL &middot; one argument away</figcaption>
           <span class="knot top"></span><span class="knot bottom"></span>
         </figure>
         <figure class="shot frame reveal" style="margin:0">
           <img src="assets/ide-apollo.png" alt="Apollo Sandbox embedded in the moongql endpoint page">
-          <figcaption><i></i>Apollo Sandbox</figcaption>
+          <figcaption><i></i>Apollo Sandbox &middot; one argument away</figcaption>
           <span class="knot top"></span><span class="knot bottom"></span>
         </figure>
       </div>

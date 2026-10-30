@@ -1,8 +1,9 @@
 ///|
 /// The IDE a `GET` on the GraphQL endpoint serves. `graphql_handler` takes an
-/// `Ide`: the default is GraphiQL, Apollo Sandbox and Altair are the other two,
-/// and `off` serves nothing (a `GET` without a `?query=` is a 405). Each page
-/// loads its IDE from a CDN at a pinned version and points it at the endpoint.
+/// `Ide`: the default is the library's own gilded page, and GraphiQL, Apollo
+/// Sandbox and Altair are the alternatives — `off` serves nothing (a `GET`
+/// without a `?query=` is a 405). The gilded page is a string the library
+/// builds; the other three load from a CDN at a pinned version.
 ///
 ///     moon run src/examples/25-graphql-ide
 #coverage.skip
@@ -22,7 +23,10 @@ fn main {
       _ => Json::null()
     }
   })
-  for ide in [@moongql.graphiql, @moongql.apollo_sandbox, @moongql.altair] {
+  for
+    ide in [
+      @moongql.gilded, @moongql.graphiql, @moongql.apollo_sandbox, @moongql.altair,
+    ] {
     let client = @moonasgi.TestClient::new(@moongql.graphql_handler(s, r, ide~))
     let page = client.get("/graphql")
     println(
@@ -31,7 +35,8 @@ fn main {
     println("  targets /graphql: \{page.text().contains("/graphql")}")
   }
   // The subscription socket: left unset each page derives one from the page's
-  // own location; set, it is spelled out.
+  // own location; set, it is spelled out. The gilded page speaks HTTP only, so
+  // this is GraphiQL's configuration.
   let wired : @moongql.Ide = {
     ..@moongql.graphiql,
     subscription_endpoint: Some("ws://localhost:12000/graphql"),

@@ -26,6 +26,8 @@ pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, 
 
 pub fn field_error(Error) -> @exec.ResolverError
 
+pub let gilded : @server.Ide
+
 pub let graphiql : @server.Ide
 
 pub fn graphiql_html(endpoint? : String) -> String

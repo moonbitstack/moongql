@@ -6,9 +6,28 @@ fn pinned(page : String) -> Bool {
 }
 
 ///|
-/// The default is GraphiQL, and its page fetches against the endpoint it is told
-/// about.
-test "the default IDE is GraphiQL, pointed at the endpoint" {
+/// The default IDE is the library's own page: one string, no CDN, the endpoint
+/// baked in, and the same field linking the documentation has.
+test "the gilded page is the default, with nothing fetched from a CDN" {
+  assert_eq(gilded.kind == Gilded, true)
+  assert_eq(gilded.is_off(), false)
+  assert_eq(gilded.title(), "moongql")
+  let page = gilded.html(endpoint="/api/graphql")
+  assert_eq(page.contains("<title>moongql</title>"), true)
+  assert_eq(page.contains("const ENDPOINT = '/api/graphql'"), true)
+  assert_eq(page.contains("https://esm.sh"), false)
+  assert_eq(page.contains("unpkg.com"), false)
+  // the linking, the annotation and the schema drawer are all in the page
+  assert_eq(page.contains("data-focus"), true)
+  assert_eq(page.contains("data-ann"), true)
+  assert_eq(page.contains("__schema"), true)
+  assert_eq(page.contains("fetch(ENDPOINT"), true)
+}
+
+///|
+/// GraphiQL is still served on request, and its page fetches against the
+/// endpoint it is told about.
+test "the GraphiQL page points its fetcher at the endpoint" {
   assert_eq(graphiql.kind == GraphiQL, true)
   assert_eq(graphiql.is_off(), false)
   let page = graphiql.html(endpoint="/api/graphql")
@@ -80,6 +99,7 @@ test "off serves no IDE" {
 ///|
 /// The titles, so a page can be told apart in a browser tab.
 test "each IDE names itself" {
+  assert_eq(gilded.title(), "moongql")
   assert_eq(graphiql.title(), "GraphiQL")
   assert_eq(apollo_sandbox.title(), "Apollo Sandbox")
   assert_eq(altair.title(), "Altair")
@@ -89,7 +109,7 @@ test "each IDE names itself" {
 /// The endpoint serves whichever IDE it is given, as HTML.
 test "the endpoint serves the configured IDE" {
   let (s, r) = server_schema()
-  for ide in [graphiql, apollo_sandbox, altair] {
+  for ide in [gilded, graphiql, apollo_sandbox, altair] {
     let client = @moonasgi.TestClient::new(graphql_handler(s, r, ide~))
     let resp = client.get("/graphql")
     assert_eq(resp.status, 200)

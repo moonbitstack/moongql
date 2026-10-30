@@ -24,7 +24,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3.5' y='3.5' width='25' height='25' fill='none' stroke='%23c9a84c' stroke-width='1'/%3E%3Crect x='7.5' y='7.5' width='17' height='17' fill='none' stroke='%23c9a84c' stroke-width='.6' opacity='.6'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23e9e3d4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/theme.css">
 <style>
 *{box-sizing:border-box}
@@ -33,21 +33,7 @@ body{margin:0;color:var(--ink);font-family:var(--sans);font-size:16px;line-heigh
   background:var(--dome-1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:var(--query);text-decoration:none}
 a:hover{text-decoration:underline}
-.wrap{max-width:1080px;margin:0 auto;padding:0 1.4rem}
 
-header.bar{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
-  background:color-mix(in oklab,var(--dome-1) 80%,transparent);
-  border-bottom:1px solid var(--line)}
-.bar .wrap{display:flex;align-items:center;gap:1rem;height:60px}
-.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--caps);font-weight:500;
-  font-size:.9rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);text-decoration:none}
-.bar nav{margin-left:auto;display:flex;align-items:center;gap:1.2rem}
-.bar nav a{color:var(--muted);font-size:.9rem}
-.bar nav a:hover{color:var(--ink);text-decoration:none}
-.bar nav a[aria-current]{color:var(--ink)}
-.theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
-  padding:.35rem .6rem;font:inherit;font-size:.8rem;cursor:pointer}
-.theme:hover{border-color:var(--bronze);color:var(--ink)}
 
 /* ---------- page ---------- */
 main.wrap{padding:5rem 1.5rem 4rem}
@@ -63,31 +49,65 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 
 /* ---------- playground ---------- */
 .play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-top:1.8rem}
-.pane{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);
-  overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
-.pane .head{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;
-  border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.74rem;
+.pane{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);overflow:hidden;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.pane .head{display:flex;align-items:center;gap:.55rem;padding:.55rem .9rem;min-height:2.4rem;
+  border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.72rem;
   letter-spacing:.16em;text-transform:uppercase;color:var(--bronze-dim)}
-.pane .head .dot{width:7px;height:7px;border-radius:50%;background:var(--query)}
-.pane.out .head .dot{background:var(--response-mark)}
-#editor{display:block;width:100%;min-height:17rem;resize:vertical;border:0;outline:none;
-  background:transparent;color:var(--ink);font-family:var(--mono);font-size:.9rem;
-  line-height:1.75;padding:1rem 1.1rem}
-#out{margin:0;padding:1rem 1.1rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
+.pane .head .dot{width:6px;height:6px;background:var(--gold);transform:rotate(45deg);flex:none}
+.pane.out .head .dot{background:var(--azure)}
+.pane .head .crumb{margin-left:auto;font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;
+  text-transform:none;color:var(--azure);opacity:0;transition:opacity .16s;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;max-width:62%}
+.play[data-focus] .pane .head .crumb{opacity:1}
+
+/* the editor is a textarea with a painted copy behind it, so a field can be lit */
+.code{position:relative;flex:1;min-height:17rem}
+.code .mirror,.code textarea{margin:0;border:0;padding:1rem 1.1rem;font-family:var(--mono);
+  font-size:.9rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
+.code .mirror{display:block;min-height:17rem;color:var(--ink);pointer-events:none}
+.code textarea{position:absolute;inset:0;width:100%;height:100%;resize:none;background:transparent;
+  color:transparent;caret-color:var(--ink);outline:none;overflow:hidden}
+.code textarea::selection{background:color-mix(in oklab,var(--azure) 32%,transparent)}
+.code .f{transition:opacity .16s,background .16s}
+.code .p{color:var(--faint)} .code .v{color:var(--azure)}
+.code .n{color:var(--gold)} .code .c{color:var(--faint);font-style:italic}
+
+#out{margin:0;padding:1rem 1.1rem 1rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
   line-height:1.7;white-space:pre;color:var(--ink);max-height:26rem;min-height:17rem}
-#out .k{color:var(--query)} #out .s{color:var(--graph)} #out .n{color:var(--response-mark)}
-#out .e{color:#e8837a} html[data-theme=light] #out .e{color:#b23b2e}
+#out .ln{position:relative;display:block;padding-left:calc(var(--d,0) * 1.05em + 1rem);
+  border-radius:2px;transition:opacity .16s,background .16s}
+#out .k{color:var(--azure)} #out .s{color:var(--gold-hi)} #out .n{color:var(--gold)}
+#out .q{color:var(--muted);font-style:italic} #out .p{color:var(--faint)}
+#out .ln.hot::before,#out .ln.anc::before{content:"";position:absolute;left:.2rem;top:.15em;
+  bottom:.15em;width:1px;background:var(--gold-hi)}
+#out .ln.anc::before{background:var(--gold-hair)}
+#out .ln.hot::after{content:attr(data-ann);position:absolute;right:0;top:50%;
+  transform:translateY(-50%);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--azure);background:var(--panel-2);border:1px solid var(--gold-hair);
+  border-radius:2px;padding:.04rem .4rem;white-space:nowrap}
+#out .ln.hot[data-ann=""]::after{content:none}
+.play[data-focus] #out .ln{opacity:.3}
+.play[data-focus] #out .ln.anc{opacity:.62}
+.play[data-focus] #out .ln.hot{opacity:1;background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.play[data-focus] .code .f{opacity:.3}
+.play[data-focus] .code .f.hot{opacity:1;color:#fff;
+  background:color-mix(in oklab,var(--azure) 34%,transparent);
+  box-shadow:0 0 0 1px color-mix(in oklab,var(--azure) 50%,transparent);border-radius:2px}
+html[data-theme=light] .play[data-focus] .code .f.hot{color:var(--ink);
+  background:color-mix(in oklab,var(--azure) 20%,transparent)}
+
 .row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
-.run{background:linear-gradient(180deg,color-mix(in oklab,var(--query) 26%,transparent),transparent);
-  border:1px solid color-mix(in oklab,var(--query) 45%,var(--line));color:var(--ink);
-  border-radius:10px;padding:.55rem 1.05rem;font:inherit;font-weight:500;font-size:.94rem;cursor:pointer}
-.run:hover{border-color:var(--query)}
-.preset{background:none;border:1px solid var(--line);border-radius:8px;color:var(--muted);
+.run{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent);
+  border:1px solid color-mix(in oklab,var(--gold) 45%,var(--line));color:var(--ink);
+  border-radius:2px;padding:.55rem 1.05rem;font:inherit;font-weight:500;font-size:.94rem;cursor:pointer}
+.run:hover{border-color:var(--gold)}
+.preset{background:none;border:1px solid var(--line);border-radius:2px;color:var(--muted);
   font:inherit;font-size:.84rem;padding:.35rem .7rem;cursor:pointer}
 .preset:hover{color:var(--ink);border-color:var(--bronze)}
 .state{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-left:auto}
-.state.ok{color:var(--graph)} .state.bad{color:#e8837a}
-kbd{font-family:var(--mono);font-size:.82em;border:1px solid var(--line);border-radius:5px;
+.state.ok{color:var(--gold-hi)} .state.bad{color:#e8837a}
+kbd{font-family:var(--mono);font-size:.82em;border:1px solid var(--line);border-radius:2px;
   padding:.05rem .3rem}
 
 /* ---------- schema browser ---------- */
@@ -169,15 +189,10 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
 
 @media (width <= 860px){
   .play{grid-template-columns:minmax(0,1fr)}
+  #out{white-space:pre-wrap;overflow-wrap:anywhere}
   .exchange{grid-template-columns:minmax(0,1fr)}
   .picks{flex-direction:row;flex-wrap:wrap}
   .pick{border-left-width:1px;border-radius:9px}
-  .bar .wrap{height:auto;flex-wrap:wrap;padding-top:.55rem;padding-bottom:.55rem;
-    row-gap:.45rem;position:relative}
-  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;
-    gap:.5rem .95rem;font-size:.86rem}
-  .theme{position:absolute;top:.55rem;right:1.4rem}
-  .brand{max-width:calc(100% - 5rem)}
 }
 </style>
 </head>
@@ -209,21 +224,26 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     <h2>Write a query. Watch the graph answer.</h2>
     <p>The editor runs the library itself, compiled to JavaScript and loaded with this page —
     the same lexer, parser, validator and executor the server uses. Nothing here is a recorded
-    response: press <kbd>Run</kbd> and the JSON is computed in front of you.</p>
+    response: type, and the answer is recomputed as you go. Run the pointer over a field on
+    either side — the other side lights the same field, dims everything else, and names the path
+    with the type the schema declares for it.</p>
 
-    <div class="play">
+    <div class="play" id="playground">
       <div class="pane">
         <div class="head"><span class="dot"></span>Query</div>
-        <textarea id="editor" spellcheck="false" aria-label="GraphQL query">{
+        <div class="code">
+          <pre class="mirror" id="mirror" aria-hidden="true"></pre>
+          <textarea id="editor" spellcheck="false" aria-label="GraphQL query" autocapitalize="off" autocomplete="off" autocorrect="off">{
   sky {
     name
     brightest { name label }
     stars { name magnitude }
   }
 }</textarea>
+        </div>
       </div>
       <div class="pane out">
-        <div class="head"><span class="dot"></span>Response</div>
+        <div class="head"><span class="dot"></span>Response<span class="crumb" id="path"></span></div>
         <pre id="out" aria-live="polite">loading the engine…</pre>
       </div>
     </div>
@@ -251,19 +271,32 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
   </section>
 
   <section id="ides" class="tabhost">
-    <div class="kicker">Three windows, one endpoint</div>
+    <div class="kicker">Four windows, one endpoint</div>
     <h2>Pick the IDE the endpoint serves.</h2>
     <p>Each is a single page built here, not a redirect: the endpoint returns it on a
     <code>GET</code> without a <code>?query=</code>, with the endpoint path baked in.
-    The subscription socket is derived from the page's own location unless you name one.</p>
+    The first is the library's own, and the default; the rest load a third-party IDE
+    from a pinned CDN. The subscription socket is derived from the page's own location
+    unless you name one.</p>
 
     <div class="tabs" role="tablist" id="ide-tabs">
-      <button class="tab" role="tab" aria-selected="true" data-panel="ide-graphiql">GraphiQL</button>
+      <button class="tab" role="tab" aria-selected="true" data-panel="ide-gilded">moongql</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="ide-graphiql">GraphiQL</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="ide-apollo">Apollo Sandbox</button>
       <button class="tab" role="tab" aria-selected="false" data-panel="ide-altair">Altair</button>
     </div>
 
-    <div class="panel" id="ide-graphiql" data-open>
+    <div class="panel" id="ide-gilded" data-open>
+      <div class="shot"><img src="assets/ide-moongql.png" alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate"></div>
+      <div class="facts"><span><b>200</b> text/html</span><span><b>23</b> kB, one string</span><span>nothing from a CDN</span><span>default</span></div>
+      <p class="note">Built by the library: the page is an HTML string the endpoint returns,
+      with the endpoint path baked in. A document on the left, the answer on the right, a
+      schema drawer, variables, and the same linking the playground above has — a field lit
+      on one side lights the same field on the other and names its path and declared type.
+      It speaks HTTP; subscriptions still belong to GraphiQL or Altair.</p>
+    </div>
+
+    <div class="panel" id="ide-graphiql">
       <div class="shot"><img src="assets/ide-graphiql.png" alt="GraphiQL, served by a moongql endpoint, with a query in the editor and its response beside it"></div>
       <div class="facts"><span><b>200</b> text/html</span><span><b>2396</b> bytes</span><span>fetches <b>/graphql</b></span><span>default</span></div>
       <p class="note">GraphiQL 5.4.0 with the explorer and history plugins, loaded from a pinned
@@ -431,20 +464,166 @@ accept: application/json</span>
 
   // tabs: one listener per host, so the markup stays a plain list of buttons
   // ---------- the playground: the library, compiled to JS, runs here ----------
+  var play=document.getElementById("playground");
   var out=document.getElementById("out");
   var editor=document.getElementById("editor");
+  var mirror=document.getElementById("mirror");
   var state=document.getElementById("state");
+  var crumb=document.getElementById("path");
   var engine=globalThis.moongqlRun;
 
-  function escapeHtml(t){
-    return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function esc(t){
+    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
-  // enough colour to read a response: keys, strings, numbers
-  function paintJson(text){
-    return escapeHtml(text)
-      .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g,'<span class="k">$1</span>$2')
-      .replace(/:\s*("(?:[^"\\]|\\.)*")/g,': <span class="s">$1</span>')
-      .replace(/:\s*(-?\d+(?:\.\d+)?)/g,': <span class="n">$1</span>');
+
+  // ---- the query, painted behind the textarea so a field can be lit ----
+  function paintQuery(text){
+    var res="",i=0,n=text.length,j,c;
+    while(i<n){
+      c=text[i];
+      if(c==='\"'){
+        j=i+1;
+        while(j<n){ if(text[j]==="\\"){j+=2}else if(text[j]==='\"'){j++;break}else{j++} }
+        res+='<span class="s">'+esc(text.slice(i,j))+"</span>"; i=j; continue;
+      }
+      if(c==="#"){
+        j=i; while(j<n&&text[j]!=="\n")j++;
+        res+='<span class="c">'+esc(text.slice(i,j))+"</span>"; i=j; continue;
+      }
+      if(/[A-Za-z_]/.test(c)){
+        j=i; while(j<n&&/[A-Za-z0-9_]/.test(text[j]))j++;
+        var w=text.slice(i,j);
+        res+='<span class="f" data-f="'+esc(w)+'">'+esc(w)+"</span>"; i=j; continue;
+      }
+      if(c==="$"){
+        j=i+1; while(j<n&&/[A-Za-z0-9_]/.test(text[j]))j++;
+        res+='<span class="v">'+esc(text.slice(i,j))+"</span>"; i=j; continue;
+      }
+      if(/[0-9]/.test(c)){
+        j=i; while(j<n&&/[0-9.eE+-]/.test(text[j]))j++;
+        res+='<span class="n">'+esc(text.slice(i,j))+"</span>"; i=j; continue;
+      }
+      if("{}()[]:,=".indexOf(c)>=0){ res+='<span class="p">'+esc(c)+"</span>"; i++; continue; }
+      res+=esc(c); i++;
+    }
+    mirror.innerHTML=res+"\n";
+    rectsDirty=true;
+  }
+
+  // ---- the response, drawn as lines that know their path ----
+  var schemaRoot="Query", schemaTypes={}, linesByPath={};
+
+  function declaredType(path){
+    if(!path||path.indexOf("data.")!==0) return "";
+    var segs=path.slice(5).split("."), cur=schemaRoot, str="";
+    for(var i=0;i<segs.length;i++){
+      var seg=segs[i].replace(/\[\d+\]/g,"");
+      var fields=schemaTypes[cur];
+      if(!fields||!fields[seg]) return str;
+      str=fields[seg];
+      cur=str.replace(/[[\]!]/g,"");
+    }
+    return str;
+  }
+
+  function leaf(v){
+    if(v===null) return '<span class="q">null</span>';
+    if(typeof v==="string") return '<span class="s">"'+esc(v)+'"</span>';
+    if(typeof v==="number") return '<span class="n">'+v+"</span>";
+    if(typeof v==="boolean") return '<span class="q">'+v+"</span>";
+    return esc(String(v));
+  }
+
+  function line(path,field,depth,html){
+    return '<div class="ln" data-path="'+esc(path)+'" data-f="'+esc(field)+'" data-ann="'+
+           esc(declaredType(path))+'" style="--d:'+depth+'">'+html+"</div>";
+  }
+
+  // the indent is padding (--d), not spaces, so a line can own a left margin
+  function renderJson(root){
+    var rows=[];
+    (function walk(v,key,path,depth,tail,carry){
+      var name=key===null?carry:key;
+      var at=path?(key===null?path:path+"."+key):(key||"");
+      var lead=key===null?"":'<span class="k">"'+esc(key)+'"</span><span class="p">:</span> ';
+      if(v===null||typeof v!=="object"){
+        rows.push(line(at,name,depth,lead+leaf(v)+tail)); return;
+      }
+      if(Array.isArray(v)){
+        if(!v.length){ rows.push(line(at,name,depth,lead+'<span class="p">[]</span>'+tail)); return; }
+        rows.push(line(at,name,depth,lead+'<span class="p">[</span>'));
+        for(var i=0;i<v.length;i++)
+          walk(v[i],null,at+"["+i+"]",depth+1,i<v.length-1?'<span class="p">,</span>':"",name);
+        rows.push(line(at,name,depth,'<span class="p">]</span>'+tail));
+        return;
+      }
+      var keys=Object.keys(v);
+      if(!keys.length){ rows.push(line(at,name,depth,lead+'<span class="p">{}</span>'+tail)); return; }
+      rows.push(line(at,name,depth,lead+'<span class="p">{</span>'));
+      for(var j=0;j<keys.length;j++)
+        walk(v[keys[j]],keys[j],at,depth+1,j<keys.length-1?'<span class="p">,</span>':"",name);
+      rows.push(line(at,name,depth,'<span class="p">}</span>'+tail));
+    })(root,null,"",0,"","");
+    return rows.join("");
+  }
+
+  // ---- linking a field on one side to the same field on the other ----
+  var rects=[], rectsDirty=true, lastFocus=null;
+
+  function clearFocus(){
+    lastFocus=null;
+    play.removeAttribute("data-focus");
+    if(crumb) crumb.textContent="";
+    mirror.querySelectorAll(".f.hot").forEach(function(el){el.classList.remove("hot")});
+    out.querySelectorAll(".ln.hot,.ln.anc").forEach(function(el){el.classList.remove("hot","anc")});
+  }
+
+  function ancestors(path){
+    var parts=path.split("."), res=[];
+    for(var i=1;i<parts.length;i++) res.push(parts.slice(0,i).join("."));
+    return res;
+  }
+
+  function showPath(p){ return p.replace(/^data\./,""); }
+
+  function applyFocus(name,path){
+    if(!name){ clearFocus(); return; }
+    lastFocus={name:name,path:path||null};
+    play.setAttribute("data-focus",name);
+    mirror.querySelectorAll(".f").forEach(function(el){
+      el.classList.toggle("hot", el.getAttribute("data-f")===name);
+    });
+    var lines=out.querySelectorAll(".ln");
+    for(var i=0;i<lines.length;i++) lines[i].classList.remove("hot","anc");
+    var hits=[];
+    if(path&&linesByPath[path]) hits=linesByPath[path].slice();
+    else for(var k=0;k<lines.length;k++) if(lines[k].getAttribute("data-f")===name) hits.push(lines[k]);
+    if(!hits.length){ play.removeAttribute("data-focus"); if(crumb) crumb.textContent=""; return; }
+    hits.forEach(function(l){
+      l.classList.add("hot");
+      ancestors(l.getAttribute("data-path")).forEach(function(p){
+        var a=linesByPath[p];
+        if(a) a.forEach(function(el){ if(hits.indexOf(el)<0) el.classList.add("anc"); });
+      });
+    });
+    if(crumb) crumb.textContent=(hits.length>1?hits.length+" lines · ":"")+
+      showPath(path||hits[0].getAttribute("data-path"));
+  }
+
+  function cacheRects(){
+    rects=[];
+    mirror.querySelectorAll(".f").forEach(function(el){
+      rects.push({el:el,r:el.getBoundingClientRect()});
+    });
+    rectsDirty=false;
+  }
+
+  function tokenAt(x,y){
+    for(var i=0;i<rects.length;i++){
+      var r=rects[i].r;
+      if(x>=r.left-1&&x<=r.right+1&&y>=r.top-1&&y<=r.bottom+1) return rects[i].el;
+    }
+    return null;
   }
 
   function execute(){
@@ -461,21 +640,54 @@ accept: application/json</span>
     var bad=parsed.errors&&parsed.errors.length>0;
     state.textContent=(bad?"errors":"ok")+" · "+ms+" ms";
     state.className="state "+(bad?"bad":"ok");
-    out.innerHTML=paintJson(JSON.stringify(parsed,null,2));
+    out.innerHTML=renderJson(parsed);
+    linesByPath={};
+    out.querySelectorAll(".ln").forEach(function(l){
+      var p=l.getAttribute("data-path");
+      if(!p) return;
+      (linesByPath[p]||(linesByPath[p]=[])).push(l);
+    });
+    if(lastFocus) applyFocus(lastFocus.name,lastFocus.path);
   }
 
   var runBtn=document.getElementById("run");
   if(runBtn)runBtn.addEventListener("click",execute);
   document.querySelectorAll(".preset").forEach(function(b){
-    b.addEventListener("click",function(){editor.value=b.getAttribute("data-q");execute();});
+    b.addEventListener("click",function(){
+      editor.value=b.getAttribute("data-q");
+      paintQuery(editor.value); execute();
+    });
   });
-  if(editor)editor.addEventListener("keydown",function(ev){
-    if((ev.metaKey||ev.ctrlKey)&&ev.key==="Enter"){ev.preventDefault();execute();}
-  });
+  if(editor){
+    editor.addEventListener("keydown",function(ev){
+      if((ev.metaKey||ev.ctrlKey)&&ev.key==="Enter"){ev.preventDefault();execute();}
+    });
+    if(mirror&&play&&out){
+      editor.addEventListener("mousemove",function(ev){
+        if(rectsDirty)cacheRects();
+        var el=tokenAt(ev.clientX,ev.clientY);
+        if(el) applyFocus(el.getAttribute("data-f"),null); else clearFocus();
+      });
+      editor.addEventListener("mouseleave",clearFocus);
+      out.addEventListener("mouseover",function(ev){
+        var l=ev.target.closest(".ln");
+        if(l) applyFocus(l.getAttribute("data-f"), l.getAttribute("data-path"));
+      });
+      out.addEventListener("mouseleave",clearFocus);
+      addEventListener("resize",function(){rectsDirty=true},{passive:true});
+      addEventListener("scroll",function(){rectsDirty=true},{passive:true});
+    }
+    var timer=null;
+    editor.addEventListener("input",function(){
+      paintQuery(editor.value);
+      clearTimeout(timer);
+      timer=setTimeout(execute,280);
+    });
+  }
 
   // ---------- the schema browser: one introspection query, rendered ----------
   var cards=document.getElementById("schema-cards");
-  var INTRO="{ __schema { types { name kind fields { name type { kind name ofType { kind name ofType { kind name } } } } } } }";
+  var INTRO="{ __schema { types { name kind fields { name type { kind name ofType { kind name ofType { kind name ofType { kind name } } } } } } } }";
 
   function typeName(t){
     if(!t)return "?";
@@ -491,6 +703,14 @@ accept: application/json</span>
     try{res=JSON.parse(engine(INTRO))}catch(e){cards.textContent=String(e);return}
     if(!res.data||!res.data.__schema){cards.textContent="introspection returned no schema";return}
     var types=res.data.__schema.types.filter(function(t){return t.name.indexOf("__")!==0});
+    // the same map answers "what type is this field" while the playground links a
+    // response line back to the schema
+    types.forEach(function(t){
+      if(!t.fields)return;
+      var f={};
+      t.fields.forEach(function(x){f[x.name]=typeName(x.type)});
+      schemaTypes[t.name]=f;
+    });
     cards.innerHTML=types.map(function(t){
       var fields=(t.fields||[]).map(function(f){
         return "<li><b>"+f.name+"</b>: "+typeName(f.type)+"</li>";
@@ -500,8 +720,9 @@ accept: application/json</span>
     }).join("");
   }
 
-  execute();
+  if(editor&&mirror) paintQuery(editor.value);
   buildSchema();
+  execute();
 
   document.querySelectorAll(".tabhost").forEach(function(host){
     host.addEventListener("click", function(ev){
