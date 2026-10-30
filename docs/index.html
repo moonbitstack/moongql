@@ -101,7 +101,7 @@
 .caption{font-family:var(--caps);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;
   color:color-mix(in oklab,var(--gold) 58%,var(--faint));text-align:center;margin:.55rem 0 0;
   line-height:1.9;max-width:100%}
-.caption i{display:block;width:58px;height:1px;margin:0 auto .6rem;
+.caption i{display:block;width:58px;height:1px;margin:.75rem auto 0;
   background:repeating-linear-gradient(90deg,var(--gold-dim) 0 3px,transparent 3px 7px)}
 
 .chamber .req{margin-bottom:.9rem}
@@ -294,7 +294,7 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
                 <path class="wire" id="w-qu" pathLength="1" d="M115 63 L115 139"/>
                 <path class="wire" id="w-up" pathLength="1" d="M104 175 C 94 200, 82 228, 73 254"/>
                 <path class="wire dim" id="w-up2" pathLength="1" d="M126 175 L155 254"/>
-                <path class="wire dim" pathLength="1" d="M134 56 C 222 118, 220 220, 180 262"/>
+                <path class="wire dim" pathLength="1" d="M130 55 C 206 104, 206 198, 176 252"/>
                 <path class="wire" id="w-pt" pathLength="1" d="M66 290 L66 330"/>
                 <g class="node" id="n-query" data-f="query">
                   <circle cx="115" cy="46" r="17"/><text x="115" y="47">Query</text>
@@ -312,7 +312,7 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
                   <circle cx="66" cy="349" r="17"/><text x="66" y="350">title</text>
                 </g>
               </svg>
-              <p class="caption"><i></i>ask once &middot;<br>walk every edge</p>
+              <p class="caption">ask once<br>walk every edge<i></i></p>
             </div>
 
             <div class="chamber">
@@ -326,12 +326,16 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
   <span class="p">}</span>
 <span class="p">}</span></pre>
               <div class="thread"></div>
-<pre class="res"><span class="ln" data-f="user"><span class="p">{</span><span class="s">"data"</span><span class="p">:</span> <span class="p">{</span></span>
-<span class="ln" data-f="user">  <span class="s">"user"</span><span class="p">:</span> <span class="p">{</span></span>
-<span class="ln" data-f="name">    <span class="s">"name"</span><span class="p">:</span> <span class="v">"Ada"</span><span class="p">,</span></span>
-<span class="ln" data-f="posts">    <span class="s">"posts"</span><span class="p">:</span> <span class="p">[</span></span>
-<span class="ln" data-f="title">      <span class="p">{</span><span class="s">"title"</span><span class="p">:</span> <span class="v">"On graphs"</span><span class="p">}</span></span>
-<span class="ln">    <span class="p">]</span> <span class="p">}</span> <span class="p">}</span> <span class="p">}</span></span></pre>
+<pre class="res"><span class="ln"><span class="p">{</span></span>
+<span class="ln" data-f="user">  <span class="s">"data"</span><span class="p">:</span> <span class="p">{</span></span>
+<span class="ln" data-f="user">    <span class="s">"user"</span><span class="p">:</span> <span class="p">{</span></span>
+<span class="ln" data-f="name">      <span class="s">"name"</span><span class="p">:</span> <span class="v">"Ada"</span><span class="p">,</span></span>
+<span class="ln" data-f="posts">      <span class="s">"posts"</span><span class="p">:</span> <span class="p">[</span></span>
+<span class="ln" data-f="title">        <span class="p">{</span><span class="s">"title"</span><span class="p">:</span> <span class="v">"On graphs"</span><span class="p">}</span></span>
+<span class="ln" data-f="posts">      <span class="p">]</span></span>
+<span class="ln" data-f="user">    <span class="p">}</span></span>
+<span class="ln" data-f="user">  <span class="p">}</span></span>
+<span class="ln"><span class="p">}</span></span></pre>
             </div>
           </div>
         </div>
