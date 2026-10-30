@@ -165,7 +165,9 @@ html[data-theme=light] .play[data-focus] .code .f.hot{color:var(--ink);
   border:1px solid color-mix(in oklab,var(--gold) 45%,var(--line));color:var(--ink);
   border-radius:2px;padding:.55rem 1.25rem;font:inherit;font-weight:500;font-size:.94rem;
   cursor:pointer;transition:border-color .25s,color .25s}
-html[data-theme=light] .run{--fil:#8a6a2a;--glow:rgba(138,106,42,.5);--glow-soft:rgba(138,106,42,.26)}
+html[data-theme=light] .run{--fil:#8a6a2a;--glow:rgba(138,106,42,.5);--glow-soft:rgba(138,106,42,.26);
+  /* on parchment the warm end belongs at the foot, or the button reads as pressed */
+  background:linear-gradient(0deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent)}
 .run:hover{border-color:var(--gold);color:#fff}
 html[data-theme=light] .run:hover{color:var(--ink)}
 .run::before{content:"";position:absolute;inset:3px;border:1px solid var(--gold-hair);

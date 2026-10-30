@@ -165,6 +165,9 @@ html[data-theme=light] ::selection{background:color-mix(in oklab,var(--gold) 22%
 .btn:hover::after{border-color:var(--gold-hair)}
 .btn.solid{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 16%,transparent),transparent);
   border-color:var(--gold)}
+/* the day plate is lit from above, so the warm end of the wash sits at the foot */
+html[data-theme=light] .btn.solid{
+  background:linear-gradient(0deg,color-mix(in oklab,var(--gold) 16%,transparent),transparent)}
 /* the arrow is drawn, not typed: a glyph sits on the font's maths axis and reads
    high next to letter-spaced capitals, so the chevron is a box we can centre */
 .btn .arrow{display:inline-flex;align-items:center;justify-content:center;

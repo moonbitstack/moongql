@@ -267,6 +267,8 @@ fn gilded_head() -> String {
     #|      .hd{color:rgba(133,101,39,.85)}
     #|      .vars label{color:rgba(133,101,39,.72)}
     #|      .s{color:#7a5a1f}
+    #|      /* the warm end of Run's wash belongs at the foot on the day plate */
+    #|      .btn.run{background:linear-gradient(0deg,rgba(133,101,39,.16),transparent)}
     #|      .play[data-focus] .code .f.hot{color:var(--ink);background:rgba(47,110,168,.18)}
     #|      .play[data-focus] #out .ln.hot{background:rgba(133,101,39,.10)}
     #|      /* on parchment the dimmed rows need a little more ink than at night */
