@@ -372,11 +372,17 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
         <div class="head"><span class="dot"></span>Query</div>
         <div class="code">
           <pre class="mirror" id="mirror" aria-hidden="true"></pre>
-          <textarea id="editor" spellcheck="false" aria-label="GraphQL query" autocapitalize="off" autocomplete="off" autocorrect="off">{
+          <textarea id="editor" spellcheck="false" aria-label="GraphQL query" autocapitalize="off" autocomplete="off" autocorrect="off">query {
   sky {
     name
-    brightest { name label }
-    stars { name magnitude }
+    brightest {
+      name
+      label
+    }
+    stars {
+      name
+      magnitude
+    }
   }
 }</textarea>
         </div>
@@ -400,9 +406,9 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     </div>
     <div class="row">
       <button class="run" id="run"><span class="fil" aria-hidden="true"><i class="r t"></i><i class="k t"></i><i class="r b"></i><i class="k b"></i><svg class="s tl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s tr" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s bl" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg><svg class="s br" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .9 7.1 4.9 11.1 6 7.1 7.1 6 11.1 4.9 7.1.9 6 4.9 4.9Z"/></svg></span>Run</button>
-      <button class="preset" data-q="{ sky { name stars { name label } } }">a query</button>
-      <button class="preset" data-q="{ sky { brightest { name nope } } }">a field that is not there</button>
-      <button class="preset" data-q="query ($id: ID!) { star(id: $id) { name label } }">a variable, with none supplied</button>
+      <button class="preset" data-q="{&#10;  sky {&#10;    name&#10;    stars {&#10;      name&#10;      label&#10;    }&#10;  }&#10;}">a query</button>
+      <button class="preset" data-q="{&#10;  sky {&#10;    brightest {&#10;      name&#10;      nope&#10;    }&#10;  }&#10;}">a field that is not there</button>
+      <button class="preset" data-q="query ($id: ID!) {&#10;  star(id: $id) {&#10;    name&#10;    label&#10;  }&#10;}">a variable, with none supplied</button>
       <span class="state" id="state">ready</span>
     </div>
     <p class="note">The right-hand pane opens on the payload the endpoint returned; unfold the strip
