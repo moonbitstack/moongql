@@ -136,6 +136,8 @@ section{padding:5rem 0 0}
 .ides{display:grid;grid-template-columns:.84fr 1.34fr .84fr;gap:1.35rem;align-items:end;
   margin-top:2.4rem}
 .ides .lead figcaption{justify-content:center}
+/* the IDE screenshot carries its own nested frame, so the card drops its inner line */
+.ides .lead::before{opacity:0}
 /* the two threads that tie the wings to the middle plate */
 .ides .thread{position:absolute;top:14%;bottom:14%;width:1px;
   background:repeating-linear-gradient(180deg,var(--gold-dim) 0 4px,transparent 4px 9px);
@@ -147,7 +149,7 @@ section{padding:5rem 0 0}
 .ides .thread.r{right:-.72rem}
 .shot{padding:.55rem;position:relative}
 html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
-.shot img{display:block;width:100%;height:auto;border:1px solid var(--gold-hair);filter:saturate(.92) contrast(1.03)}
+.shot img{display:block;width:100%;height:auto;filter:saturate(.92) contrast(1.03)}
 .shot figcaption{display:flex;align-items:center;gap:.6rem;padding:.6rem .4rem .1rem;
   font-family:var(--caps);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
 .shot figcaption i{width:5px;height:5px;background:var(--gold);transform:rotate(45deg);flex:none}
@@ -326,6 +328,7 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
 
       <div class="acts">
         <div class="act frame reveal">
+          <i class="trim" aria-hidden="true"></i>
           <div class="num">I &middot; interconnection</div>
           <h3>Every type is a node</h3>
           <p>A field that returns <code>User</code> is an edge to <code>User</code>. One request
@@ -336,6 +339,7 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
         </div>
 
         <div class="act frame reveal">
+          <i class="trim" aria-hidden="true"></i>
           <div class="num">II &middot; on demand</div>
           <h3>Ask for less, get less</h3>
           <p>The selection set is the contract. Drop <code>title</code> and the resolver for it
@@ -346,6 +350,7 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
         </div>
 
         <div class="act frame reveal">
+          <i class="trim" aria-hidden="true"></i>
           <div class="num">III &middot; pattern matched</div>
           <h3>MoonBit, not a DSL</h3>
           <p>Arguments arrive as <code>Json</code>, so reading one is a match &mdash; exhaustive,

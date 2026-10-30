@@ -99,6 +99,19 @@ p{margin:.9rem 0 0;color:var(--ink)}
   color:var(--gold);font-weight:500}
 .lede,.note,p{overflow-wrap:anywhere}
 
+/* ---------- selection and keyboard focus, one language on every page ---------- */
+::selection{background:color-mix(in oklab,var(--gold) 30%,transparent);color:var(--ink)}
+html[data-theme=light] ::selection{background:color-mix(in oklab,var(--gold) 22%,transparent)}
+:where(a,button,input,textarea,select,summary,[tabindex]):focus-visible{
+  outline:1px solid var(--gold);outline-offset:3px;border-radius:2px}
+
+/* a dashed trim that floats above a card and ends in a gem: <i class="trim"></i> */
+.trim{position:absolute;left:16%;right:16%;top:-10px;height:1px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,var(--gold-dim) 0 3px,transparent 3px 8px)}
+.trim::after{content:"";position:absolute;left:50%;top:0;width:5px;height:5px;
+  background:var(--gold);transform:translate(-50%,-50%) rotate(45deg);
+  box-shadow:0 0 7px color-mix(in oklab,var(--gold) 60%,transparent)}
+
 /* the small caps label with a hairline either side */
 .crest{display:flex;align-items:center;justify-content:center;gap:.9rem;color:var(--gold)}
 .crest::before,.crest::after{content:"";height:1px;width:min(90px,12vw);

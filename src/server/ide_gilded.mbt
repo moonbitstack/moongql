@@ -40,8 +40,12 @@ fn gilded_head() -> String {
     #|    }
     #|    *{box-sizing:border-box}
     #|    html,body{height:100%}
-    #|    body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
-    #|      font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow:hidden}
+    #|    body{margin:0;color:var(--ink);font-family:var(--sans);
+    #|      font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow:hidden;
+    #|      background:radial-gradient(120% 90% at 50% -12%,#141019 0%,var(--bg) 62%)}
+    #|    ::selection{background:rgba(201,168,76,.3);color:var(--ink)}
+    #|    :where(a,button,input,textarea,[tabindex]):focus-visible{
+    #|      outline:1px solid var(--gold);outline-offset:3px;border-radius:2px}
     #|    .play{height:100%;display:grid;grid-template-rows:3.4rem minmax(0,1fr)}
     #|    button{font:inherit;color:inherit}
     #|    .bar{display:flex;align-items:center;gap:.85rem;padding:0 1.15rem;
@@ -58,13 +62,39 @@ fn gilded_head() -> String {
     #|    .btn{background:none;border:1px solid var(--hair);border-radius:2px;color:var(--muted);
     #|      font-size:.8rem;padding:.34rem .7rem;cursor:pointer;
     #|      transition:color .15s,border-color .15s}
+    #|    .btn{position:relative}
+    #|    .btn::after{content:"";position:absolute;inset:3px;border:1px solid transparent;
+    #|      border-radius:1px;transition:border-color .25s;pointer-events:none}
     #|    .btn:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
+    #|    .btn:hover::after{border-color:var(--hair)}
     #|    .btn.run{color:var(--ink);border-color:var(--gold-dim);
     #|      background:linear-gradient(180deg,rgba(201,168,76,.18),transparent)}
     #|    .btn.run:hover{color:var(--gold-hi);border-color:var(--gold)}
     #|    kbd{font-family:var(--mono);font-size:.72em;color:var(--gold);margin-left:.35rem}
     #|    main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px;
-    #|      background:var(--hair);min-height:0}
+    #|      background:var(--hair);background-clip:content-box;
+    #|      min-height:0;position:relative;margin:.62rem;padding:9px;
+    #|      border:1px solid var(--gold-dim);border-radius:2px;
+    #|      box-shadow:inset 0 0 70px -34px rgba(201,168,76,.4),0 34px 80px -60px #000}
+    #|    /* the same nested frame the documentation uses: the hairline lives in the
+    #|       ring of padding, so it never crosses the two panes */
+    #|    main::before{content:"";position:absolute;inset:4px;border:1px solid var(--hair);
+    #|      border-radius:1px;pointer-events:none;z-index:3}
+    #|    main::after{content:"";position:absolute;inset:-4px;pointer-events:none;z-index:3;
+    #|      background:
+    #|        linear-gradient(var(--gold),var(--gold)) left top/18px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left top/1px 18px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right top/18px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right top/1px 18px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left bottom/18px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left bottom/1px 18px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right bottom/18px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right bottom/1px 18px no-repeat;
+    #|      opacity:.85}
+    #|    .knot{position:absolute;left:50%;width:6px;height:6px;background:var(--gold);z-index:4;
+    #|      transform:translateX(-50%) rotate(45deg);
+    #|      box-shadow:0 0 8px rgba(201,168,76,.6)}
+    #|    .knot.t{top:-3px} .knot.b{bottom:-3px}
     #|    .pane{background:var(--panel-2);display:flex;flex-direction:column;
     #|      min-width:0;min-height:0;position:relative}
     #|    .hd{display:flex;align-items:center;gap:.55rem;padding:.55rem .95rem;flex:none;
@@ -148,9 +178,13 @@ fn gilded_head() -> String {
     #|    .types .empty{color:var(--faint);font-size:.8rem;margin-top:1rem}
     #|    @media (width <= 860px){
     #|      .play{grid-template-rows:auto minmax(0,1fr)}
-    #|      .bar{flex-wrap:wrap;gap:.5rem .7rem;padding:.55rem .9rem}
-    #|      .url{max-width:12rem}
-    #|      .name{display:none}
+    #|      .bar{flex-wrap:wrap;gap:.45rem .6rem;padding:.5rem .8rem}
+    #|      .name{display:block;font-size:.7rem}
+    #|      .url{max-width:9rem}
+    #|      .spacer{display:none}
+    #|      .state{margin-left:auto}
+    #|      main{margin:.45rem;padding:6px}
+    #|      main::before{inset:3px}
     #|      main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
     #|    }
     #|    /* the day plate: the page follows the reader's system theme */
@@ -161,8 +195,8 @@ fn gilded_head() -> String {
     #|        --gold:#856527; --gold-hi:#946d2c; --hair:rgba(133,101,39,.32);
     #|        --gold-dim:rgba(133,101,39,.42); --azure:#2f6ea8; --crimson:#b23b2e;
     #|      }
-    #|      .hd{color:rgba(133,101,39,.7)}
-    #|      .vars label{color:rgba(133,101,39,.6)}
+    #|      .hd{color:rgba(133,101,39,.85)}
+    #|      .vars label{color:rgba(133,101,39,.72)}
     #|      .s{color:#7a5a1f}
     #|      .play[data-focus] .code .f.hot{color:var(--ink);background:rgba(47,110,168,.18)}
     #|      .play[data-focus] #out .ln.hot{background:rgba(133,101,39,.10)}
@@ -183,6 +217,8 @@ fn gilded_head() -> String {
     #|    <button class="btn run" id="run">Run<kbd>⌘↵</kbd></button>
     #|  </header>
     #|  <main>
+    #|    <span class="knot t" aria-hidden="true"></span>
+    #|    <span class="knot b" aria-hidden="true"></span>
     #|    <section class="pane q">
     #|      <div class="hd"><span class="dot"></span>Document</div>
     #|      <div class="code">
@@ -484,8 +520,8 @@ fn gilded_tail() -> String {
     #|            return '<button data-name="'+esc(f.name)+'"><b>'+esc(f.name)+
     #|              "</b><i>"+esc(typeName(f.type))+"</i></button>";
     #|          }).join("");
-    #|          return "<h3>"+esc(t.name)+"<span>"+t.kind.toLowerCase()+"</span></h3>"+
-    #|            (rows||'<p class="empty">no fields</p>');
+    #|          // a scalar has no fields, so it gets a heading and nothing else
+    #|          return "<h3>"+esc(t.name)+"<span>"+t.kind.toLowerCase()+"</span></h3>"+rows;
     #|        }).join("");
     #|      }).catch(function(){
     #|        types.innerHTML='<p class="empty">the schema could not be read</p>';
