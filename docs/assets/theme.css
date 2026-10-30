@@ -1,0 +1,246 @@
+/* ==========================================================================
+   moongql — a tarot-plate design system
+   Nested gold frames, segmented geometry, thin astral threads, Cinzel caps.
+   One file, four pages: index, guide, showcase and the generated reference.
+   ========================================================================== */
+
+:root{
+  /* the plate */
+  --abyss:#07060a;
+  --abyss-2:#0b0912;
+  --panel:#100d17;
+  --panel-2:#151120;
+  --ink:#e9e3d4;
+  --muted:#9b917c;
+  --faint:#6d6555;
+
+  /* metals and lights */
+  --gold:#c9a84c;
+  --gold-hi:#eed89b;
+  --gold-dim:rgba(201,168,76,.34);
+  --gold-hair:rgba(201,168,76,.26);
+  --azure:#4a90d9;
+  --azure-soft:rgba(74,144,217,.16);
+  --crimson:#a33a2e;
+
+  /* type */
+  --serif:"Cormorant Garamond",ui-serif,Georgia,"Times New Roman",serif;
+  --display:"Cormorant Garamond",ui-serif,Georgia,serif;
+  --caps:"Cinzel",ui-serif,Georgia,serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+
+  --frame-gap:7px;
+  --radius:3px;
+}
+
+/* the day plate: parchment, sepia ink, bronze rules */
+:root[data-theme=light]{
+  --abyss:#efe9dc;
+  --abyss-2:#e7dfcd;
+  --panel:#f6f1e5;
+  --panel-2:#eee7d6;
+  --ink:#211c14;
+  --muted:#6b6153;
+  --faint:#8a7f6b;
+  --gold:#8a6a2a;
+  --gold-hi:#a8823a;
+  --gold-dim:rgba(138,106,42,.38);
+  --gold-hair:rgba(138,106,42,.2);
+  --azure:#2f6ea8;
+  --azure-soft:rgba(47,110,168,.12);
+  --crimson:#8d2f24;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--abyss)}
+html,button,input,textarea,select{font-variant-ligatures:no-contextual}
+
+body{
+  margin:0;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;
+  background:var(--abyss);-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+
+/* the vault: a vignette, two slow fogs, and grain over everything */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-3;pointer-events:none;
+  background:
+    radial-gradient(120% 80% at 50% -20%, color-mix(in oklab,var(--azure) 14%,transparent) 0%, transparent 55%),
+    radial-gradient(90% 70% at 50% 110%, color-mix(in oklab,var(--gold) 8%,transparent) 0%, transparent 60%),
+    radial-gradient(140% 100% at 50% 50%, transparent 40%, color-mix(in oklab,#000 62%,transparent) 100%),
+    var(--abyss);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
+}
+/* the fog drifts, very slowly, so the plate never looks printed */
+.fog{position:fixed;inset:-20%;z-index:-2;pointer-events:none;opacity:.5;
+  background:
+    radial-gradient(closest-side at 22% 30%, color-mix(in oklab,var(--azure) 22%,transparent), transparent 70%),
+    radial-gradient(closest-side at 78% 62%, color-mix(in oklab,var(--gold) 12%,transparent), transparent 70%);
+  filter:blur(60px);animation:drift 46s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0) scale(1)}to{transform:translate3d(3%,2%,0) scale(1.08)}}
+
+a{color:var(--gold-hi);text-decoration:none}
+a:hover{text-decoration:none;color:var(--azure)}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 1.5rem}
+
+/* ---------- type ---------- */
+h1,h2,h3{font-family:var(--display);font-weight:500;letter-spacing:.01em;margin:0}
+h1{font-size:clamp(2.4rem,5.2vw,4rem);line-height:1.06;text-wrap:balance}
+h2{font-size:clamp(1.7rem,3vw,2.3rem);line-height:1.15;text-wrap:balance}
+h3{font-size:1.2rem}
+em{font-style:italic;color:var(--gold-hi)}
+p{margin:.9rem 0 0;color:var(--ink)}
+.lede{color:var(--muted);font-size:1.06rem;max-width:62ch}
+.kicker,.caps{font-family:var(--caps);font-size:.72rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--gold);font-weight:500}
+.lede,.note,p{overflow-wrap:anywhere}
+
+/* the small caps label with a hairline either side */
+.crest{display:flex;align-items:center;justify-content:center;gap:.9rem;color:var(--gold)}
+.crest::before,.crest::after{content:"";height:1px;width:min(90px,12vw);
+  background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
+
+/* ---------- the frame: nested lines, corner brackets, knots ---------- */
+.frame{position:relative;border:1px solid var(--gold-dim);border-radius:var(--radius);
+  background:
+    linear-gradient(180deg, color-mix(in oklab,var(--panel) 92%,transparent), color-mix(in oklab,var(--abyss-2) 88%,transparent));
+  box-shadow:0 1px 0 rgba(0,0,0,.6), 0 30px 80px -50px rgba(0,0,0,.9), inset 0 0 60px -30px color-mix(in oklab,var(--gold) 40%,transparent);
+}
+/* the inner hairline, held off the edge by --frame-gap */
+.frame::before{content:"";position:absolute;inset:var(--frame-gap);border:1px solid var(--gold-hair);
+  border-radius:1px;pointer-events:none}
+/* the four corner brackets, drawn slightly outside the plate */
+.frame::after{
+  content:"";position:absolute;inset:-4px;pointer-events:none;
+  background:
+    linear-gradient(var(--gold),var(--gold)) left top/18px 1px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) left top/1px 18px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) right top/18px 1px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) right top/1px 18px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) left bottom/18px 1px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) left bottom/1px 18px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) right bottom/18px 1px no-repeat,
+    linear-gradient(var(--gold),var(--gold)) right bottom/1px 18px no-repeat;
+  opacity:.85;
+}
+/* a knot at the midpoint of an edge breaks the straight line */
+.knot{position:absolute;left:50%;width:6px;height:6px;background:var(--gold);
+  transform:translateX(-50%) rotate(45deg);box-shadow:0 0 8px color-mix(in oklab,var(--gold) 60%,transparent);z-index:2}
+.knot.top{top:-3px}.knot.bottom{bottom:-3px}
+
+/* ---------- segmented rule with a diamond at its centre ---------- */
+.rule{display:flex;align-items:center;gap:.7rem;color:var(--gold-dim)}
+.rule::before,.rule::after{content:"";flex:1;height:1px;
+  background:repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 10px)}
+.rule i{width:5px;height:5px;background:var(--gold);transform:rotate(45deg);flex:none;
+  box-shadow:0 0 6px color-mix(in oklab,var(--gold) 55%,transparent)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:.55rem;padding:.62rem 1.15rem;
+  font-family:var(--caps);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);border:1px solid var(--gold-dim);border-radius:2px;background:transparent;
+  position:relative;transition:color .25s,border-color .25s,box-shadow .35s}
+.btn::after{content:"";position:absolute;inset:3px;border:1px solid transparent;transition:border-color .3s;
+  pointer-events:none}
+.btn:hover{color:var(--gold-hi);border-color:var(--gold);
+  box-shadow:0 0 0 1px color-mix(in oklab,var(--gold) 18%,transparent),
+             0 10px 30px -18px color-mix(in oklab,var(--azure) 80%,transparent)}
+.btn:hover::after{border-color:var(--gold-hair)}
+.btn.solid{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 16%,transparent),transparent);
+  border-color:var(--gold)}
+.btn .arrow{color:var(--gold);transition:transform .3s}
+.btn:hover .arrow{transform:translateX(3px)}
+
+/* ---------- top bar ---------- */
+header.bar{position:sticky;top:0;z-index:30;border-bottom:1px solid var(--gold-hair);
+  background:color-mix(in oklab,var(--abyss) 78%,transparent);backdrop-filter:blur(10px)}
+.bar .wrap{display:flex;align-items:center;gap:1.1rem;height:64px}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--caps);font-size:.95rem;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
+.brand:hover{color:var(--ink)}
+.brand .mark{width:22px;height:22px;flex:none}
+.brand .sub{font-family:var(--sans);font-size:.66rem;letter-spacing:.14em;color:var(--faint);
+  text-transform:uppercase;border-left:1px solid var(--gold-hair);padding-left:.6rem;margin-left:.2rem}
+.bar nav{margin-left:auto;display:flex;align-items:center;gap:1.35rem}
+.bar nav a{font-family:var(--caps);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);position:relative;padding:.2rem 0}
+.bar nav a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;background:var(--gold);
+  transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.bar nav a:hover{color:var(--ink)}
+.bar nav a:hover::after,.bar nav a[aria-current]::after{transform:scaleX(1)}
+.bar nav a[aria-current]{color:var(--gold-hi)}
+.theme{background:none;border:1px solid var(--gold-hair);color:var(--muted);border-radius:2px;
+  padding:.3rem .55rem;font-family:var(--caps);font-size:.64rem;letter-spacing:.14em;cursor:pointer;
+  transition:color .25s,border-color .25s}
+.theme:hover{color:var(--gold-hi);border-color:var(--gold-dim)}
+
+/* ---------- code plates ---------- */
+pre,code{font-family:var(--mono)}
+pre{margin:.9rem 0 0;padding:1rem 1.15rem;background:
+    linear-gradient(180deg,color-mix(in oklab,var(--panel-2) 92%,transparent),color-mix(in oklab,var(--abyss-2) 94%,transparent));
+  border:1px solid var(--gold-hair);border-radius:2px;overflow-x:auto;
+  font-size:.85rem;line-height:1.72;color:var(--ink);white-space:pre;position:relative;
+  box-shadow:inset 0 0 40px -24px color-mix(in oklab,var(--gold) 60%,transparent)}
+pre .kw{color:var(--gold)}
+pre .ty{color:var(--azure)}
+pre .c,pre .cm{color:var(--faint)}
+pre .s{color:var(--gold-hi)}
+pre .v{color:var(--ink)}
+pre .p{color:var(--muted)}
+code{font-size:.88em;color:var(--gold-hi);background:color-mix(in oklab,var(--gold) 8%,transparent);
+  border:1px solid var(--gold-hair);border-radius:2px;padding:.04rem .3rem}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- footer ---------- */
+footer{margin-top:4rem;border-top:1px solid var(--gold-hair);padding:2.6rem 0 3.4rem;
+  color:var(--faint);font-size:.86rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;justify-content:space-between}
+footer a{color:var(--muted);font-family:var(--caps);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase}
+footer a:hover{color:var(--gold-hi)}
+footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
+
+/* ---------- scrollbars: same rule on every page ---------- */
+@supports selector(::-webkit-scrollbar){
+  html::-webkit-scrollbar{width:10px;height:10px}
+  html::-webkit-scrollbar-track{background:transparent}
+  html::-webkit-scrollbar-thumb{border-radius:99px;border:3px solid transparent;background-clip:content-box;
+    background-color:color-mix(in srgb,var(--gold) 42%,transparent)}
+  html.at-top::-webkit-scrollbar-thumb{background-color:transparent}
+  pre::-webkit-scrollbar{height:10px}
+  pre::-webkit-scrollbar-track{background:transparent}
+  pre::-webkit-scrollbar-thumb{border-radius:99px;border:3px solid transparent;background-clip:content-box;
+    background-color:color-mix(in srgb,var(--gold) 30%,transparent)}
+}
+@supports not selector(::-webkit-scrollbar){
+  html{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gold) 42%,transparent) transparent}
+  html.at-top{scrollbar-color:transparent transparent}
+  pre{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gold) 30%,transparent) transparent}
+}
+
+
+/* ---------- aliases the older page sheets still speak ---------- */
+:root{
+  --line:var(--gold-hair); --bronze:var(--gold); --bronze-dim:var(--gold-dim);
+  --query:var(--azure); --graph:var(--gold-hi); --response:var(--ink);
+  --response-mark:var(--gold-hi); --dome-1:var(--abyss); --dome-2:var(--abyss-2);
+  --panel-3:var(--panel-2);
+  --shadow:0 1px 0 rgba(0,0,0,.6), 0 34px 90px -60px rgba(0,0,0,.95);
+  --grain:0;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto}
+  .reveal{opacity:1;transform:none}
+}
+@media (width <= 860px){
+  .bar .wrap{height:auto;flex-wrap:wrap;padding:.55rem 0;row-gap:.5rem}
+  .brand .sub{display:none}
+  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;gap:.55rem 1rem}
+}

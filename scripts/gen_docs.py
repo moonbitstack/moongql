@@ -154,15 +154,22 @@ def prose(t):
 
 CSS = r"""
 :root{
-  --bg:#f4f0e8; --panel:#fbf8f2; --panel-2:#efe9dd; --ink:#1f1a14;
-  --muted:#5b5346; --line:rgba(166,124,82,.28); --accent:#8a6638; --accent-soft:rgba(166,124,82,.12);
-  --out:#a87d0a; --code-bg:#efe9dd; --bronze:#a67c52; --query:#4a86c0;
-  --shadow:0 1px 2px rgba(31,26,20,.05),0 18px 40px -26px rgba(31,26,20,.30);
+  --bg:#07060a; --panel:#100d17; --panel-2:#151120; --ink:#e9e3d4;
+  --muted:#9b917c; --line:rgba(201,168,76,.26); --accent:#c9a84c; --accent-soft:rgba(201,168,76,.14);
+  --out:#eed89b; --code-bg:#0d0b12; --bronze:#c9a84c; --query:#4a90d9;
+  --serif:"Cormorant Garamond",ui-serif,Georgia,serif;
+  --display:"Cormorant Garamond",ui-serif,Georgia,serif;
+  --caps:"Cinzel",ui-serif,Georgia,serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --shadow:0 1px 0 rgba(0,0,0,.6),0 30px 80px -50px rgba(0,0,0,.9);
 }
-:root[data-theme=dark]{--bg:#0a0e1a;--panel:#111827;--panel-2:#0d1220;--ink:#e8e4dc;--muted:#9aa3b2;
-  --line:rgba(201,160,106,.22);--accent:#c9a06a;--accent-soft:rgba(201,160,106,.14);--out:#f0d070;
-  --code-bg:#141c30;--bronze:#c9a06a;--query:#7db8e8;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 22px 50px -28px rgba(0,0,0,.7)}
+:root[data-theme=light]{
+  --bg:#efe9dc; --panel:#f6f1e5; --panel-2:#eee7d6; --ink:#211c14;
+  --muted:#6b6153; --line:rgba(138,106,42,.3); --accent:#8a6a2a; --accent-soft:rgba(138,106,42,.12);
+  --out:#a8823a; --code-bg:#e8e0cd; --bronze:#8a6a2a; --query:#2f6ea8;
+  --shadow:0 1px 0 rgba(31,26,20,.06),0 24px 60px -40px rgba(31,26,20,.35);
+}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
@@ -196,7 +203,7 @@ a:hover{text-decoration:underline}
   border-radius:8px;padding:.35rem .6rem;font:inherit;font-size:.82rem;cursor:pointer;width:100%}
 .theme-btn:hover{border-color:var(--accent);color:var(--ink)}
 main{padding:2.6rem 2.4rem 5rem;min-width:0}
-.hero h1{font-family:var(--serif);font-weight:400;font-size:2.9rem;letter-spacing:-.02em;margin:0}
+.hero h1{font-family:var(--display);font-weight:500;font-size:2.9rem;letter-spacing:-.02em;margin:0}
 .hero .tag{color:var(--muted);font-size:1.12rem;max-width:62ch;margin:.5rem 0 1.1rem;text-wrap:balance}
 .badges{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.4rem}
 .badges img{height:21px;display:block}
@@ -216,7 +223,7 @@ main{padding:2.6rem 2.4rem 5rem;min-width:0}
 .contract pre{margin:0;overflow-x:auto;font-size:.92rem;line-height:1.7}
 .contract .k{color:var(--accent);font-weight:500}.contract .ty{color:var(--query)}.contract .op{color:var(--muted)}
 section.pkg{scroll-margin-top:1.2rem;padding-top:2.4rem;margin-top:2rem;border-top:1px solid var(--line)}
-section.pkg > h2{font-family:var(--serif);font-weight:400;font-size:1.7rem;margin:0 0 .15rem;letter-spacing:-.01em}
+section.pkg > h2{font-family:var(--display);font-weight:500;font-size:1.75rem;margin:0 0 .15rem;letter-spacing:-.01em}
 section.pkg > h2 .at{color:var(--accent)}
 .pdesc{color:var(--muted);margin:.15rem 0 1.2rem;max-width:72ch}
 .item{background:var(--panel);border:1px solid var(--line);border-radius:13px;
@@ -239,7 +246,7 @@ footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);color
   padding:0 1.4rem}
 .topbar .oc{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--bronze);
   box-shadow:0 0 0 3px color-mix(in oklab,var(--bronze) 16%,transparent)}
-.topbar .name{font-family:var(--mono);font-weight:600;font-size:1rem;color:var(--ink)}
+.topbar .name{font-family:var(--caps);font-weight:500;font-size:.92rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
 .topbar nav{margin-left:auto;display:flex;align-items:center;gap:1.1rem}
 .topbar nav a{color:var(--muted);font-size:.88rem}
 .topbar nav a:hover{color:var(--ink);text-decoration:none}
