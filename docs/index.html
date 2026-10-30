@@ -85,10 +85,12 @@
 .chamber.mid{display:flex;flex-direction:column;align-items:center;justify-content:space-between;
   background:radial-gradient(70% 55% at 50% 44%, color-mix(in oklab,var(--azure) 7%,transparent), transparent 72%)}
 .graph{width:100%;max-width:230px;margin:.1rem auto 0}
-.graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:130;stroke-dashoffset:130;
-  animation:wire 1s ease 1.9s forwards}
+/* the wire is drawn at rest and the animation only *undoes* that first, so a
+   reader who asked for reduced motion still gets the whole graph */
+.graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:130;
+  animation:wire 1s ease 1.9s backwards}
 .graph .wire.dim{opacity:.14;animation-delay:2.1s}
-@keyframes wire{to{stroke-dashoffset:0}}
+@keyframes wire{from{stroke-dashoffset:130}to{stroke-dashoffset:0}}
 .graph .node :is(circle,rect){fill:color-mix(in oklab,var(--abyss) 70%,transparent);stroke:var(--gold);
   stroke-width:1;transition:fill .25s,stroke .25s}
 .graph .node text{font-family:var(--mono);font-size:10.5px;fill:var(--ink);text-anchor:middle;
