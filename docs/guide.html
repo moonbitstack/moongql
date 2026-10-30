@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<script>
+/* pick the theme before the first paint: ?theme= wins, then the stored choice,
+   then the OS preference — this avoids a flash of the wrong dome. */
+(function(){
+  var m=null;
+  try{
+    var q=new URLSearchParams(location.search).get("theme");
+    if(q==="light"||q==="dark"){m=q;localStorage.setItem("moongql-theme",q)}
+    else m=localStorage.getItem("moongql-theme");
+  }catch(e){}
+  if(m!=="light"&&m!=="dark"){
+    m=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";
+  }
+  document.documentElement.setAttribute("data-theme",m);
+})();
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moongql — guide</title>
+<meta name="description" content="From one type and one resolver to a served endpoint: a walk through moongql, with the output each step really prints.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23c9a06a' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23f0d070'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --serif:"Fraunces",ui-serif,Georgia,"Times New Roman",serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bronze:#c9a06a; --bronze-dim:#a67c52;
+  --query:#7db8e8; --graph:#f0d070; --response:#fff8e8; --response-mark:#fff8e8;
+  --dome-1:#0a0e1a; --dome-2:#121a2e;
+  --ink:#e8e4dc; --muted:#9aa3b2; --line:rgba(201,160,106,.22);
+  --panel:rgba(255,255,255,.035); --panel-2:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 24px 60px -28px rgba(0,0,0,.7);
+  --grain:0.025;
+}
+html[data-theme=light]{
+  --bronze:#a67c52; --bronze-dim:#8a6638;
+  --query:#4a86c0; --graph:#a87d0a; --response:#fff8e8; --response-mark:#b07a3a;
+  --dome-1:#f2eee6; --dome-2:#e8e2d4;
+  --ink:#1f1a14; --muted:#5b5346; --line:rgba(166,124,82,.32);
+  --panel:rgba(31,26,20,.035); --panel-2:rgba(31,26,20,.05);
+  --shadow:0 1px 2px rgba(31,26,20,.06),0 24px 60px -30px rgba(31,26,20,.28);
+  --grain:0.02;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;
+  background:var(--dome-1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% -10%,var(--dome-2) 0%,var(--dome-1) 60%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:var(--grain);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:var(--query);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.88em;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:5px;padding:.05rem .3rem;overflow-wrap:anywhere}
+.wrap{max-width:1080px;margin:0 auto;padding:0 1.4rem}
+
+header.bar{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
+  background:color-mix(in oklab,var(--dome-1) 80%,transparent);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:1rem;height:60px}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-weight:600;
+  font-size:1.05rem;color:var(--ink);text-decoration:none}
+.brand .oc{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bronze);
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--bronze) 18%,transparent),inset 0 0 8px color-mix(in oklab,var(--graph) 30%,transparent)}
+.bar nav{margin-left:auto;display:flex;align-items:center;gap:1.2rem}
+.bar nav a{color:var(--muted);font-size:.9rem}
+.bar nav a:hover{color:var(--ink);text-decoration:none}
+.bar nav a[aria-current]{color:var(--ink)}
+.theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  padding:.35rem .6rem;font:inherit;font-size:.8rem;cursor:pointer}
+.theme:hover{border-color:var(--bronze);color:var(--ink)}
+
+/* a guide is read in order: number the acts, keep the column narrow */
+main{display:grid;grid-template-columns:minmax(0,1fr) 13rem;gap:3rem;padding:3rem 0 4rem}
+article{min-width:0}
+.kicker{color:var(--bronze-dim);font-family:var(--mono);font-size:.76rem;
+  letter-spacing:.3em;text-transform:uppercase}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(2rem,4.4vw,2.9rem);line-height:1.12;
+  letter-spacing:-.015em;margin:.7rem 0 0;max-width:20ch}
+.lede{color:var(--muted);max-width:60ch;margin:1rem 0 0;font-size:1.03rem}
+section{margin-top:2.9rem;padding-top:2rem;border-top:1px solid var(--line)}
+section > h2{font-family:var(--serif);font-weight:400;font-size:1.55rem;margin:0;letter-spacing:-.01em;
+  display:flex;gap:.7rem;align-items:baseline}
+section > h2 .n{font-family:var(--mono);font-size:.8rem;color:var(--bronze);letter-spacing:.1em}
+section p{margin:.8rem 0 0;max-width:64ch}
+pre{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;
+  overflow-x:auto;font-family:var(--mono);font-size:.86rem;line-height:1.7;color:var(--ink);
+  margin:.9rem 0 0;white-space:pre}
+pre.out{border-style:dashed;color:var(--muted)}
+pre .k{color:var(--bronze)} pre .ty{color:var(--query)} pre .c{color:var(--muted)}
+.tag{display:inline-block;font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--bronze-dim);margin:.9rem 0 0}
+aside{position:sticky;top:5rem;align-self:start;font-size:.88rem}
+aside .t{font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--bronze-dim);margin-bottom:.6rem}
+aside a{display:block;color:var(--muted);padding:.18rem 0;border-left:2px solid transparent;
+  padding-left:.6rem}
+aside a:hover{color:var(--ink);text-decoration:none}
+aside a.on{color:var(--ink);border-left-color:var(--bronze)}
+
+footer{border-top:1px solid var(--line);padding:2.6rem 0 3.4rem;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;justify-content:space-between}
+footer a{color:var(--muted)}
+footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
+
+/* ---------- chrome shared by every page ---------- */
+html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
+@supports selector(::-webkit-scrollbar) {
+  html::-webkit-scrollbar { width: 10px; height: 10px; }
+  html::-webkit-scrollbar-track { background: transparent; }
+  html::-webkit-scrollbar-thumb {
+    border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
+  html.at-top::-webkit-scrollbar-thumb { background-color: transparent; }
+  pre::-webkit-scrollbar { height: 10px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb {
+    border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 22%, transparent); }
+}
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
+  html.at-top { scrollbar-color: transparent transparent; }
+  pre { scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent; }
+}
+p, li, .note { overflow-wrap: anywhere; }
+
+@media (width <= 900px){
+  main{grid-template-columns:minmax(0,1fr);gap:0;padding-top:2.2rem}
+  aside{display:none}
+  .bar .wrap{height:auto;flex-wrap:wrap;padding-top:.55rem;padding-bottom:.55rem;
+    row-gap:.45rem;position:relative}
+  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;
+    gap:.5rem .95rem;font-size:.86rem}
+  .theme{position:absolute;top:.55rem;right:1.4rem}
+  .brand{max-width:calc(100% - 5rem)}
+}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="wrap">
+  <a class="brand" href="index.html"><span class="oc"></span>moongql</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="guide.html" aria-current="page">Guide</a>
+    <a href="api.html">API</a>
+    <a href="showcase.html">Showcase</a>
+    <a href="https://github.com/moonbitstack/moongql">GitHub</a>
+    <button class="theme" id="theme" aria-label="toggle light or night theme" aria-live="polite">◐ night</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<article>
+  <div class="kicker">Guide</div>
+  <h1>From one type to a served endpoint.</h1>
+  <p class="lede">Nine steps, in the order a program grows: a type and a resolver, the schema as
+  text, annotations instead of hand-written builders, then variables, errors, subscriptions,
+  batching, federation, and the endpoint that serves all of it. Every output below is what the
+  matching example in <code>src/examples</code> prints.</p>
+
+  <section id="install">
+    <h2><span class="n">00</span>Add it</h2>
+    <p>One dependency. The library has no runtime dependencies of its own, so the same code runs
+    on <code>wasm</code>, <code>wasm-gc</code>, <code>js</code> and <code>native</code>.</p>
+<pre>moon add moonbitstack/moongql</pre>
+  </section>
+
+  <section id="first">
+    <h2><span class="n">01</span>A type, a resolver, a query</h2>
+    <p>A schema is an object you build. A resolver is a function registered under
+    <code>"Type.field"</code>; the field's declared type tells the executor whether to treat the
+    result as a leaf, a list or an object, so a resolver only has to return JSON.</p>
+<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
+<span class="k">let</span> query = schema.object(<span class="c">"Query"</span>)
+query.field(<span class="c">"greeting"</span>, NonNull(Scalar(<span class="c">"String"</span>)))
+query.field(<span class="c">"luckyNumber"</span>, NonNull(Scalar(<span class="c">"Int"</span>)))
+
+<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"greeting"</span>, <span class="k">fn</span>(_info) { Json(<span class="c">"qwq from moongql"</span>) })
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"luckyNumber"</span>, <span class="k">fn</span>(_info) { Json(233) })
+
+<span class="k">let</span> res = execute(schema, resolvers, <span class="c">"{ greeting luckyNumber }"</span>)
+println(res.stringify())</pre>
+    <p class="tag">prints</p>
+<pre class="out">{"data":{"greeting":"qwq from moongql","luckyNumber":233}}</pre>
+  </section>
+
+  <section id="sdl">
+    <h2><span class="n">02</span>The same schema, as text</h2>
+    <p><code>to_sdl</code> writes the type system out — descriptions, argument defaults,
+    <code>@deprecated(reason:)</code>, directives and the <code>schema</code> block. Reading it
+    back with <code>Schema::of_sdl</code> gives the same schema, so the next print is identical.</p>
+<pre><span class="k">let</span> s = <span class="ty">Schema</span>::of_sdl(
+  <span class="c">#|type Query {</span>
+  <span class="c">#|  "Whoever is asking."</span>
+  <span class="c">#|  me: User</span>
+  <span class="c">#|}</span>
+  <span class="c">#|type User {</span>
+  <span class="c">#|  id: ID!</span>
+  <span class="c">#|  legacyName: String! @deprecated(reason: "use name")</span>
+  <span class="c">#|}</span>
+)
+s.to_sdl()</pre>
+    <p class="tag">prints the description and the deprecation back, unchanged</p>
+<pre class="out">type Query {
+  "Whoever is asking."
+  me: User
+}
+
+type User {
+  id: ID!
+  legacyName: String! @deprecated(reason: "use name")
+}</pre>
+  </section>
+
+  <section id="annotations">
+    <h2><span class="n">03</span>Write the types you already have</h2>
+    <p>Instead of building the schema by hand, annotate ordinary MoonBit types. The generator
+    emits <code>register(schema, resolvers)</code>, which adds them to a schema you own — the two
+    styles mix, and the SDL either way is byte-for-byte the same.</p>
+<pre><span class="c">#gql.type(description="Someone who writes books")</span>
+<span class="k">pub struct</span> <span class="ty">Author</span> {
+  id : Int64
+  name : String
+  <span class="c">#gql.skip</span>
+  email : String
+}
+
+<span class="c">#gql.field(description="Books by this author")</span>
+<span class="k">fn</span> Author::books(self : <span class="ty">Author</span>) -> <span class="ty">Array</span>[<span class="ty">Book</span>] { ... }</pre>
+    <p class="tag">register it, then query it</p>
+<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
+<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
+register(schema, resolvers)
+execute(schema, resolvers, <span class="c">"{ authors { name books { title } } }"</span>)</pre>
+  </section>
+
+  <section id="variables">
+    <h2><span class="n">04</span>Variables, fragments, directives</h2>
+    <p>A document can take its values from outside. Variables are declared in the operation and
+    passed as a map; fragments and <code>@skip</code> / <code>@include</code> work as the
+    specification describes.</p>
+<pre><span class="k">let</span> vars : <span class="ty">Map</span>[<span class="ty">String</span>, <span class="ty">Json</span>] = { <span class="c">"uid"</span>: <span class="c">"1"</span> }
+execute(schema, resolvers,
+  <span class="c">"query ($uid: ID!) { hero: user(id: $uid) { ...who } } fragment who on User { id name }"</span>,
+  variables=vars)</pre>
+    <p class="tag">prints</p>
+<pre class="out">{"data":{"hero":{"id":"1","name":"Alice"}}}</pre>
+  </section>
+
+  <section id="errors">
+    <h2><span class="n">05</span>Errors carry their place</h2>
+    <p>A field error is a value, not an exception: it lands in <code>errors</code> with the path
+    into the result and the line and column of the field it is about. A non-null field that
+    fails propagates to its nearest nullable parent, as the specification requires.</p>
+<pre class="out">{"data":null,"errors":[{"message":"Cannot return null for non-nullable field",
+  "locations":[{"line":1,"column":3}],"path":["mustFail"]}]}
+
+{"data":{"boom":null},"errors":[{"message":"plain failure",
+  "locations":[{"line":1,"column":3}],"path":["boom"]}]}</pre>
+    <p>A server's own entry rides alongside the result as <code>extensions</code> — a trace id,
+    a timing, whatever the deployment wants to say.</p>
+  </section>
+
+  <section id="subscriptions">
+    <h2><span class="n">06</span>Subscriptions</h2>
+    <p>A source stream returns the payloads a subscription produces; the executor walks each one
+    with the selection set. Over the wire the same thing is carried by
+    <code>graphql-transport-ws</code>: <code>connection_init</code>, <code>subscribe</code>, then
+    <code>next</code> for each payload and <code>complete</code> at the end.</p>
+<pre><span class="k">let</span> stream = create_source_event_stream(resolvers, <span class="c">"Subscription"</span>, <span class="c">"countdown"</span>, info)
+execute_subscription(schema, stream, document)</pre>
+  </section>
+
+  <section id="dataloader">
+    <h2><span class="n">07</span>Batch the N+1 away</h2>
+    <p>A <code>DataLoader</code> queues the keys a resolution pass asks for, dedupes them, and runs
+    one batch over the distinct set — so a list of twenty authors costs one query, not twenty.</p>
+<pre><span class="k">let</span> loader = <span class="ty">DataLoader</span>::new(<span class="k">fn</span>(keys) { fetch_authors(keys) })
+<span class="k">let</span> a = loader.load(<span class="c">"1"</span>)
+<span class="k">let</span> b = loader.load(<span class="c">"2"</span>)
+loader.dispatch()   <span class="c">// one call for both keys</span></pre>
+  </section>
+
+  <section id="federation">
+    <h2><span class="n">08</span>Subgraphs that compose</h2>
+    <p>Register entities with <code>@key</code> and their reference resolvers; the subgraph then
+    answers <code>_service { sdl }</code> and <code>_entities(representations:)</code>, and a
+    gateway can join it to its siblings.</p>
+<pre><span class="k">let</span> fed = <span class="ty">Federation</span>::new()
+fed.entity(<span class="c">"User"</span>, <span class="c">"id"</span>)   <span class="c">// @key(fields: "id")</span>
+fed.reference(<span class="c">"User"</span>, <span class="k">fn</span>(rep) { find_user(rep) })
+fed.install(schema)</pre>
+  </section>
+
+  <section id="http">
+    <h2><span class="n">09</span>Serve it</h2>
+    <p><code>graphql_handler</code> turns the schema into a handler on the ASGI seam: a
+    <code>POST</code> reads <code>{ query, variables }</code> and answers
+    <code>{ data, errors }</code>; a <code>GET</code> without <code>?query=</code> serves the IDE.
+    The endpoint defaults to <code>/graphql</code> and the port to 12000.</p>
+<pre><span class="k">let</span> app = graphql_app(schema, resolvers)                        <span class="c">// GraphiQL</span>
+<span class="k">let</span> app = graphql_app(schema, resolvers, ide=@moongql.apollo_sandbox)
+<span class="k">let</span> app = graphql_app(schema, resolvers, ide=@moongql.off)      <span class="c">// no IDE: 405</span></pre>
+    <p class="tag">a POST, and what comes back</p>
+<pre class="out">content-type: application/json
+{"query":"{ user(id: \"1\") { id name } }"}
+
+200 application/json
+{"data":{"user":{"id":"1","name":"lfanke"}}}</pre>
+    <p>Run <code>moon run src/examples/22-http-server</code> for the whole transport, or open the
+    <a href="showcase.html">showcase</a> to query a schema in the browser.</p>
+  </section>
+</article>
+
+<aside>
+  <div class="t">Steps</div>
+  <a href="#install">00 · Add it</a>
+  <a href="#first">01 · A type, a resolver</a>
+  <a href="#sdl">02 · The schema as text</a>
+  <a href="#annotations">03 · Annotations</a>
+  <a href="#variables">04 · Variables, fragments</a>
+  <a href="#errors">05 · Errors</a>
+  <a href="#subscriptions">06 · Subscriptions</a>
+  <a href="#dataloader">07 · Batching</a>
+  <a href="#federation">08 · Federation</a>
+  <a href="#http">09 · Serve it</a>
+</aside>
+</main>
+
+<footer><div class="wrap">
+  <span>moongql · Apache-2.0 · a moonbitstack library</span>
+  <span class="links">
+    <a href="index.html">Home</a>
+    <a href="api.html">API reference</a>
+    <a href="showcase.html">Showcase</a>
+    <a href="https://github.com/moonbitstack/moongql">GitHub</a>
+    <a href="https://mooncakes.io/docs/moonbitstack/moongql">mooncakes</a>
+  </span>
+</div></footer>
+
+<script>
+(function(){
+  var root=document.documentElement;
+
+  var syncTop=function(){ root.classList.toggle("at-top", window.scrollY <= 0); };
+  window.addEventListener("scroll", syncTop, { passive: true });
+  syncTop();
+
+  var btn=document.getElementById("theme");
+  function paint(mode){
+    root.setAttribute("data-theme",mode);
+    if(btn){
+      btn.textContent=(mode==="light"?"◑ day":"◐ night");
+      btn.setAttribute("aria-label","switch to "+(mode==="light"?"night":"day")+" theme");
+    }
+  }
+  paint(root.getAttribute("data-theme")==="light"?"light":"dark");
+  if(btn)btn.addEventListener("click",function(){
+    var cur=root.getAttribute("data-theme")==="light"?"dark":"light";
+    paint(cur);
+    try{localStorage.setItem("moongql-theme",cur)}catch(e){}
+  });
+
+  // mark the step the reader is on
+  var links=[].slice.call(document.querySelectorAll("aside a"));
+  var byId={};
+  links.forEach(function(a){byId[a.getAttribute("href").slice(1)]=a});
+  var spy=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(!e.isIntersecting)return;
+      links.forEach(function(a){a.classList.remove("on")});
+      var a=byId[e.target.id];
+      if(a)a.classList.add("on");
+    });
+  },{rootMargin:"-15% 0px -70% 0px"});
+  document.querySelectorAll("section").forEach(function(s){spy.observe(s)});
+})();
+</script>
+</body>
+</html>

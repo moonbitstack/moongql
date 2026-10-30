@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/examples/browser"
+
+// Values
+pub fn run(String) -> String
+
+pub fn sdl() -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

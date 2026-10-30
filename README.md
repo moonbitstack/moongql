@@ -2,17 +2,13 @@
 
 # moongql
 
-**A code-first GraphQL library for MoonBit — `← strawberry-graphql`.**
+**A code-first GraphQL library for MoonBit.**
 
-[![Check and Test](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml/badge.svg)](https://github.com/moonbitstack/moongql/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
-[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoongql-brightgreen)](https://mooncakes.io/docs/moonbitstack/moongql)
+[Homepage](https://moonbitstack.github.io/moongql/) · [Guide](https://moonbitstack.github.io/moongql/guide.html) · [API reference](https://moonbitstack.github.io/moongql/api.html) · [mooncakes](https://mooncakes.io/docs/moonbitstack/moongql)
 
 </div>
 
-> Moved on mooncakes from `Lfan-ke/moongql` to `moonbitstack/moongql`.
-
-`moongql` is a code-first GraphQL library for MoonBit — define a schema in code the way `strawberry-graphql` does for Python, then execute queries, validate them against the spec, and serve them over HTTP with a built-in browser IDE. It prints **and parses** GraphQL SDL (print-then-parse yields the same schema), runs subscriptions and Apollo Federation subgraphs, batches with a `DataLoader`, and turns your own types into a schema with `#gql` annotations. It is pure MoonBit with no runtime dependencies, so it runs on every backend (`wasm`, `wasm-gc`, `js`, `native`).
+`moongql` is a code-first GraphQL library for MoonBit — define a schema in code, then execute queries, validate them against the spec, and serve them over HTTP with a built-in browser IDE. It prints **and parses** GraphQL SDL (print-then-parse yields the same schema), runs subscriptions and Apollo Federation subgraphs, batches with a `DataLoader`, and turns your own types into a schema with `#gql` annotations. It is pure MoonBit with no runtime dependencies, so it runs on every backend (`wasm`, `wasm-gc`, `js`, `native`).
 
 ## Quickstart
 
@@ -109,9 +105,8 @@ subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
 
 ## Annotations
 
-`#gql` annotations write the schema and the resolvers from your own types, the
-way strawberry's decorators do. The generator emits `register(schema,
-resolvers)`:
+`#gql` annotations write the schema and the resolvers from your own types. The
+generator emits `register(schema, resolvers)`:
 
 ```moonbit
 #gql.type(description="Someone who writes books")
@@ -239,9 +234,9 @@ let res = @moongql.execute(s, r, "{ user(id: \"1\") { name } }",
 // {"data":{...},"extensions":{"traceId":"qwq-233"}}
 ```
 
-### Design: faithful equivalences to strawberry
+### Design: explicit, because MoonBit has no runtime reflection
 
-MoonBit has no runtime reflection, so where strawberry discovers resolvers and schema from Python classes, `moongql` uses **explicit** values: resolvers are functions registered by `"Type.field"` (like Rust/Go GraphQL servers), and a field's declared return type drives leaf-vs-composite completion exactly as `graphql-core`'s `complete_value` does. Fields with no registered resolver read their value off the parent JSON object — the equivalent of `graphql-core`'s `default_field_resolver`.
+A schema is built from **explicit** values rather than discovered from the shape of a class: a type is an object you declare, and its resolvers are functions registered by `"Type.field"`. A field's declared return type drives leaf-vs-composite completion, so a field returning a list of objects is completed as one without being told twice. Fields with no registered resolver read their value off the parent JSON object.
 
 Union types, custom scalars, subscriptions, a DataLoader, a built-in HTTP endpoint with a browser IDE, and Apollo Federation are all part of the library and documented above.
 
@@ -279,7 +274,7 @@ s.union("SearchResult", ["Book", "Author"])
 // { search { __typename ... on Book { title } ... on Author { name } } }
 ```
 
-A custom scalar carries its own `serialize` (output) and `parse_value` (input) hooks, the same two coercions strawberry's `Scalar` defines. Input arguments and variables run through `parse_value` before a resolver sees them; resolver results run through `serialize`:
+A custom scalar carries its own `serialize` (output) and `parse_value` (input) hooks — the two coercions the specification gives every scalar. Input arguments and variables run through `parse_value` before a resolver sees them; resolver results run through `serialize`:
 
 ```moonbit
 s.scalar("DateTime",

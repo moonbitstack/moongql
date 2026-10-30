@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>
+/* pick the theme before the first paint: ?theme= wins, then the stored choice,
+   then the OS preference — this avoids a flash of the wrong dome. */
+(function(){
+  var m=null;
+  try{
+    var q=new URLSearchParams(location.search).get("theme");
+    if(q==="light"||q==="dark"){m=q;localStorage.setItem("moongql-theme",q)}
+    else m=localStorage.getItem("moongql-theme");
+  }catch(e){}
+  if(m!=="light"&&m!=="dark"){
+    m=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";
+  }
+  document.documentElement.setAttribute("data-theme",m);
+})();
+</script>
+<title>moongql — the endpoint, in the browser</title>
+<meta name="description" content="What the moongql endpoint serves: three in-browser IDEs, and the requests and responses it answers over GraphQL over HTTP.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='12' fill='none' stroke='%23c9a06a' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23f0d070'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --serif:"Fraunces",ui-serif,Georgia,"Times New Roman",serif;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bronze:#c9a06a; --bronze-dim:#a67c52;
+  --query:#7db8e8; --graph:#f0d070; --response:#fff8e8; --response-mark:#fff8e8;
+  --dome-1:#0a0e1a; --dome-2:#121a2e;
+  --ink:#e8e4dc; --muted:#9aa3b2; --line:rgba(201,160,106,.22);
+  --panel:rgba(255,255,255,.035); --panel-2:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 24px 60px -28px rgba(0,0,0,.7);
+  --grain:0.025;
+}
+html[data-theme=light]{
+  --bronze:#a67c52; --bronze-dim:#8a6638;
+  --query:#4a86c0; --graph:#a87d0a; --response:#fff8e8; --response-mark:#b07a3a;
+  --dome-1:#f2eee6; --dome-2:#e8e2d4;
+  --ink:#1f1a14; --muted:#5b5346; --line:rgba(166,124,82,.32);
+  --panel:rgba(31,26,20,.035); --panel-2:rgba(31,26,20,.05);
+  --shadow:0 1px 2px rgba(31,26,20,.06),0 24px 60px -30px rgba(31,26,20,.28);
+  --grain:0.02;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.7;
+  background:var(--dome-1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% -10%,var(--dome-2) 0%,var(--dome-1) 60%);
+  transition:background .8s ease}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:var(--grain);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:var(--query);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 1.4rem}
+
+header.bar{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
+  background:color-mix(in oklab,var(--dome-1) 80%,transparent);
+  border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;gap:1rem;height:60px}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-weight:600;
+  font-size:1.05rem;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.brand .oc{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bronze);
+  box-shadow:0 0 0 3px color-mix(in oklab,var(--bronze) 18%,transparent),inset 0 0 8px color-mix(in oklab,var(--graph) 30%,transparent)}
+.bar nav{margin-left:auto;display:flex;align-items:center;gap:1.2rem}
+.bar nav a{color:var(--muted);font-size:.9rem}
+.bar nav a:hover{color:var(--ink);text-decoration:none}
+.bar nav a[aria-current]{color:var(--ink)}
+.theme{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+  padding:.35rem .6rem;font:inherit;font-size:.8rem;cursor:pointer}
+.theme:hover{border-color:var(--bronze);color:var(--ink)}
+
+/* ---------- page ---------- */
+main{padding:3rem 0 4rem}
+.kicker{color:var(--bronze-dim);font-family:var(--mono);font-size:.76rem;
+  letter-spacing:.3em;text-transform:uppercase}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(2rem,4.6vw,3.1rem);
+  line-height:1.1;letter-spacing:-.015em;margin:.7rem 0 0;max-width:20ch}
+.lede{color:var(--muted);max-width:62ch;margin:1rem 0 0;font-size:1.03rem}
+section{margin-top:3.4rem;padding-top:2.2rem;border-top:1px solid var(--line)}
+h2{font-family:var(--serif);font-weight:400;font-size:1.75rem;margin:.5rem 0 0;letter-spacing:-.01em}
+h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
+
+
+/* ---------- playground ---------- */
+.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-top:1.8rem}
+.pane{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);
+  overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.pane .head{display:flex;align-items:center;gap:.6rem;padding:.55rem .9rem;
+  border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.74rem;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--bronze-dim)}
+.pane .head .dot{width:7px;height:7px;border-radius:50%;background:var(--query)}
+.pane.out .head .dot{background:var(--response-mark)}
+#editor{display:block;width:100%;min-height:17rem;resize:vertical;border:0;outline:none;
+  background:transparent;color:var(--ink);font-family:var(--mono);font-size:.9rem;
+  line-height:1.75;padding:1rem 1.1rem}
+#out{margin:0;padding:1rem 1.1rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
+  line-height:1.7;white-space:pre;color:var(--ink);max-height:26rem;min-height:17rem}
+#out .k{color:var(--query)} #out .s{color:var(--graph)} #out .n{color:var(--response-mark)}
+#out .e{color:#e8837a} html[data-theme=light] #out .e{color:#b23b2e}
+.row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
+.run{background:linear-gradient(180deg,color-mix(in oklab,var(--query) 26%,transparent),transparent);
+  border:1px solid color-mix(in oklab,var(--query) 45%,var(--line));color:var(--ink);
+  border-radius:10px;padding:.55rem 1.05rem;font:inherit;font-weight:500;font-size:.94rem;cursor:pointer}
+.run:hover{border-color:var(--query)}
+.preset{background:none;border:1px solid var(--line);border-radius:8px;color:var(--muted);
+  font:inherit;font-size:.84rem;padding:.35rem .7rem;cursor:pointer}
+.preset:hover{color:var(--ink);border-color:var(--bronze)}
+.state{font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-left:auto}
+.state.ok{color:var(--graph)} .state.bad{color:#e8837a}
+kbd{font-family:var(--mono);font-size:.82em;border:1px solid var(--line);border-radius:5px;
+  padding:.05rem .3rem}
+
+/* ---------- schema browser ---------- */
+.schema{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.8rem;margin-top:1.6rem}
+.type{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:.9rem 1rem}
+.type h3{font-family:var(--mono);font-size:.92rem;margin:.1rem 0 0;font-weight:500;color:var(--ink)}
+.type .kindtag{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--bronze-dim)}
+.type ul{list-style:none;margin:.55rem 0 0;padding:0;font-family:var(--mono);font-size:.78rem;
+  color:var(--muted)}
+.type li{padding:.1rem 0;overflow-wrap:anywhere}
+.type li b{color:var(--query);font-weight:400}
+
+/* tabs */
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin:1.8rem 0 0}
+.tab{background:none;border:1px solid var(--line);border-radius:9px;color:var(--muted);
+  font:inherit;font-size:.9rem;padding:.45rem .9rem;cursor:pointer}
+.tab:hover{color:var(--ink);border-color:color-mix(in oklab,var(--bronze) 50%,var(--line))}
+.tab[aria-selected=true]{color:var(--ink);border-color:var(--bronze);background:var(--panel)}
+.panel{display:none;margin-top:1.2rem}
+.panel[data-open]{display:block}
+.shot{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel-2);
+  box-shadow:var(--shadow)}
+.shot img{display:block;width:100%;height:auto}
+.facts{display:flex;gap:1.6rem;flex-wrap:wrap;margin:1rem 0 0;font-family:var(--mono);font-size:.8rem;
+  color:var(--muted)}
+.facts b{color:var(--ink);font-weight:500}
+.note{color:var(--muted);font-size:.92rem;margin:.9rem 0 0}
+
+/* exchanges */
+.exchange{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:1.6rem;margin-top:1.8rem}
+.picks{display:flex;flex-direction:column;gap:.35rem;margin:0;padding:0;list-style:none}
+.pick{text-align:left;background:none;border:1px solid transparent;border-radius:9px;
+  color:var(--muted);font:inherit;font-size:.9rem;padding:.5rem .7rem;cursor:pointer;
+  border-left-width:2px}
+.pick:hover{color:var(--ink);background:var(--panel)}
+.pick[aria-selected=true]{color:var(--ink);background:var(--panel);border-color:var(--line);
+  border-left-color:var(--bronze);border-radius:0 9px 9px 0}
+.pick .m{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;color:var(--bronze-dim);
+  text-transform:uppercase;display:block}
+pre{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+  padding:1rem 1.1rem;overflow-x:auto;font-family:var(--mono);font-size:.86rem;line-height:1.65;
+  color:var(--ink);margin:.6rem 0 0;white-space:pre}
+pre .c{color:var(--muted)} pre .g{color:var(--graph)} pre .q{color:var(--query)}
+.status{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:1rem}
+.status b{color:var(--ink);font-weight:500}
+.label{font-family:var(--mono);font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--bronze-dim);margin-top:1.1rem}
+.hint{color:var(--muted);font-size:.95rem;margin:.4rem 0 0}
+
+footer{border-top:1px solid var(--line);padding:2.6rem 0 3.4rem;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;justify-content:space-between}
+footer a{color:var(--muted)}
+footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
+
+/* ---------- chrome shared by every page ---------- */
+html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
+@supports selector(::-webkit-scrollbar) {
+  html::-webkit-scrollbar { width: 10px; height: 10px; }
+  html::-webkit-scrollbar-track { background: transparent; }
+  html::-webkit-scrollbar-thumb {
+    border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
+  html.at-top::-webkit-scrollbar-thumb { background-color: transparent; }
+  pre::-webkit-scrollbar { height: 10px; }
+  pre::-webkit-scrollbar-track { background: transparent; }
+  pre::-webkit-scrollbar-thumb {
+    border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
+    background-color: color-mix(in srgb, var(--ink) 22%, transparent); }
+}
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
+  html.at-top { scrollbar-color: transparent transparent; }
+  pre { scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent; }
+}
+p, li, figcaption, .note { overflow-wrap: anywhere; }
+
+@media (width <= 860px){
+  .play{grid-template-columns:minmax(0,1fr)}
+  .exchange{grid-template-columns:minmax(0,1fr)}
+  .picks{flex-direction:row;flex-wrap:wrap}
+  .pick{border-left-width:1px;border-radius:9px}
+  .bar .wrap{height:auto;flex-wrap:wrap;padding-top:.55rem;padding-bottom:.55rem;
+    row-gap:.45rem;position:relative}
+  .bar nav{margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;
+    gap:.5rem .95rem;font-size:.86rem}
+  .theme{position:absolute;top:.55rem;right:1.4rem}
+  .brand{max-width:calc(100% - 5rem)}
+}
+</style>
+</head>
+<body>
+
+<header class="bar"><div class="wrap">
+  <a class="brand" href="index.html"><span class="oc"></span>moongql</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="guide.html">Guide</a>
+    <a href="api.html">API</a>
+    <a href="showcase.html" aria-current="page">Showcase</a>
+    <a href="https://github.com/moonbitstack/moongql">GitHub</a>
+    <button class="theme" id="theme" aria-label="toggle light or night theme" aria-live="polite">◐ night</button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <div class="kicker">Showcase</div>
+  <h1>The endpoint, in the browser.</h1>
+  <p class="lede">A moongql endpoint answers GraphQL over HTTP and, on the same path, serves an
+  IDE to write queries in. Below, the library runs in this tab: write a query and the answer is
+  executed here, then introspect the schema, open the three IDEs it can serve, and follow one
+  request through the transport.</p>
+
+  <section id="play">
+    <div class="kicker">The library, in this tab</div>
+    <h2>Write a query. Watch the graph answer.</h2>
+    <p>The editor runs the library itself, compiled to JavaScript and loaded with this page —
+    the same lexer, parser, validator and executor the server uses. Nothing here is a recorded
+    response: press <kbd>Run</kbd> and the JSON is computed in front of you.</p>
+
+    <div class="play">
+      <div class="pane">
+        <div class="head"><span class="dot"></span>Query</div>
+        <textarea id="editor" spellcheck="false" aria-label="GraphQL query">{
+  sky {
+    name
+    brightest { name label }
+    stars { name magnitude }
+  }
+}</textarea>
+      </div>
+      <div class="pane out">
+        <div class="head"><span class="dot"></span>Response</div>
+        <pre id="out" aria-live="polite">loading the engine…</pre>
+      </div>
+    </div>
+    <div class="row">
+      <button class="run" id="run">Run</button>
+      <button class="preset" data-q="{ sky { name stars { name label } } }">a query</button>
+      <button class="preset" data-q="{ sky { brightest { name nope } } }">a field that is not there</button>
+      <button class="preset" data-q="query ($id: ID!) { star(id: $id) { name label } }">a variable, with none supplied</button>
+      <span class="state" id="state">ready</span>
+    </div>
+    <p class="note">A document that does not validate comes back as <code>errors</code> with the
+    line and column of the field, argument or variable at fault. The third preset asks for a
+    variable and supplies none, which the executor refuses before running the document.</p>
+  </section>
+
+  <section id="schema">
+    <div class="kicker">Introspection</div>
+    <h2>The schema the endpoint reports.</h2>
+    <p>Read from the running engine with the introspection query any GraphQL client sends —
+    <code>{ __schema { types { … } } }</code>, answered by the library's own introspection
+    resolver and rendered here with every wrapper intact.</p>
+    <div class="schema" id="schema-cards">
+      <p class="note">loading…</p>
+    </div>
+  </section>
+
+  <section id="ides" class="tabhost">
+    <div class="kicker">Three windows, one endpoint</div>
+    <h2>Pick the IDE the endpoint serves.</h2>
+    <p>Each is a single page built here, not a redirect: the endpoint returns it on a
+    <code>GET</code> without a <code>?query=</code>, with the endpoint path baked in.
+    The subscription socket is derived from the page's own location unless you name one.</p>
+
+    <div class="tabs" role="tablist" id="ide-tabs">
+      <button class="tab" role="tab" aria-selected="true" data-panel="ide-graphiql">GraphiQL</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="ide-apollo">Apollo Sandbox</button>
+      <button class="tab" role="tab" aria-selected="false" data-panel="ide-altair">Altair</button>
+    </div>
+
+    <div class="panel" id="ide-graphiql" data-open>
+      <div class="shot"><img src="assets/ide-graphiql.png" alt="GraphiQL, served by a moongql endpoint, with a query in the editor and its response beside it"></div>
+      <div class="facts"><span><b>200</b> text/html</span><span><b>2396</b> bytes</span><span>fetches <b>/graphql</b></span><span>default</span></div>
+      <p class="note">GraphiQL 5.4.0 with the explorer and history plugins, loaded from a pinned
+      CDN import map. React and the IDE are named by exact version, so a client that opens the
+      endpoint a year from now gets the page that was shipped.</p>
+    </div>
+
+    <div class="panel" id="ide-apollo">
+      <div class="shot"><img src="assets/ide-apollo.png" alt="Apollo Sandbox embedded in the moongql endpoint page, showing the schema explorer"></div>
+      <div class="facts"><span><b>200</b> text/html</span><span><b>698</b> bytes</span><span>fetches <b>/graphql</b></span></div>
+      <p class="note">Apollo Sandbox 2.7.4 in an iframe, with the endpoint passed as an absolute
+      URL so the embedded app can reach it from its own origin.</p>
+    </div>
+
+    <div class="panel" id="ide-altair">
+      <div class="facts"><span><b>200</b> text/html</span><span><b>941</b> bytes</span><span>fetches <b>/graphql</b></span><span>subscriptions derived</span></div>
+      <p class="label">The page it returns</p>
+<pre>&lt;script&gt;
+  window.__ALTAIR_ENDPOINT_URL__ = "/graphql";
+  window.__ALTAIR_SUBSCRIPTIONS_ENDPOINT__ = "ws://127.0.0.1:12000/subscriptions";
+  window.__ALTAIR_WEB_APP__ = true;
+&lt;/script&gt;</pre>
+      <p class="note">Altair 8.5.11 reads its endpoint from globals before it boots, so the page is
+      two scripts and three assignments. This tab has no screenshot: the build machine that
+      captured the other two cannot reach the CDN Altair loads from, so the picture would show
+      an empty frame rather than the IDE.</p>
+    </div>
+  </section>
+
+  <section id="transport">
+    <div class="kicker">GraphQL over HTTP</div>
+    <h2>One request, six answers.</h2>
+    <p>The same endpoint, driven by the transport rules: what a POST carries, what the
+    <code>Accept</code> header chooses, and what a client gets back when the request is
+    wrong. Pick a case.</p>
+
+    <div class="exchange tabhost">
+      <ul class="picks" role="tablist" id="x-tabs">
+        <li><button class="pick" role="tab" aria-selected="true" data-panel="x1"><span class="m">POST</span>A query</button></li>
+        <li><button class="pick" role="tab" aria-selected="false" data-panel="x2"><span class="m">POST</span>Variables</button></li>
+        <li><button class="pick" role="tab" aria-selected="false" data-panel="x3"><span class="m">POST</span>No content type</button></li>
+        <li><button class="pick" role="tab" aria-selected="false" data-panel="x4"><span class="m">POST</span>A request error</button></li>
+        <li><button class="pick" role="tab" aria-selected="false" data-panel="x5"><span class="m">POST</span>A batch</button></li>
+        <li><button class="pick" role="tab" aria-selected="false" data-panel="x6"><span class="m">GET</span>The same query</button></li>
+      </ul>
+
+      <div>
+        <div class="panel" id="x1" data-open>
+          <p class="hint">A POST with an <code>application/json</code> body, asking for
+          <code>application/json</code> back.</p>
+<pre><span class="c">content-type: application/json
+accept: application/json</span>
+
+{ "query": "{ user(id: \"1\") { id name } }" }</pre>
+          <p class="status"><b>200</b> · application/json</p>
+<pre>{"data":{"user":{"id":"1","name":"lfanke"}}}</pre>
+        </div>
+
+        <div class="panel" id="x2">
+          <p class="hint">The same query with the id in a variable instead of the document.</p>
+<pre>{ "query": "query ($uid: ID!) { user(id: $uid) { name } }",
+  "variables": { "uid": "1" } }</pre>
+          <p class="status"><b>200</b> · application/json</p>
+<pre>{"data":{"user":{"name":"lfanke"}}}</pre>
+        </div>
+
+        <div class="panel" id="x3">
+          <p class="hint">A body the endpoint cannot read as JSON: a request error, not a
+          field error, so it is refused before any document runs.</p>
+          <p class="status"><b>415</b> · unsupported media type</p>
+<pre>{"errors":[{"message":"..."}]}</pre>
+          <p class="note">415 is the status the transport assigns to a missing or unsupported
+          <code>content-type</code>, so a client can tell it apart from a GraphQL error.</p>
+        </div>
+
+        <div class="panel" id="x4">
+          <p class="hint">With <code>accept: application/graphql-response+json</code> the status
+          separates the two kinds of failure: 400 when the request never ran, 200 when a field
+          failed while the rest of the response succeeded.</p>
+          <p class="status"><b>400</b> · the document did not run</p>
+<pre>{"errors":[{"message":"Cannot query field 'nope' on type 'User'",
+           "locations":[{"line":3,"column":5}]}]}</pre>
+        </div>
+
+        <div class="panel" id="x5">
+          <p class="hint">An array body is a batch: each entry is executed on its own and the
+          answers come back in the same order.</p>
+          <p class="status"><b>200</b> · application/json</p>
+<pre>[{"data":{"user":{"name":"lfanke"}}},{"data":{"hero":{"id":"1"}}}]</pre>
+        </div>
+
+        <div class="panel" id="x6">
+          <p class="hint">A GET carries the same fields in the query string. It runs only
+          queries — a mutation over GET is refused.</p>
+<pre>GET /graphql?query={ user(id: "1") { name } }</pre>
+          <p class="status"><b>200</b> · application/json</p>
+<pre>{"data":{"user":{"name":"lfanke"}}}</pre>
+          <p class="note">Serve the endpoint with no IDE and a GET without <code>?query=</code>
+          answers <b>405</b> instead of a page.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sdl">
+    <div class="kicker">Print, then parse</div>
+    <h2>The schema the code builds, as text.</h2>
+    <p><code>to_sdl</code> writes the type system out; <code>Schema::of_sdl</code> reads it back.
+    Descriptions, argument defaults, <code>@deprecated(reason:)</code> and custom directives all
+    survive the trip, so the second print is byte-for-byte the first.</p>
+<pre><span class="g">schema</span> {
+  query: Query
+  mutation: Mutation
+}
+
+<span class="g">directive</span> @tag(name: String!) repeatable on OBJECT | FIELD_DEFINITION
+
+"The root of the graph."
+<span class="g">type</span> Query {
+  "Whoever is asking."
+  me: User
+  "Search the graph."
+  search(filter: UserFilter, first: Int = 10): [SearchResult!]!
+  "The old way."
+  legacy: String @deprecated(reason: "use search") @tag(name: "gone")
+}</pre>
+    <p class="note">Printed by <code>moon run src/examples/01-sdl</code>.</p>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <span>moongql · Apache-2.0 · a moonbitstack library</span>
+  <span class="links">
+    <a href="index.html">Home</a>
+    <a href="guide.html">Guide</a>
+    <a href="api.html">API reference</a>
+    <a href="https://github.com/moonbitstack/moongql">GitHub</a>
+    <a href="https://mooncakes.io/docs/moonbitstack/moongql">mooncakes</a>
+  </span>
+</div></footer>
+
+<script src="engine/moongql.js"></script>
+<script>
+(function(){
+  var root=document.documentElement;
+
+  var syncTop=function(){ root.classList.toggle("at-top", window.scrollY <= 0); };
+  window.addEventListener("scroll", syncTop, { passive: true });
+  syncTop();
+
+  var btn=document.getElementById("theme");
+  function paint(mode){
+    root.setAttribute("data-theme",mode);
+    if(btn){
+      btn.textContent=(mode==="light"?"◑ day":"◐ night");
+      btn.setAttribute("aria-label","switch to "+(mode==="light"?"night":"day")+" theme");
+    }
+  }
+  paint(root.getAttribute("data-theme")==="light"?"light":"dark");
+  if(btn)btn.addEventListener("click",function(){
+    var cur=root.getAttribute("data-theme")==="light"?"dark":"light";
+    paint(cur);
+    try{localStorage.setItem("moongql-theme",cur)}catch(e){}
+  });
+
+  // tabs: one listener per host, so the markup stays a plain list of buttons
+  // ---------- the playground: the library, compiled to JS, runs here ----------
+  var out=document.getElementById("out");
+  var editor=document.getElementById("editor");
+  var state=document.getElementById("state");
+  var engine=globalThis.moongqlRun;
+
+  function escapeHtml(t){
+    return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  // enough colour to read a response: keys, strings, numbers
+  function paintJson(text){
+    return escapeHtml(text)
+      .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g,'<span class="k">$1</span>$2')
+      .replace(/:\s*("(?:[^"\\]|\\.)*")/g,': <span class="s">$1</span>')
+      .replace(/:\s*(-?\d+(?:\.\d+)?)/g,': <span class="n">$1</span>');
+  }
+
+  function execute(){
+    if(!engine){
+      out.textContent="the engine did not load — this page needs engine/moongql.js beside it";
+      state.textContent="no engine";state.className="state bad";
+      return;
+    }
+    var started=performance.now();
+    var text=engine(editor.value);
+    var ms=Math.round(performance.now()-started);
+    var parsed;
+    try{parsed=JSON.parse(text)}catch(e){out.textContent=text;return}
+    var bad=parsed.errors&&parsed.errors.length>0;
+    state.textContent=(bad?"errors":"ok")+" · "+ms+" ms";
+    state.className="state "+(bad?"bad":"ok");
+    out.innerHTML=paintJson(JSON.stringify(parsed,null,2));
+  }
+
+  var runBtn=document.getElementById("run");
+  if(runBtn)runBtn.addEventListener("click",execute);
+  document.querySelectorAll(".preset").forEach(function(b){
+    b.addEventListener("click",function(){editor.value=b.getAttribute("data-q");execute();});
+  });
+  if(editor)editor.addEventListener("keydown",function(ev){
+    if((ev.metaKey||ev.ctrlKey)&&ev.key==="Enter"){ev.preventDefault();execute();}
+  });
+
+  // ---------- the schema browser: one introspection query, rendered ----------
+  var cards=document.getElementById("schema-cards");
+  var INTRO="{ __schema { types { name kind fields { name type { kind name ofType { kind name ofType { kind name } } } } } } }";
+
+  function typeName(t){
+    if(!t)return "?";
+    if(t.kind==="NON_NULL")return typeName(t.ofType)+"!";
+    if(t.kind==="LIST")return "["+typeName(t.ofType)+"]";
+    return t.name||"?";
+  }
+
+  function buildSchema(){
+    if(!cards)return;
+    if(!engine){cards.textContent="the engine did not load";return}
+    var res;
+    try{res=JSON.parse(engine(INTRO))}catch(e){cards.textContent=String(e);return}
+    if(!res.data||!res.data.__schema){cards.textContent="introspection returned no schema";return}
+    var types=res.data.__schema.types.filter(function(t){return t.name.indexOf("__")!==0});
+    cards.innerHTML=types.map(function(t){
+      var fields=(t.fields||[]).map(function(f){
+        return "<li><b>"+f.name+"</b>: "+typeName(f.type)+"</li>";
+      }).join("");
+      return '<div class="type"><span class="kindtag">'+t.kind.toLowerCase()+"</span>"+
+             "<h3>"+t.name+"</h3><ul>"+(fields||"<li>—</li>")+"</ul></div>";
+    }).join("");
+  }
+
+  execute();
+  buildSchema();
+
+  document.querySelectorAll(".tabhost").forEach(function(host){
+    host.addEventListener("click", function(ev){
+      var tab=ev.target.closest("[data-panel]");
+      if(!tab||!host.contains(tab))return;
+      host.querySelectorAll("[role=tab]").forEach(function(t){
+        t.setAttribute("aria-selected", t===tab ? "true" : "false");
+      });
+      host.querySelectorAll(".panel").forEach(function(p){
+        if(p.id===tab.getAttribute("data-panel"))p.setAttribute("data-open","");
+        else p.removeAttribute("data-open");
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
