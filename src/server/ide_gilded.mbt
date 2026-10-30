@@ -29,7 +29,7 @@ fn gilded_head() -> String {
     #|  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     #|  <style>
     #|    :root{
-    #|      --bg:#07060a; --panel:#100d17; --panel-2:#151120;
+    #|      --bg:#07060a; --panel:#100d17; --panel-2:#151120; --abyss-2:#0b0912;
     #|      --ink:#e9e3d4; --muted:#9b917c; --faint:#6d6555;
     #|      --gold:#c9a84c; --gold-hi:#eed89b; --hair:rgba(201,168,76,.22);
     #|      --gold-dim:rgba(201,168,76,.34); --azure:#4a90d9; --crimson:#e8837a;
@@ -43,7 +43,9 @@ fn gilded_head() -> String {
     #|    html,body{height:100%}
     #|    body{margin:0;color:var(--ink);font-family:var(--sans);
     #|      font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow:hidden;
-    #|      background:radial-gradient(120% 90% at 50% -12%,#141019 0%,var(--bg) 62%)}
+    #|      background:
+    #|        radial-gradient(120% 90% at 50% -12%,#141019 0%,var(--bg) 62%),
+    #|        radial-gradient(90% 60% at 50% 116%,var(--abyss-2) 0%,transparent 68%)}
     #|    ::selection{background:rgba(201,168,76,.3);color:var(--ink)}
     #|    :where(a,button,input,textarea,[tabindex]):focus-visible{
     #|      outline:1px solid var(--gold);outline-offset:3px;border-radius:2px}
@@ -54,6 +56,9 @@ fn gilded_head() -> String {
     #|    .mark{width:21px;height:21px;flex:none}
     #|    .name{font-family:var(--caps);font-size:.82rem;letter-spacing:.22em;
     #|      text-transform:uppercase;color:var(--ink)}
+    #|    .sub{font-family:var(--sans);font-size:.6rem;letter-spacing:.14em;
+    #|      text-transform:uppercase;color:var(--muted);border-left:1px solid var(--hair);
+    #|      padding-left:.6rem;margin-left:.05rem;white-space:nowrap}
     #|    .url{font-family:var(--mono);font-size:.75rem;color:var(--gold);
     #|      border:1px solid var(--hair);border-radius:2px;padding:.1rem .45rem;
     #|      max-width:20rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -131,30 +136,42 @@ fn gilded_head() -> String {
     #|    kbd{font-family:var(--mono);font-size:.72em;color:var(--gold);margin-left:.35rem}
     #|    main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px;
     #|      background:var(--hair);background-clip:content-box;
-    #|      min-height:0;position:relative;margin:.62rem;padding:9px;
+    #|      min-height:0;position:relative;margin:1rem;padding:14px;
     #|      border:1px solid var(--gold-dim);border-radius:2px;
-    #|      box-shadow:inset 0 0 70px -34px rgba(201,168,76,.4),0 34px 80px -60px #000}
+    #|      box-shadow:inset 0 0 80px -36px rgba(201,168,76,.45),0 34px 80px -60px #000}
     #|    /* the same nested frame the documentation uses: the hairline lives in the
     #|       ring of padding, so it never crosses the two panes */
-    #|    main::before{content:"";position:absolute;inset:4px;border:1px solid var(--hair);
+    #|    main::before{content:"";position:absolute;inset:5px;border:1px solid var(--hair);
     #|      border-radius:1px;pointer-events:none;z-index:3}
     #|    main::after{content:"";position:absolute;inset:-4px;pointer-events:none;z-index:3;
     #|      background:
-    #|        linear-gradient(var(--gold),var(--gold)) left top/18px 1px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) left top/1px 18px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) right top/18px 1px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) right top/1px 18px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) left bottom/18px 1px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) left bottom/1px 18px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) right bottom/18px 1px no-repeat,
-    #|        linear-gradient(var(--gold),var(--gold)) right bottom/1px 18px no-repeat;
+    #|        linear-gradient(var(--gold),var(--gold)) left top/22px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left top/1px 22px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right top/22px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right top/1px 22px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left bottom/22px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) left bottom/1px 22px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right bottom/22px 1px no-repeat,
+    #|        linear-gradient(var(--gold),var(--gold)) right bottom/1px 22px no-repeat;
     #|      opacity:.85}
     #|    .knot{position:absolute;left:50%;width:6px;height:6px;background:var(--gold);z-index:4;
     #|      transform:translateX(-50%) rotate(45deg);
     #|      box-shadow:0 0 8px rgba(201,168,76,.6)}
     #|    .knot.t{top:-3px} .knot.b{bottom:-3px}
-    #|    .pane{background:var(--panel-2);display:flex;flex-direction:column;
-    #|      min-width:0;min-height:0;position:relative}
+    #|    /* -- · -- runs flanking each knot, the same ruler the panels wear */
+    #|    .tick{position:absolute;height:1px;width:min(15%,110px);opacity:.55;pointer-events:none;
+    #|      background:repeating-linear-gradient(90deg,var(--gold-dim) 0 3px,transparent 3px 7px)}
+    #|    .tick.tl{right:calc(50% + 16px);top:-6px}
+    #|    .tick.tr{left:calc(50% + 16px);top:-6px}
+    #|    .tick.bl{right:calc(50% + 16px);bottom:-6px}
+    #|    .tick.br{left:calc(50% + 16px);bottom:-6px}
+    #|    .pane{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;
+    #|      background:
+    #|        linear-gradient(180deg,rgba(233,227,212,.04),transparent 22%),
+    #|        linear-gradient(180deg,
+    #|          color-mix(in oklab,var(--panel-2) 97%,transparent),
+    #|          color-mix(in oklab,var(--panel-2) 88%,var(--bg)));
+    #|      box-shadow:inset 0 0 60px -50px rgba(201,168,76,.55)}
     #|    .hd{display:flex;align-items:center;gap:.55rem;padding:.55rem .95rem;flex:none;
     #|      border-bottom:1px solid var(--hair);font-family:var(--caps);font-size:.63rem;
     #|      letter-spacing:.22em;text-transform:uppercase;color:rgba(201,168,76,.62)}
@@ -247,6 +264,7 @@ fn gilded_head() -> String {
     #|      .play{grid-template-rows:auto minmax(0,1fr)}
     #|      .bar{flex-wrap:wrap;gap:.45rem .6rem;padding:.5rem .8rem}
     #|      .name{display:block;font-size:.7rem}
+    #|      .sub{display:none}
     #|      .url{max-width:9rem}
     #|      .spacer{display:none}
     #|      .state{margin-left:auto}
@@ -258,7 +276,7 @@ fn gilded_head() -> String {
     #|    /* the day plate: the page follows the reader's system theme */
     #|    @media (prefers-color-scheme: light){
     #|      :root{
-    #|        --bg:#ede7d9; --panel:#f7f2e6; --panel-2:#fcf8ef;
+    #|        --bg:#ede7d9; --panel:#f7f2e6; --panel-2:#fcf8ef; --abyss-2:#e2d9c6;
     #|        --ink:#211c14; --muted:#635a4c; --faint:#756a5a;
     #|        --gold:#856527; --gold-hi:#946d2c; --hair:rgba(133,101,39,.32);
     #|        --gold-dim:rgba(133,101,39,.42); --azure:#2f6ea8; --crimson:#b23b2e;
@@ -285,6 +303,7 @@ fn gilded_head() -> String {
     #|  <header class="bar">
     #|    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="3.5" y="3.5" width="25" height="25" fill="none" stroke="#c9a84c" stroke-width="1"/><rect x="7.5" y="7.5" width="17" height="17" fill="none" stroke="#c9a84c" stroke-width=".6" opacity=".55"/><circle cx="16" cy="16" r="3.2" fill="#e9e3d4"/><circle cx="16" cy="16" r="6.2" fill="none" stroke="#c9a84c" stroke-width=".5" opacity=".45"/></svg>
     #|    <span class="name">moongql</span>
+    #|    <span class="sub">GraphQL &middot; MoonBit</span>
     #|    <code class="url" id="url"></code>
     #|    <span class="spacer"></span>
     #|    <span class="state" id="state" aria-live="polite">ready</span>
@@ -294,6 +313,8 @@ fn gilded_head() -> String {
     #|    </span>
     #|  </header>
     #|  <main>
+    #|    <i class="tick tl" aria-hidden="true"></i><i class="tick tr" aria-hidden="true"></i>
+    #|    <i class="tick bl" aria-hidden="true"></i><i class="tick br" aria-hidden="true"></i>
     #|    <span class="knot t" aria-hidden="true"></span>
     #|    <span class="knot b" aria-hidden="true"></span>
     #|    <section class="pane q">
