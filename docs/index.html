@@ -120,9 +120,20 @@ section{padding:5rem 0 0}
 .card h3{font-size:1.12rem;margin:0 0 .2rem}
 .card p{color:var(--muted);font-size:.92rem;margin-top:.5rem;line-height:1.7}
 
-.ides{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:2.4rem}
-.ides .lead{grid-column:1/-1}
+.ides{display:grid;grid-template-columns:.84fr 1.34fr .84fr;gap:1.35rem;align-items:end;
+  margin-top:2.4rem}
+.ides .lead figcaption{justify-content:center}
+/* the two threads that tie the wings to the middle plate */
+.ides .thread{position:absolute;top:14%;bottom:14%;width:1px;
+  background:repeating-linear-gradient(180deg,var(--gold-dim) 0 4px,transparent 4px 9px);
+  opacity:.75;pointer-events:none}
+.ides .thread::after{content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;
+  background:var(--gold);transform:translate(-50%,-50%) rotate(45deg);
+  box-shadow:0 0 6px color-mix(in oklab,var(--gold) 70%,transparent)}
+.ides .thread.l{left:-.72rem}
+.ides .thread.r{right:-.72rem}
 .shot{padding:.55rem;position:relative}
+html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
 .shot img{display:block;width:100%;height:auto;border:1px solid var(--gold-hair);filter:saturate(.92) contrast(1.03)}
 .shot figcaption{display:flex;align-items:center;gap:.6rem;padding:.6rem .4rem .1rem;
   font-family:var(--caps);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
@@ -391,19 +402,27 @@ section{padding:5rem 0 0}
       </div>
 
       <div class="ides">
+        <figure class="shot frame reveal wing" style="margin:0">
+          <img src="assets/ide-graphiql.png" data-dark="assets/ide-graphiql.png"
+               data-light="assets/ide-graphiql-light.png"
+               alt="GraphiQL served by a moongql endpoint, with the starter query and its response">
+          <figcaption><i></i>GraphiQL</figcaption>
+          <span class="knot top"></span><span class="knot bottom"></span>
+        </figure>
         <figure class="shot frame reveal lead" style="margin:0">
-          <img src="assets/ide-moongql.png" alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate">
+          <img src="assets/ide-moongql.png" data-dark="assets/ide-moongql.png"
+               data-light="assets/ide-moongql-light.png"
+               alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate">
           <figcaption><i></i>moongql &middot; the default IDE</figcaption>
           <span class="knot top"></span><span class="knot bottom"></span>
+          <span class="thread l" aria-hidden="true"></span>
+          <span class="thread r" aria-hidden="true"></span>
         </figure>
-        <figure class="shot frame reveal" style="margin:0">
-          <img src="assets/ide-graphiql.png" alt="GraphiQL served by a moongql endpoint, with a query and its response">
-          <figcaption><i></i>GraphiQL &middot; one argument away</figcaption>
-          <span class="knot top"></span><span class="knot bottom"></span>
-        </figure>
-        <figure class="shot frame reveal" style="margin:0">
-          <img src="assets/ide-apollo.png" alt="Apollo Sandbox embedded in the moongql endpoint page">
-          <figcaption><i></i>Apollo Sandbox &middot; one argument away</figcaption>
+        <figure class="shot frame reveal wing" style="margin:0">
+          <img src="assets/ide-apollo.png" data-dark="assets/ide-apollo.png"
+               data-light="assets/ide-apollo-light.png"
+               alt="Apollo Sandbox embedded in the moongql endpoint page, showing the schema explorer">
+          <figcaption><i></i>Apollo Sandbox</figcaption>
           <span class="knot top"></span><span class="knot bottom"></span>
         </figure>
       </div>
@@ -485,12 +504,23 @@ s.to_sdl()
   syncTop();
 
   var btn=document.getElementById("theme");
+  // the IDE screenshots are products: each one has a day and a night plate, so
+  // the row keeps its tone when the page does
+  function paintShots(mode){
+    var shots=document.querySelectorAll("img[data-light]");
+    for(var i=0;i<shots.length;i++){
+      var next=shots[i].getAttribute(mode==="light"?"data-light":"data-dark");
+      if(next&&shots[i].getAttribute("src")!==next) shots[i].setAttribute("src",next);
+    }
+  }
+
   function paint(mode){
     root.setAttribute("data-theme",mode);
     if(btn){
       btn.innerHTML=(mode==="light"?"&#9687; day":"&#9686; night");
       btn.setAttribute("aria-label","switch to "+(mode==="light"?"night":"day")+" plate");
     }
+    paintShots(mode);
   }
   paint(root.getAttribute("data-theme")==="light"?"light":"dark");
   if(btn)btn.addEventListener("click",function(){

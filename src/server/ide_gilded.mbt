@@ -151,6 +151,21 @@ fn gilded_head() -> String {
     #|      .name{display:none}
     #|      main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
     #|    }
+    #|    /* the day plate: the page follows the reader's system theme */
+    #|    @media (prefers-color-scheme: light){
+    #|      :root{
+    #|        --bg:#ede7d9; --panel:#f7f2e6; --panel-2:#fcf8ef;
+    #|        --ink:#211c14; --muted:#635a4c; --faint:#756a5a;
+    #|        --gold:#856527; --gold-hi:#946d2c; --hair:rgba(133,101,39,.32);
+    #|        --gold-dim:rgba(133,101,39,.42); --azure:#2f6ea8; --crimson:#b23b2e;
+    #|      }
+    #|      .hd{color:rgba(133,101,39,.7)}
+    #|      .vars label{color:rgba(133,101,39,.6)}
+    #|      .s{color:#7a5a1f}
+    #|      .play[data-focus] .code .f.hot{color:var(--ink);background:rgba(47,110,168,.18)}
+    #|      .play[data-focus] #out .ln.hot{background:rgba(133,101,39,.10)}
+    #|      .code textarea::selection{background:rgba(47,110,168,.2)}
+    #|    }
     #|    @media (prefers-reduced-motion:reduce){*{transition:none!important}}
     #|  </style>
     #|</head>

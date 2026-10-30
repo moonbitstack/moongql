@@ -213,6 +213,8 @@ fn apollo_page(endpoint : String) -> String {
     #|      initialEndpoint: endpoint,
     #|      endpointIsEditable: true,
     #|      hideCookieToggle: true,
+    #|      // Sandbox keeps its own theme; match the one the reader's system asks for
+    #|      initialTheme: matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
     #|    });
     #|  </script>
     #|</body>

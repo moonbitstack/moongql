@@ -49,6 +49,8 @@ test "the Apollo Sandbox page embeds the sandbox at the endpoint" {
   assert_eq(page.contains("https://esm.sh/@apollo/sandbox@2.7.4"), true)
   assert_eq(page.contains("initialEndpoint: endpoint"), true)
   assert_eq(page.contains("new URL('/graphql', location.href)"), true)
+  // Sandbox carries its own theme, so the page asks for the reader's
+  assert_eq(page.contains("prefers-color-scheme: light"), true)
   assert_eq(pinned(page), true)
 }
 

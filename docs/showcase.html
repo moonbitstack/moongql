@@ -287,8 +287,8 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     </div>
 
     <div class="panel" id="ide-gilded" data-open>
-      <div class="shot"><img src="assets/ide-moongql.png" alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate"></div>
-      <div class="facts"><span><b>200</b> text/html</span><span><b>23</b> kB, one string</span><span>nothing from a CDN</span><span>default</span></div>
+      <div class="shot"><img src="assets/ide-moongql.png" data-dark="assets/ide-moongql.png" data-light="assets/ide-moongql-light.png" alt="The moongql IDE: a document on the left, its response on the right, both on a gold-haired plate"></div>
+      <div class="facts"><span><b>200</b> text/html</span><span><b>24</b> kB, one string</span><span>nothing from a CDN</span><span>default</span></div>
       <p class="note">Built by the library: the page is an HTML string the endpoint returns,
       with the endpoint path baked in. A document on the left, the answer on the right, a
       schema drawer, variables, and the same linking the playground above has — a field lit
@@ -297,7 +297,7 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     </div>
 
     <div class="panel" id="ide-graphiql">
-      <div class="shot"><img src="assets/ide-graphiql.png" alt="GraphiQL, served by a moongql endpoint, with a query in the editor and its response beside it"></div>
+      <div class="shot"><img src="assets/ide-graphiql.png" data-dark="assets/ide-graphiql.png" data-light="assets/ide-graphiql-light.png" alt="GraphiQL, served by a moongql endpoint, with a query in the editor and its response beside it"></div>
       <div class="facts"><span><b>200</b> text/html</span><span><b>2396</b> bytes</span><span>fetches <b>/graphql</b></span><span>default</span></div>
       <p class="note">GraphiQL 5.4.0 with the explorer and history plugins, loaded from a pinned
       CDN import map. React and the IDE are named by exact version, so a client that opens the
@@ -305,7 +305,7 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     </div>
 
     <div class="panel" id="ide-apollo">
-      <div class="shot"><img src="assets/ide-apollo.png" alt="Apollo Sandbox embedded in the moongql endpoint page, showing the schema explorer"></div>
+      <div class="shot"><img src="assets/ide-apollo.png" data-dark="assets/ide-apollo.png" data-light="assets/ide-apollo-light.png" alt="Apollo Sandbox embedded in the moongql endpoint page, showing the schema explorer"></div>
       <div class="facts"><span><b>200</b> text/html</span><span><b>698</b> bytes</span><span>fetches <b>/graphql</b></span></div>
       <p class="note">Apollo Sandbox 2.7.4 in an iframe, with the endpoint passed as an absolute
       URL so the embedded app can reach it from its own origin.</p>
@@ -448,12 +448,22 @@ accept: application/json</span>
   syncTop();
 
   var btn=document.getElementById("theme");
+  // each captured IDE has a day plate and a night plate
+  function paintShots(mode){
+    var shots=document.querySelectorAll("img[data-light]");
+    for(var i=0;i<shots.length;i++){
+      var next=shots[i].getAttribute(mode==="light"?"data-light":"data-dark");
+      if(next&&shots[i].getAttribute("src")!==next) shots[i].setAttribute("src",next);
+    }
+  }
+
   function paint(mode){
     root.setAttribute("data-theme",mode);
     if(btn){
       btn.textContent=(mode==="light"?"◑ day":"◐ night");
       btn.setAttribute("aria-label","switch to "+(mode==="light"?"night":"day")+" theme");
     }
+    paintShots(mode);
   }
   paint(root.getAttribute("data-theme")==="light"?"light":"dark");
   if(btn)btn.addEventListener("click",function(){
