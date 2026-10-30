@@ -405,8 +405,8 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
       <button class="preset" data-q="query ($id: ID!) { star(id: $id) { name label } }">a variable, with none supplied</button>
       <span class="state" id="state">ready</span>
     </div>
-    <p class="note">The right-hand pane starts as the payload the endpoint returned and takes any
-    JSON you paste, matched to the answer by path. A document that does not validate comes back as
+    <p class="note">The right-hand pane opens on the payload the endpoint returned; unfold the strip
+    at its foot to paste your own, which is matched to the answer by path. A document that does not validate comes back as
     <code>errors</code> with the line and column of the field, argument or variable at fault, and
     <kbd>Run</kbd> says so in red before it settles. The third preset asks for a variable and
     supplies none, which the executor refuses before running the document.</p>
