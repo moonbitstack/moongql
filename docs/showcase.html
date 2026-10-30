@@ -48,9 +48,13 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 
 
 /* ---------- playground ---------- */
-.play{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-top:1.8rem}
+.play{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr);gap:1rem;margin-top:1.8rem}
 .pane{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);overflow:hidden;
   box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.pane.q{grid-column:1;grid-row:1}
+.pane.out{grid-column:1;grid-row:2}
+.pane.d{grid-column:2;grid-row:1 / span 2}
 .pane .head{display:flex;align-items:center;gap:.55rem;padding:.55rem .9rem;min-height:2.4rem;
   border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.72rem;
   letter-spacing:.16em;text-transform:uppercase;color:var(--bronze-dim)}
@@ -59,13 +63,16 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 .pane .head .crumb{margin-left:auto;font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;
   text-transform:none;color:var(--azure);opacity:0;transition:opacity .16s;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;max-width:62%}
-.play[data-focus] .pane .head .crumb{opacity:1}
+.pane .head .crumb.on{opacity:1}
+.pane .head .hint{margin-left:auto;font-family:var(--sans);font-size:.68rem;letter-spacing:.04em;
+  text-transform:none;color:var(--faint)}
+.pane .head .hint.bad{color:#e8837a}
 
 /* the editor is a textarea with a painted copy behind it, so a field can be lit */
-.code{position:relative;flex:1;min-height:17rem}
+.code{position:relative;flex:1;min-height:12rem}
 .code .mirror,.code textarea{margin:0;border:0;padding:1rem 1.1rem;font-family:var(--mono);
   font-size:.9rem;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
-.code .mirror{display:block;min-height:17rem;color:var(--ink);pointer-events:none}
+.code .mirror{display:block;min-height:12rem;color:var(--ink);pointer-events:none}
 .code textarea{position:absolute;inset:0;width:100%;height:100%;resize:none;background:transparent;
   color:transparent;caret-color:var(--ink);outline:none;overflow:hidden}
 .code textarea::selection{background:color-mix(in oklab,var(--azure) 32%,transparent)}
@@ -73,29 +80,43 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 .code .p{color:var(--faint)} .code .v{color:var(--azure)}
 .code .n{color:var(--gold)} .code .c{color:var(--faint);font-style:italic}
 
-#out{margin:0;padding:1rem 1.1rem 1rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
-  line-height:1.7;white-space:pre;color:var(--ink);max-height:26rem;min-height:17rem}
-#out .ln{position:relative;display:block;padding-left:calc(var(--d,0) * 1.05em + 1rem);
+#out{margin:0;padding:.8rem 1.1rem 1.2rem;overflow:auto;font-family:var(--mono);font-size:.84rem;
+  line-height:1.7;white-space:pre;color:var(--ink);flex:1;min-height:12rem;max-height:26rem}
+#dlines{margin:0;padding:.7rem 1rem 1rem;overflow:auto;font-family:var(--mono);font-size:.82rem;
+  line-height:1.7;white-space:pre;color:var(--ink);flex:1;min-height:8rem}
+#data{flex:none;height:5.6rem;resize:vertical;background:var(--panel);color:var(--ink);
+  border:0;border-bottom:1px solid var(--line);outline:none;padding:.6rem .9rem;
+  font-family:var(--mono);font-size:.78rem;line-height:1.6}
+#data:focus{box-shadow:inset 0 0 0 1px var(--gold-dim)}
+/* on parchment the panes need a little more body than the page behind them */
+html[data-theme=light] .pane{background:#fbf7ec;border-color:rgba(133,101,39,.3)}
+html[data-theme=light] #data{background:#fffdf8}
+
+.ln{position:relative;display:block;padding-left:calc(var(--d,0) * 1.05em + 1rem);
   border-radius:2px;transition:opacity .16s,background .16s}
-#out .k{color:var(--azure)} #out .s{color:var(--gold-hi)} #out .n{color:var(--gold)}
-#out .q{color:var(--muted);font-style:italic} #out .p{color:var(--faint)}
-#out .ln.hot::before,#out .ln.anc::before{content:"";position:absolute;left:.2rem;top:.15em;
+.k{color:var(--azure)} .s{color:var(--gold-hi)} .n{color:var(--gold)}
+.q{color:var(--muted);font-style:italic} .p{color:var(--faint)}
+.ln.hot::before,.ln.anc::before{content:"";position:absolute;left:.2rem;top:.15em;
   bottom:.15em;width:1px;background:var(--gold-hi)}
-#out .ln.anc::before{background:var(--gold-hair)}
-#out .ln.hot::after{content:attr(data-ann);position:absolute;right:0;top:50%;
+.ln.anc::before{background:var(--gold-hair)}
+.ln.hot::after{content:attr(data-ann);position:absolute;right:0;top:50%;
   transform:translateY(-50%);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--azure);background:var(--panel-2);border:1px solid var(--gold-hair);
   border-radius:2px;padding:.04rem .4rem;white-space:nowrap}
-#out .ln.hot[data-ann=""]::after{content:none}
-.play[data-focus] #out .ln{opacity:.3}
-.play[data-focus] #out .ln.anc{opacity:.62}
+.ln.hot[data-ann=""]::after{content:none}
+.play[data-focus] #out .ln,.play[data-focus] #dlines .ln{opacity:.3}
+.play[data-focus] #out .ln.anc,.play[data-focus] #dlines .ln.anc{opacity:.62}
 .play[data-focus] #out .ln.hot{opacity:1;background:color-mix(in oklab,var(--gold) 9%,transparent)}
+.play[data-focus] #dlines .ln.hot{opacity:1;background:color-mix(in oklab,var(--azure) 10%,transparent)}
 .play[data-focus] .code .f{opacity:.3}
 .play[data-focus] .code .f.hot{opacity:1;color:#fff;
   background:color-mix(in oklab,var(--azure) 34%,transparent);
   box-shadow:0 0 0 1px color-mix(in oklab,var(--azure) 50%,transparent);border-radius:2px}
 html[data-theme=light] .play[data-focus] .code .f.hot{color:var(--ink);
   background:color-mix(in oklab,var(--azure) 20%,transparent)}
+/* a document that will not parse comes back as errors: say it in red, once */
+#out.flash-err .ln{color:#e8837a;font-weight:500}
+#out.flash-err .ln .s,#out.flash-err .ln .k{color:#e8837a}
 
 .row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
 .run{background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent);
@@ -188,8 +209,10 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 p, li, figcaption, .note { overflow-wrap: anywhere; }
 
 @media (width <= 860px){
-  .play{grid-template-columns:minmax(0,1fr)}
+  .play{grid-template-columns:minmax(0,1fr);grid-template-rows:none}
+  .pane.q,.pane.out,.pane.d{grid-column:1;grid-row:auto}
   #out{white-space:pre-wrap;overflow-wrap:anywhere}
+  #dlines{white-space:pre-wrap;overflow-wrap:anywhere}
   .exchange{grid-template-columns:minmax(0,1fr)}
   .picks{flex-direction:row;flex-wrap:wrap}
   .pick{border-left-width:1px;border-radius:9px}
@@ -224,12 +247,13 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
     <h2>Write a query. Watch the graph answer.</h2>
     <p>The editor runs the library itself, compiled to JavaScript and loaded with this page —
     the same lexer, parser, validator and executor the server uses. Nothing here is a recorded
-    response: type, and the answer is recomputed as you go. Run the pointer over a field on
-    either side — the other side lights the same field, dims everything else, and names the path
-    with the type the schema declares for it.</p>
+    response: type, and the answer is recomputed as you go. Three panes, one path: the document,
+    the answer it produces, and a payload you can paste over. Hovering a field lights it in all
+    three and names the type the schema declares for it; <kbd>Run</kbd> walks the document the way
+    an executor does — every leaf, depth first — and then lets the plate go quiet again.</p>
 
     <div class="play" id="playground">
-      <div class="pane">
+      <div class="pane q">
         <div class="head"><span class="dot"></span>Query</div>
         <div class="code">
           <pre class="mirror" id="mirror" aria-hidden="true"></pre>
@@ -242,9 +266,16 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
 }</textarea>
         </div>
       </div>
+
       <div class="pane out">
         <div class="head"><span class="dot"></span>Response<span class="crumb" id="path"></span></div>
         <pre id="out" aria-live="polite">loading the engine…</pre>
+      </div>
+
+      <div class="pane d">
+        <div class="head"><span class="dot"></span>Data<span class="hint" id="derr">your own JSON</span></div>
+        <textarea id="data" spellcheck="false" aria-label="JSON data to match against"></textarea>
+        <pre id="dlines"></pre>
       </div>
     </div>
     <div class="row">
@@ -254,9 +285,11 @@ p, li, figcaption, .note { overflow-wrap: anywhere; }
       <button class="preset" data-q="query ($id: ID!) { star(id: $id) { name label } }">a variable, with none supplied</button>
       <span class="state" id="state">ready</span>
     </div>
-    <p class="note">A document that does not validate comes back as <code>errors</code> with the
-    line and column of the field, argument or variable at fault. The third preset asks for a
-    variable and supplies none, which the executor refuses before running the document.</p>
+    <p class="note">The right-hand pane starts as the payload the endpoint returned and takes any
+    JSON you paste, matched to the answer by path. A document that does not validate comes back as
+    <code>errors</code> with the line and column of the field, argument or variable at fault, and
+    <kbd>Run</kbd> says so in red before it settles. The third preset asks for a variable and
+    supplies none, which the executor refuses before running the document.</p>
   </section>
 
   <section id="schema">
@@ -478,6 +511,9 @@ accept: application/json</span>
   var out=document.getElementById("out");
   var editor=document.getElementById("editor");
   var mirror=document.getElementById("mirror");
+  var dataTa=document.getElementById("data");
+  var dlines=document.getElementById("dlines");
+  var derr=document.getElementById("derr");
   var state=document.getElementById("state");
   var crumb=document.getElementById("path");
   var engine=globalThis.moongqlRun;
@@ -491,9 +527,9 @@ accept: application/json</span>
     var res="",i=0,n=text.length,j,c;
     while(i<n){
       c=text[i];
-      if(c==='\"'){
+      if(c==='"'){
         j=i+1;
-        while(j<n){ if(text[j]==="\\"){j+=2}else if(text[j]==='\"'){j++;break}else{j++} }
+        while(j<n){ if(text[j]==="\\"){j+=2}else if(text[j]==='"'){j++;break}else{j++} }
         res+='<span class="s">'+esc(text.slice(i,j))+"</span>"; i=j; continue;
       }
       if(c==="#"){
@@ -520,12 +556,18 @@ accept: application/json</span>
     rectsDirty=true;
   }
 
-  // ---- the response, drawn as lines that know their path ----
-  var schemaRoot="Query", schemaTypes={}, linesByPath={};
+  // ---- both panes are drawn as lines that know their path ----
+  // the response carries `data.sky.name`; the pasted payload carries `sky.name`.
+  // dropping the leading `data.` is the whole join.
+  var schemaRoot="Query", schemaTypes={};
+  var respIndex={}, dataIndex={};
+  var steps=[], walkTimer=null, lastMs=0, seeded=false, lastBad=false;
 
-  function declaredType(path){
-    if(!path||path.indexOf("data.")!==0) return "";
-    var segs=path.slice(5).split("."), cur=schemaRoot, str="";
+  function norm(p){ return (p||"").replace(/^data\./,"") }
+
+  function declared(path){
+    if(!path) return "";
+    var segs=path.split("."), cur=schemaRoot, str="";
     for(var i=0;i<segs.length;i++){
       var seg=segs[i].replace(/\[\d+\]/g,"");
       var fields=schemaTypes[cur];
@@ -546,18 +588,19 @@ accept: application/json</span>
 
   function line(path,field,depth,html){
     return '<div class="ln" data-path="'+esc(path)+'" data-f="'+esc(field)+'" data-ann="'+
-           esc(declaredType(path))+'" style="--d:'+depth+'">'+html+"</div>";
+           esc(declared(norm(path)))+'" style="--d:'+depth+'">'+html+"</div>";
   }
 
-  // the indent is padding (--d), not spaces, so a line can own a left margin
-  function renderJson(root){
-    var rows=[];
+  function render(value){
+    var rows=[], found=[];
     (function walk(v,key,path,depth,tail,carry){
       var name=key===null?carry:key;
-      var at=path?(key===null?path:path+"."+key):(key||"");
+      var at=key===null?(path||""):(path?path+"."+key:key);
       var lead=key===null?"":'<span class="k">"'+esc(key)+'"</span><span class="p">:</span> ';
       if(v===null||typeof v!=="object"){
-        rows.push(line(at,name,depth,lead+leaf(v)+tail)); return;
+        rows.push(line(at,name,depth,lead+leaf(v)+tail));
+        found.push({path:at,field:name});
+        return;
       }
       if(Array.isArray(v)){
         if(!v.length){ rows.push(line(at,name,depth,lead+'<span class="p">[]</span>'+tail)); return; }
@@ -573,19 +616,18 @@ accept: application/json</span>
       for(var j=0;j<keys.length;j++)
         walk(v[keys[j]],keys[j],at,depth+1,j<keys.length-1?'<span class="p">,</span>':"",name);
       rows.push(line(at,name,depth,'<span class="p">}</span>'+tail));
-    })(root,null,"",0,"","");
-    return rows.join("");
+    })(value,null,"",0,"","");
+    return {html:rows.join(""), leaves:found};
   }
 
-  // ---- linking a field on one side to the same field on the other ----
-  var rects=[], rectsDirty=true, lastFocus=null;
-
-  function clearFocus(){
-    lastFocus=null;
-    play.removeAttribute("data-focus");
-    if(crumb) crumb.textContent="";
-    mirror.querySelectorAll(".f.hot").forEach(function(el){el.classList.remove("hot")});
-    out.querySelectorAll(".ln.hot,.ln.anc").forEach(function(el){el.classList.remove("hot","anc")});
+  function buildIndex(pre){
+    var idx={};
+    Array.prototype.forEach.call(pre.querySelectorAll(".ln"),function(l){
+      var p=l.getAttribute("data-path"); if(!p) return;
+      var k=norm(p);
+      (idx[k]||(idx[k]=[])).push(l);
+    });
+    return idx;
   }
 
   function ancestors(path){
@@ -594,35 +636,157 @@ accept: application/json</span>
     return res;
   }
 
-  function showPath(p){ return p.replace(/^data\./,""); }
-
-  function applyFocus(name,path){
-    if(!name){ clearFocus(); return; }
-    lastFocus={name:name,path:path||null};
-    play.setAttribute("data-focus",name);
-    mirror.querySelectorAll(".f").forEach(function(el){
-      el.classList.toggle("hot", el.getAttribute("data-f")===name);
+  function byName(pre,name){
+    return Array.prototype.filter.call(pre.querySelectorAll(".ln"),function(l){
+      return l.getAttribute("data-f")===name;
     });
-    var lines=out.querySelectorAll(".ln");
-    for(var i=0;i<lines.length;i++) lines[i].classList.remove("hot","anc");
-    var hits=[];
-    if(path&&linesByPath[path]) hits=linesByPath[path].slice();
-    else for(var k=0;k<lines.length;k++) if(lines[k].getAttribute("data-f")===name) hits.push(lines[k]);
-    if(!hits.length){ play.removeAttribute("data-focus"); if(crumb) crumb.textContent=""; return; }
+  }
+
+  function mark(index,hits){
     hits.forEach(function(l){
       l.classList.add("hot");
       ancestors(l.getAttribute("data-path")).forEach(function(p){
-        var a=linesByPath[p];
-        if(a) a.forEach(function(el){ if(hits.indexOf(el)<0) el.classList.add("anc"); });
+        var a=index[norm(p)]; if(!a) return;
+        a.forEach(function(el){ if(hits.indexOf(el)<0) el.classList.add("anc"); });
       });
     });
-    if(crumb) crumb.textContent=(hits.length>1?hits.length+" lines · ":"")+
-      showPath(path||hits[0].getAttribute("data-path"));
   }
+
+  function rest(){
+    play.removeAttribute("data-focus");
+    if(crumb){ crumb.textContent=""; crumb.classList.remove("on"); }
+    Array.prototype.forEach.call(mirror.querySelectorAll(".f.hot"),function(e){ e.classList.remove("hot"); });
+    [out,dlines].forEach(function(pre){
+      Array.prototype.forEach.call(pre.querySelectorAll(".ln.hot,.ln.anc"),function(e){
+        e.classList.remove("hot","anc");
+      });
+    });
+  }
+
+  // one field, lit in three places: the document, the answer, the payload
+  function focus(name,path,keepWalk){
+    if(!keepWalk&&walkTimer) stopWalk();
+    rest();
+    if(!name) return;
+    play.setAttribute("data-focus",name);
+    Array.prototype.forEach.call(mirror.querySelectorAll(".f"),function(el){
+      el.classList.toggle("hot",el.getAttribute("data-f")===name);
+    });
+    var key=path?norm(path):null;
+    var a=key?(respIndex[key]||[]):byName(out,name);
+    var b=key?(dataIndex[key]||[]):byName(dlines,name);
+    mark(respIndex,a); mark(dataIndex,b);
+    if(crumb){
+      var shown=key||(a.length?norm(a[0].getAttribute("data-path")):"");
+      crumb.textContent=shown;
+      crumb.classList.toggle("on",!!shown);
+    }
+  }
+
+  function stopWalk(){
+    if(walkTimer){ clearTimeout(walkTimer); walkTimer=null; }
+    rest();
+    if(state&&/walking/.test(state.textContent)){
+      state.textContent="ok · "+lastMs+" ms"; state.className="state ok";
+    }
+  }
+
+  // a document that did not validate is shown once, in red and bold, then released
+  function flashErrors(){
+    out.classList.add("flash-err");
+    setTimeout(function(){ out.classList.remove("flash-err"); },1700);
+  }
+
+  // RUN walks the document the way an executor does: every leaf, depth first,
+  // lighting the same field in the answer and in the payload as it goes
+  function walk(){
+    if(!engine) return;
+    if(walkTimer){ clearTimeout(walkTimer); walkTimer=null; }
+    rest();
+    if(lastBad){ flashErrors(); return; }
+    if(!steps.length) return;
+    var i=0;
+    state.className="state";
+    state.textContent="walking · 0/"+steps.length;
+    (function step(){
+      if(i>=steps.length){
+        walkTimer=null; rest();
+        state.textContent="ok · "+lastMs+" ms"; state.className="state ok";
+        return;
+      }
+      var s=steps[i++];
+      focus(s.field,s.path,true);
+      state.textContent="walking · "+i+"/"+steps.length;
+      walkTimer=setTimeout(step,430);
+    })();
+  }
+
+  function execute(){
+    if(!engine){
+      out.textContent="the engine did not load — this page needs engine/moongql.js beside it";
+      state.textContent="no engine";state.className="state bad";
+      return;
+    }
+    var started=performance.now();
+    var text=engine(editor.value);
+    var ms=Math.round(performance.now()-started);
+    lastMs=ms;
+    var parsed;
+    try{parsed=JSON.parse(text)}catch(e){out.textContent=text;return}
+    if(walkTimer){ clearTimeout(walkTimer); walkTimer=null; }
+    rest();
+    var bad=parsed.errors&&parsed.errors.length>0;
+    state.textContent=(bad?"errors":"ok")+" · "+ms+" ms";
+    state.className="state "+(bad?"bad":"ok");
+    var r=render(parsed);
+    out.innerHTML=r.html;
+    steps=r.leaves;
+    respIndex=buildIndex(out);
+    out.classList.remove("flash-err");
+    if(bad){ steps=[]; flashErrors(); }
+    lastBad=bad;
+    // the payload pane starts as the original data, and can be replaced wholesale
+    if(!seeded&&!dataTa.value.trim()){
+      seeded=true;
+      dataTa.value=JSON.stringify(parsed.data!==undefined?parsed.data:parsed,null,2);
+      paintData();
+    }
+  }
+
+  function paintData(){
+    var raw=dataTa.value.trim();
+    if(!raw){
+      dlines.innerHTML=""; dataIndex={};
+      derr.textContent="your own JSON"; derr.className="hint";
+      return;
+    }
+    var parsed;
+    try{ parsed=JSON.parse(raw) }
+    catch(e){
+      dlines.innerHTML=""; dataIndex={};
+      derr.textContent="not JSON"; derr.className="hint bad";
+      return;
+    }
+    var r=render(parsed);
+    dlines.innerHTML=r.html;
+    dataIndex=buildIndex(dlines);
+    derr.textContent="matched by path"; derr.className="hint";
+  }
+
+  var runBtn=document.getElementById("run");
+  if(runBtn)runBtn.addEventListener("click",walk);
+  document.querySelectorAll(".preset").forEach(function(b){
+    b.addEventListener("click",function(){
+      editor.value=b.getAttribute("data-q");
+      paintQuery(editor.value); execute();
+    });
+  });
+
+  var rects=[], rectsDirty=true;
 
   function cacheRects(){
     rects=[];
-    mirror.querySelectorAll(".f").forEach(function(el){
+    Array.prototype.forEach.call(mirror.querySelectorAll(".f"),function(el){
       rects.push({el:el,r:el.getBoundingClientRect()});
     });
     rectsDirty=false;
@@ -636,62 +800,45 @@ accept: application/json</span>
     return null;
   }
 
-  function execute(){
-    if(!engine){
-      out.textContent="the engine did not load — this page needs engine/moongql.js beside it";
-      state.textContent="no engine";state.className="state bad";
-      return;
-    }
-    var started=performance.now();
-    var text=engine(editor.value);
-    var ms=Math.round(performance.now()-started);
-    var parsed;
-    try{parsed=JSON.parse(text)}catch(e){out.textContent=text;return}
-    var bad=parsed.errors&&parsed.errors.length>0;
-    state.textContent=(bad?"errors":"ok")+" · "+ms+" ms";
-    state.className="state "+(bad?"bad":"ok");
-    out.innerHTML=renderJson(parsed);
-    linesByPath={};
-    out.querySelectorAll(".ln").forEach(function(l){
-      var p=l.getAttribute("data-path");
-      if(!p) return;
-      (linesByPath[p]||(linesByPath[p]=[])).push(l);
-    });
-    if(lastFocus) applyFocus(lastFocus.name,lastFocus.path);
-  }
-
-  var runBtn=document.getElementById("run");
-  if(runBtn)runBtn.addEventListener("click",execute);
-  document.querySelectorAll(".preset").forEach(function(b){
-    b.addEventListener("click",function(){
-      editor.value=b.getAttribute("data-q");
-      paintQuery(editor.value); execute();
-    });
-  });
   if(editor){
     editor.addEventListener("keydown",function(ev){
       if((ev.metaKey||ev.ctrlKey)&&ev.key==="Enter"){ev.preventDefault();execute();}
     });
-    if(mirror&&play&&out){
-      editor.addEventListener("mousemove",function(ev){
-        if(rectsDirty)cacheRects();
-        var el=tokenAt(ev.clientX,ev.clientY);
-        if(el) applyFocus(el.getAttribute("data-f"),null); else clearFocus();
-      });
-      editor.addEventListener("mouseleave",clearFocus);
-      out.addEventListener("mouseover",function(ev){
-        var l=ev.target.closest(".ln");
-        if(l) applyFocus(l.getAttribute("data-f"), l.getAttribute("data-path"));
-      });
-      out.addEventListener("mouseleave",clearFocus);
-      addEventListener("resize",function(){rectsDirty=true},{passive:true});
-      addEventListener("scroll",function(){rectsDirty=true},{passive:true});
-    }
-    var timer=null;
     editor.addEventListener("input",function(){
       paintQuery(editor.value);
-      clearTimeout(timer);
-      timer=setTimeout(execute,280);
+      clearTimeout(editor._t);
+      editor._t=setTimeout(execute,280);
+    });
+    editor.addEventListener("mousemove",function(ev){
+      if(rectsDirty)cacheRects();
+      var el=tokenAt(ev.clientX,ev.clientY);
+      if(el) focus(el.getAttribute("data-f"),null); else if(!walkTimer) rest();
+    });
+    editor.addEventListener("mouseleave",function(){ if(!walkTimer) rest(); });
+    addEventListener("resize",function(){rectsDirty=true},{passive:true});
+    addEventListener("scroll",function(){rectsDirty=true},{passive:true});
+  }
+
+  if(out){
+    out.addEventListener("mouseover",function(ev){
+      var l=ev.target.closest(".ln");
+      if(l) focus(l.getAttribute("data-f"),l.getAttribute("data-path"));
+    });
+    out.addEventListener("mouseleave",function(){ if(!walkTimer) rest(); });
+  }
+
+  if(dlines){
+    dlines.addEventListener("mouseover",function(ev){
+      var l=ev.target.closest(".ln");
+      if(l) focus(l.getAttribute("data-f"),l.getAttribute("data-path"));
+    });
+    dlines.addEventListener("mouseleave",function(){ if(!walkTimer) rest(); });
+  }
+
+  if(dataTa){
+    dataTa.addEventListener("input",function(){
+      clearTimeout(dataTa._t);
+      dataTa._t=setTimeout(paintData,300);
     });
   }
 
