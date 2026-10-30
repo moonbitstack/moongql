@@ -291,12 +291,12 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
   .sig::-webkit-scrollbar-thumb, pre::-webkit-scrollbar-thumb {
     border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
     background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
-  html.at-top::-webkit-scrollbar-thumb { background-color: transparent; }
+  html:not(.scrolling)::-webkit-scrollbar-thumb { background-color: transparent; }
 }
 @supports not selector(::-webkit-scrollbar) {
   html { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
-  html.at-top { scrollbar-color: transparent transparent; }
+  html:not(.scrolling) { scrollbar-color: transparent transparent; }
 }
 p, li, .doc { overflow-wrap: anywhere; }
 
@@ -335,8 +335,11 @@ document.addEventListener("DOMContentLoaded",()=>{
   mark();
   addEventListener("scroll",mark,{passive:true});
   const root=document.documentElement;
-  const syncTop=()=>root.classList.toggle("at-top",scrollY<=0);
-  addEventListener("scroll",syncTop,{passive:true});syncTop();
+  let idle=0,near=false;
+  const hideSoon=()=>{clearTimeout(idle);idle=setTimeout(()=>near||root.classList.remove("scrolling"),1200);};
+  addEventListener("scroll",()=>{root.classList.add("scrolling");hideSoon();},{passive:true});
+  addEventListener("pointermove",e=>{const was=near;near=e.pointerType==="mouse"&&e.clientX>=root.clientWidth-24;if(near)root.classList.add("scrolling");else if(was)hideSoon();},{passive:true});
+  root.addEventListener("pointerleave",()=>{near=false;hideSoon();});
   const tb=document.getElementById("theme");
   const paint=mode=>{root.setAttribute("data-theme",mode);
     if(tb){tb.textContent=mode==="light"?"◑ day":"◐ night";
@@ -417,11 +420,10 @@ def main():
 
     hero = ('<main><header class="hero"><h1>moongql</h1>'
             '<p class="tag">A code-first GraphQL library for MoonBit: define object types and '
-            'fields in code and print the schema SDL, then read SDL back into the same schema. '
-            'Pure logic, no runtime dependencies.</p>'
+            'fields in code and print the schema SDL, then read SDL back into the same schema.</p>'
             '<div class="install"><span class="prompt">$</span><code>moon add moonbitstack/moongql</code>'
             '<button class="copy" data-copy="moon add moonbitstack/moongql">copy</button></div>'
-            '<div class="contract"><h2><span class="spark">&#10038;</span> The contract at a glance</h2>'
+            '<div class="contract"><h2><span class="spark">&#10038;</span> A schema in four lines</h2>'
             '<pre>' + tint(CONTRACT) + '</pre></div></header>')
 
     body = [HEAD, TOP, '<div class="layout">'] + side + [hero]

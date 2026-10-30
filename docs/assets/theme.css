@@ -153,7 +153,9 @@ html[data-theme=light] ::selection{background:color-mix(in oklab,var(--gold) 22%
   box-shadow:0 0 6px color-mix(in oklab,var(--gold) 55%,transparent)}
 
 /* ---------- buttons ---------- */
-.btn{display:inline-flex;align-items:center;gap:.55rem;padding:.62rem 1.15rem;
+/* the capitals carry their ink in the top of the line, so a label centred by
+   its box reads high: a tenth of an em moves from below the text to above it */
+.btn{display:inline-flex;align-items:center;gap:.55rem;padding:calc(.62rem + .1em) 1.15rem calc(.62rem - .1em);
   font-family:var(--caps);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
   color:var(--ink);border:1px solid var(--gold-dim);border-radius:2px;background:transparent;
   position:relative;transition:color .25s,border-color .25s,box-shadow .35s}
@@ -236,7 +238,7 @@ footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
   html::-webkit-scrollbar-track{background:transparent}
   html::-webkit-scrollbar-thumb{border-radius:99px;border:3px solid transparent;background-clip:content-box;
     background-color:color-mix(in srgb,var(--gold) 42%,transparent)}
-  html.at-top::-webkit-scrollbar-thumb{background-color:transparent}
+  html:not(.scrolling)::-webkit-scrollbar-thumb{background-color:transparent}
   pre::-webkit-scrollbar{height:10px}
   pre::-webkit-scrollbar-track{background:transparent}
   pre::-webkit-scrollbar-thumb{border-radius:99px;border:3px solid transparent;background-clip:content-box;
@@ -244,7 +246,7 @@ footer .links{display:flex;gap:1.4rem;flex-wrap:wrap}
 }
 @supports not selector(::-webkit-scrollbar){
   html{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gold) 42%,transparent) transparent}
-  html.at-top{scrollbar-color:transparent transparent}
+  html:not(.scrolling){scrollbar-color:transparent transparent}
   pre{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--gold) 30%,transparent) transparent}
 }
 

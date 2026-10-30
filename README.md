@@ -8,7 +8,7 @@
 
 </div>
 
-`moongql` is a code-first GraphQL library for MoonBit — define a schema in code, then execute queries, validate them against the spec, and serve them over HTTP with a built-in browser IDE. It prints **and parses** GraphQL SDL (print-then-parse yields the same schema), runs subscriptions and Apollo Federation subgraphs, batches with a `DataLoader`, and turns your own types into a schema with `#gql` annotations. It is pure MoonBit with no runtime dependencies, so it runs on every backend (`wasm`, `wasm-gc`, `js`, `native`).
+`moongql` is a code-first GraphQL library for MoonBit — define a schema in code, then execute queries, validate them against the spec, and serve them over HTTP with a built-in browser IDE. It prints **and parses** GraphQL SDL (print-then-parse yields the same schema), runs subscriptions and Apollo Federation subgraphs, batches with a `DataLoader`, and turns your own types into a schema with `#gql` annotations. It is pure MoonBit and runs on every backend (`wasm`, `wasm-gc`, `js`, `native`).
 
 ## Quickstart
 
@@ -167,7 +167,7 @@ generated schema against the same schema written by hand.
 Wire the generator into the build once. In `moon.mod`:
 
 ```
-rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.1 -C \"$mod_dir\" \"$input\" -o \"$output\"")
+rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.2 -C \"$mod_dir\" \"$input\" -o \"$output\"")
 ```
 
 and in the `moon.pkg` of the package holding the declarations:

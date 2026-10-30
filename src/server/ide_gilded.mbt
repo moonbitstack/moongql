@@ -72,7 +72,7 @@ fn gilded_head() -> String {
     #|    .state{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
     #|    .state.ok{color:var(--gold-hi)} .state.bad{color:var(--crimson)}
     #|    .btn{background:none;border:1px solid var(--hair);border-radius:2px;color:var(--muted);
-    #|      font-size:.8rem;padding:.34rem .7rem;cursor:pointer;
+    #|      font-size:.8rem;padding:calc(.34rem + .1em) .7rem calc(.34rem - .1em);cursor:pointer;
     #|      transition:color .15s,border-color .15s}
     #|    /* every button wears the same mount the documentation uses: a hairline
     #|       border, then a second line three pixels in */
@@ -188,20 +188,23 @@ fn gilded_head() -> String {
     #|    .code .mirror{position:absolute;inset:0;pointer-events:none;color:var(--ink)}
     #|    .code textarea{position:absolute;inset:0;width:100%;height:100%;resize:none;
     #|      background:transparent;color:transparent;caret-color:var(--gold-hi);
-    #|      outline:none;overflow:auto;scrollbar-width:none}
+    #|      outline:none;overflow:auto}
     #|    .code textarea::-webkit-scrollbar{width:0;height:0}
     #|    .code textarea::selection{background:rgba(74,144,217,.3)}
     #|    .code .f{transition:opacity .16s,background .16s}
     #|    .code .p{color:var(--faint)} .code .v{color:var(--azure)}
     #|    .code .n{color:var(--gold)} .code .c{color:var(--faint);font-style:italic}
     #|    /* one scrollbar everywhere: a thin gold hairline, never a grey bar */
-    #|    #out,.types,.vars textarea,.doc input{scrollbar-width:thin;
-    #|      scrollbar-color:var(--gold-dim) transparent}
-    #|    #out::-webkit-scrollbar,.types::-webkit-scrollbar{width:10px;height:10px}
-    #|    #out::-webkit-scrollbar-track,.types::-webkit-scrollbar-track{background:transparent}
-    #|    #out::-webkit-scrollbar-thumb,.types::-webkit-scrollbar-thumb{
+    #|    @supports not selector(::-webkit-scrollbar){
+    #|      .code textarea{scrollbar-width:none}
+    #|      #out,.types,.vars textarea,.doc input{scrollbar-width:thin;
+    #|        scrollbar-color:var(--gold-dim) transparent}
+    #|    }
+    #|    #out::-webkit-scrollbar,.types::-webkit-scrollbar,.vars textarea::-webkit-scrollbar,.doc input::-webkit-scrollbar{width:10px;height:10px}
+    #|    #out::-webkit-scrollbar-track,.types::-webkit-scrollbar-track,.vars textarea::-webkit-scrollbar-track,.doc input::-webkit-scrollbar-track{background:transparent}
+    #|    #out::-webkit-scrollbar-thumb,.types::-webkit-scrollbar-thumb,.vars textarea::-webkit-scrollbar-thumb,.doc input::-webkit-scrollbar-thumb{
     #|      background:rgba(201,168,76,.4);border:3px solid transparent;background-clip:content-box}
-    #|    #out::-webkit-scrollbar-thumb:hover,.types::-webkit-scrollbar-thumb:hover{
+    #|    #out::-webkit-scrollbar-thumb:hover,.types::-webkit-scrollbar-thumb:hover,.vars textarea::-webkit-scrollbar-thumb:hover{
     #|      background:var(--gold-dim);background-clip:content-box}
     #|    #out{margin:0;padding:1rem 1.1rem 2rem;overflow:auto;flex:1;min-height:0;
     #|      font-family:var(--mono);font-size:.82rem;line-height:1.75;white-space:pre;

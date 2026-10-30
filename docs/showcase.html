@@ -76,11 +76,10 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 .code .mirror,.code textarea{margin:0;border:0;padding:.8rem 1rem;font-family:var(--mono);
   font-size:.82rem;line-height:1.72;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2}
 .code .mirror{display:block;height:100%;overflow:auto;color:var(--ink);pointer-events:none;
-  background:none;box-shadow:none;border-radius:0;scrollbar-width:none}
+  background:none;box-shadow:none;border-radius:0}
 .code .mirror::-webkit-scrollbar{width:0;height:0}
 .code textarea{position:absolute;inset:0;width:100%;height:100%;resize:none;background:transparent;
-  color:transparent;caret-color:var(--ink);outline:none;overflow:auto;scrollbar-width:none}
-.code textarea::-webkit-scrollbar{width:0;height:0}
+  color:transparent;caret-color:var(--ink);outline:none;overflow:auto}
 .code textarea::selection{background:color-mix(in oklab,var(--azure) 32%,transparent)}
 .code .f{transition:opacity .16s,background .16s}
 .code .p{color:var(--faint)} .code .v{color:var(--azure)}
@@ -116,8 +115,11 @@ h2 + p{margin:.7rem 0 0;color:var(--muted);max-width:64ch}
 #data:focus{background:color-mix(in oklab,var(--gold) 5%,transparent)}
 
 /* one scrollbar, everywhere: a thin gold hairline on the plate, never a grey bar */
-#out,#dlines,#data,.code textarea{scrollbar-width:thin;
-  scrollbar-color:color-mix(in oklab,var(--gold) 45%,transparent) transparent}
+@supports not selector(::-webkit-scrollbar){
+  .code .mirror{scrollbar-width:none}
+  #out,#dlines,#data,.code textarea{scrollbar-width:thin;
+    scrollbar-color:color-mix(in oklab,var(--gold) 45%,transparent) transparent}
+}
 #out::-webkit-scrollbar,#dlines::-webkit-scrollbar,#data::-webkit-scrollbar,
 .code textarea::-webkit-scrollbar{width:10px;height:10px}
 #out::-webkit-scrollbar-track,#dlines::-webkit-scrollbar-track,#data::-webkit-scrollbar-track,
@@ -163,7 +165,7 @@ html[data-theme=light] .play[data-focus] .code .f.hot{color:var(--ink);
   --glow-soft:rgba(238,216,155,.3);
   background:linear-gradient(180deg,color-mix(in oklab,var(--gold) 22%,transparent),transparent);
   border:1px solid color-mix(in oklab,var(--gold) 45%,var(--line));color:var(--ink);
-  border-radius:2px;padding:.55rem 1.25rem;font:inherit;font-weight:500;font-size:.94rem;
+  border-radius:2px;padding:calc(.55rem + .1em) 1.25rem calc(.55rem - .1em);font:inherit;font-weight:500;font-size:.94rem;
   cursor:pointer;transition:border-color .25s,color .25s}
 html[data-theme=light] .run{--fil:#8a6a2a;--glow:rgba(138,106,42,.5);--glow-soft:rgba(138,106,42,.26);
   /* on parchment the warm end belongs at the foot, or the button reads as pressed */
@@ -306,7 +308,7 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
   html::-webkit-scrollbar-thumb {
     border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
     background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
-  html.at-top::-webkit-scrollbar-thumb { background-color: transparent; }
+  html:not(.scrolling)::-webkit-scrollbar-thumb { background-color: transparent; }
   pre::-webkit-scrollbar { height: 10px; }
   pre::-webkit-scrollbar-track { background: transparent; }
   pre::-webkit-scrollbar-thumb {
@@ -316,7 +318,7 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 @supports not selector(::-webkit-scrollbar) {
   html { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
-  html.at-top { scrollbar-color: transparent transparent; }
+  html:not(.scrolling) { scrollbar-color: transparent transparent; }
   pre { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent; }
 }
@@ -604,9 +606,11 @@ accept: application/json</span>
 (function(){
   var root=document.documentElement;
 
-  var syncTop=function(){ root.classList.toggle("at-top", window.scrollY <= 0); };
-  window.addEventListener("scroll", syncTop, { passive: true });
-  syncTop();
+  var idle=0,near=false;
+  var hideSoon=function(){ clearTimeout(idle); idle=setTimeout(function(){ if(!near) root.classList.remove("scrolling"); },1200); };
+  window.addEventListener("scroll", function(){ root.classList.add("scrolling"); hideSoon(); }, { passive:true });
+  window.addEventListener("pointermove", function(e){ var was=near; near=e.pointerType==="mouse"&&e.clientX>=root.clientWidth-24; if(near) root.classList.add("scrolling"); else if(was) hideSoon(); }, { passive:true });
+  root.addEventListener("pointerleave", function(){ near=false; hideSoon(); });
 
   var btn=document.getElementById("theme");
   // each captured IDE has a day plate and a night plate
