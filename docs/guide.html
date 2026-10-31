@@ -77,7 +77,7 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
   html::-webkit-scrollbar-thumb {
     border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
     background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
-  html:not(.scrolling)::-webkit-scrollbar-thumb { background-color: transparent; }
+  html:not(.scrolled)::-webkit-scrollbar-thumb { background-color: transparent; }
   pre::-webkit-scrollbar { height: 10px; }
   pre::-webkit-scrollbar-track { background: transparent; }
   pre::-webkit-scrollbar-thumb {
@@ -87,7 +87,7 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 @supports not selector(::-webkit-scrollbar) {
   html { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
-  html:not(.scrolling) { scrollbar-color: transparent transparent; }
+  html:not(.scrolled) { scrollbar-color: transparent transparent; }
   pre { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent; }
 }
@@ -308,11 +308,9 @@ fed.install(schema)</pre>
 (function(){
   var root=document.documentElement;
 
-  var idle=0,near=false;
-  var hideSoon=function(){ clearTimeout(idle); idle=setTimeout(function(){ if(!near) root.classList.remove("scrolling"); },1200); };
-  window.addEventListener("scroll", function(){ root.classList.add("scrolling"); hideSoon(); }, { passive:true });
-  window.addEventListener("pointermove", function(e){ var was=near; near=e.pointerType==="mouse"&&e.clientX>=root.clientWidth-24; if(near) root.classList.add("scrolling"); else if(was) hideSoon(); }, { passive:true });
-  root.addEventListener("pointerleave", function(){ near=false; hideSoon(); });
+  var scrolled=function(){ root.classList.toggle("scrolled", window.scrollY>0); };
+  window.addEventListener("scroll", scrolled, { passive:true });
+  scrolled();
 
   var btn=document.getElementById("theme");
   function paint(mode){

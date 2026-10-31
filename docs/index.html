@@ -566,11 +566,9 @@ s.to_sdl()
 (function(){
   var root=document.documentElement;
 
-  var idle=0,near=false;
-  var hideSoon=function(){ clearTimeout(idle); idle=setTimeout(function(){ if(!near) root.classList.remove("scrolling"); },1200); };
-  window.addEventListener("scroll", function(){ root.classList.add("scrolling"); hideSoon(); }, { passive:true });
-  window.addEventListener("pointermove", function(e){ var was=near; near=e.pointerType==="mouse"&&e.clientX>=root.clientWidth-24; if(near) root.classList.add("scrolling"); else if(was) hideSoon(); }, { passive:true });
-  root.addEventListener("pointerleave", function(){ near=false; hideSoon(); });
+  var scrolled=function(){ root.classList.toggle("scrolled", window.scrollY>0); };
+  window.addEventListener("scroll", scrolled, { passive:true });
+  scrolled();
 
   var btn=document.getElementById("theme");
   // the IDE screenshots are products: each one has a day and a night plate, so

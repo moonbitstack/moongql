@@ -291,12 +291,12 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
   .sig::-webkit-scrollbar-thumb, pre::-webkit-scrollbar-thumb {
     border-radius: 99px; border: 3px solid transparent; background-clip: content-box;
     background-color: color-mix(in srgb, var(--ink) 24%, transparent); }
-  html:not(.scrolling)::-webkit-scrollbar-thumb { background-color: transparent; }
+  html:not(.scrolled)::-webkit-scrollbar-thumb { background-color: transparent; }
 }
 @supports not selector(::-webkit-scrollbar) {
   html { scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--ink) 26%, transparent) transparent; }
-  html:not(.scrolling) { scrollbar-color: transparent transparent; }
+  html:not(.scrolled) { scrollbar-color: transparent transparent; }
 }
 p, li, .doc { overflow-wrap: anywhere; }
 
@@ -335,11 +335,9 @@ document.addEventListener("DOMContentLoaded",()=>{
   mark();
   addEventListener("scroll",mark,{passive:true});
   const root=document.documentElement;
-  let idle=0,near=false;
-  const hideSoon=()=>{clearTimeout(idle);idle=setTimeout(()=>near||root.classList.remove("scrolling"),1200);};
-  addEventListener("scroll",()=>{root.classList.add("scrolling");hideSoon();},{passive:true});
-  addEventListener("pointermove",e=>{const was=near;near=e.pointerType==="mouse"&&e.clientX>=root.clientWidth-24;if(near)root.classList.add("scrolling");else if(was)hideSoon();},{passive:true});
-  root.addEventListener("pointerleave",()=>{near=false;hideSoon();});
+  const scrolled=()=>root.classList.toggle("scrolled",scrollY>0);
+  addEventListener("scroll",scrolled,{passive:true});
+  scrolled();
   const tb=document.getElementById("theme");
   const paint=mode=>{root.setAttribute("data-theme",mode);
     if(tb){tb.textContent=mode==="light"?"◑ day":"◐ night";
