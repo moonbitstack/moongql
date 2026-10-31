@@ -184,7 +184,7 @@ generated schema against the same schema written by hand.
 Wire the generator into the build once. In `moon.mod`:
 
 ```
-rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.3 -C \"$mod_dir\" \"$input\" -o \"$output\"")
+rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.4 -C \"$mod_dir\" \"$input\" -o \"$output\"")
 ```
 
 and in the `moon.pkg` of the package holding the declarations:
