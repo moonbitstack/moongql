@@ -2,8 +2,8 @@
 /// The in-browser IDE a `GET` on the GraphQL endpoint serves. Four of them are on
 /// offer and the whole thing can be turned off:
 ///
-///   * **the gilded page** (`gilded`, the default) — the library's own IDE, built
-///     in `ide_gilded.mbt`. It is one HTML string with no CDN and no bundler: a
+///   * **the MoonQL page** (`site`, the default) — the library's own IDE, built
+///     in `ide_site.mbt`. It is one HTML string with no CDN and no bundler: a
 ///     document on the left, the answer on the right, a schema drawer, variables,
 ///     and the same linking the documentation uses — a field lit on one side
 ///     lights the same field on the other. An operation is sent when it is run,
@@ -29,7 +29,7 @@
 ///|
 /// Which IDE the endpoint serves.
 pub(all) enum IdeKind {
-  Gilded
+  Site
   GraphiQL
   ApolloSandbox
   Altair
@@ -47,8 +47,8 @@ pub(all) struct Ide {
 }
 
 ///|
-/// The gilded page: the library's own IDE, and the default.
-pub let gilded : Ide = { kind: Gilded, subscription_endpoint: None, }
+/// The MoonQL page: the library's own IDE, and the default.
+pub let site : Ide = { kind: Site, subscription_endpoint: None, }
 
 ///|
 /// GraphiQL, the reference IDE.
@@ -79,7 +79,7 @@ pub fn Ide::is_off(self : Ide) -> Bool {
 /// The page title the IDE's HTML carries.
 pub fn Ide::title(self : Ide) -> String {
   match self.kind {
-    Gilded => "MoonQL"
+    Site => "MoonQL"
     GraphiQL => "GraphiQL"
     ApolloSandbox => "Apollo Sandbox"
     Altair => "Altair"
@@ -92,7 +92,7 @@ pub fn Ide::title(self : Ide) -> String {
 /// and answers the empty string.
 pub fn Ide::html(self : Ide, endpoint~ : String = "/graphql") -> String {
   match self.kind {
-    Gilded => gilded_page(endpoint)
+    Site => site_page(endpoint)
     GraphiQL => graphiql_page(endpoint, self.subscription_endpoint)
     ApolloSandbox => apollo_page(endpoint)
     Altair => altair_page(endpoint, self.subscription_endpoint)

@@ -204,6 +204,177 @@ test "kind names a scalar the program registers itself" {
 }
 
 ///|
+let pets : String =
+  #|#gql.type
+  #|struct Cat {
+  #|  name : String
+  #|  lives : Int
+  #|}
+  #|
+  #|#gql.type
+  #|struct Dog {
+  #|  name : String
+  #|}
+  #|
+
+///|
+test "an enum over object types is a union or an interface" {
+  let code = generate(
+    pets +
+    (
+      #|#gql.union(description="Either")
+      #|enum Pet { C(Cat); D(Dog) }
+      #|
+      #|#gql.interface(name="Named", field="name")
+      #|pub enum Animal { Puss(Cat); Hound(Dog) }
+      #|
+      #|#gql.query
+      #|fn pets() -> Array[Pet] { [] }
+    ),
+  )
+  assert_true(
+    code.contains(flat("\"pets\", _ => @moongql.ToGql::to_gql(pets())")),
+  )
+  assert_true(
+    code.contains(
+      flat("schema.union(\"Pet\", [\"Cat\", \"Dog\"], description=\"Either\")"),
+    ),
+  )
+  assert_true(
+    code.contains(flat("let gql_animal = schema.interface(\"Named\")")),
+  )
+  assert_true(
+    code.contains(
+      flat("gql_animal.field(\"name\", NonNull(Scalar(\"String\")))"),
+    ),
+  )
+  assert_true(code.contains(flat("gql_cat.implements(\"Named\")")))
+  assert_true(code.contains(flat("gql_dog.implements(\"Named\")")))
+  assert_true(!code.contains(flat("implements(\"Pet\")")))
+  assert_true(code.contains(flat("C(v) => @moongql.ToGql::to_gql(v)")))
+  assert_true(
+    code.contains(
+      flat(
+        "{ \"__typename\": String(\"Dog\"), .. } => Hound(@moongql.FromGql::from_gql(v))",
+      ),
+    ),
+  )
+  assert_true(
+    code.contains(flat("pub impl @moongql.ToGql for Animal with fn to_gql")),
+  )
+  assert_true(
+    code.contains(
+      flat("raise @moongql.ResolverError::expected(\"Pet\", other)"),
+    ),
+  )
+}
+
+///|
+test "an interface field keeps the arguments its members take" {
+  let code = generate(
+    (
+      #|#gql.type
+      #|struct A { x : Int }
+      #|
+      #|#gql.field
+      #|fn A::at(self : A, n? : Int) -> Int { n.unwrap_or(self.x) }
+      #|
+      #|#gql.type
+      #|struct B { y : Int }
+      #|
+      #|#gql.field
+      #|fn B::at(self : B, n? : Int) -> Int { n.unwrap_or(self.y) }
+      #|
+      #|#gql.interface(field="at")
+      #|enum Point { A(A); B(B) }
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat(
+        "gql_point.field_args(\"at\", [(\"n\", Scalar(\"Int\"))], NonNull(Scalar(\"Int\")))",
+      ),
+    ),
+  )
+}
+
+///|
+test "unions and interfaces refuse what GraphQL does not allow" {
+  assert_true(
+    refused(
+      pets +
+      (
+        #|#gql.union
+        #|enum Pet { C(Cat); Stray }
+      ),
+    ).contains("`Pet::Stray` does not wrap one `#gql.type` struct"),
+  )
+  assert_true(
+    refused(
+      (
+        #|#gql.union
+        #|enum Num { I(Int) }
+      ),
+    ).contains("`Num::I` does not wrap one `#gql.type` struct"),
+  )
+  assert_true(
+    refused(
+      pets +
+      (
+        #|#gql.interface
+        #|enum Animal { C(Cat); D(Dog) }
+      ),
+    ).contains("names at least one `field`"),
+  )
+  assert_true(
+    refused(
+      pets +
+      (
+        #|#gql.interface(field="lives")
+        #|enum Animal { C(Cat); D(Dog) }
+      ),
+    ).contains("`Dog` has no field `lives`"),
+  )
+  assert_true(
+    refused(
+      (
+        #|#gql.type
+        #|struct A { id : Int }
+        #|
+        #|#gql.type
+        #|struct B { id : String }
+        #|
+        #|#gql.interface(field="id")
+        #|enum Node { A(A); B(B) }
+      ),
+    ).contains("field `id` is not the same in every member of `Node`"),
+  )
+  assert_true(
+    refused(
+      pets +
+      (
+        #|#gql.union
+        #|enum Pet { C(Cat); D(Dog) }
+        #|
+        #|#gql.query
+        #|fn adopt(pet : Pet) -> Int { 0 }
+      ),
+    ).contains("parameter `pet`: `Pet` is an output type"),
+  )
+  assert_true(
+    refused(
+      pets +
+      (
+        #|#gql.input
+        #|struct Home {
+        #|  cats : Array[Cat]
+        #|}
+      ),
+    ).contains("field `cats`: `Cat` is an output type"),
+  )
+}
+
+///|
 test "names and nothing to generate" {
   assert_eq(camel("password_hash"), "passwordHash")
   assert_eq(camel("_private_key"), "_privateKey")

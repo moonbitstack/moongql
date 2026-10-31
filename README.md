@@ -148,6 +148,23 @@ root fields. A parameter is a field argument; one of type `ResolveInfo` receives
 the request instead. A resolver that raises gives a field error, and a
 `ResolverError` keeps its message.
 
+An enum whose constructors each wrap one `#gql.type` struct is a union of those
+types under `#gql.union`, or an interface they implement under
+`#gql.interface`, which names the fields it carries; every member has each of
+them, with the same type and arguments. A value converts by its constructor,
+and back by the `__typename` its object carries.
+
+```moonbit
+#gql.interface(field="id", field="title")
+pub enum Work { Printed(Book); Periodical(Magazine) }
+
+#gql.union
+pub enum Hit { Writer(Author); Title(Book) }
+
+#gql.query
+fn search(text : String) -> Array[Hit] { ... }
+```
+
 | MoonBit | GraphQL |
 |:--:|:--:|
 | `String` | `String!` |
@@ -167,7 +184,7 @@ generated schema against the same schema written by hand.
 Wire the generator into the build once. In `moon.mod`:
 
 ```
-rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.2 -C \"$mod_dir\" \"$input\" -o \"$output\"")
+rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.3 -C \"$mod_dir\" \"$input\" -o \"$output\"")
 ```
 
 and in the `moon.pkg` of the package holding the declarations:
@@ -327,16 +344,16 @@ let handler = @moongql.graphql_handler(schema, resolvers)      // path defaults 
 let app = @moongql.graphql_app(schema, resolvers)              // the same, lifted onto an AsgiApp
 ```
 
-A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — the library's own **gilded page** by default, or **GraphiQL**, **Apollo Sandbox** and **Altair** through the `ide~` argument, or nothing at all with `off`:
+A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — the library's own **MoonQL page** by default, or **GraphiQL**, **Apollo Sandbox** and **Altair** through the `ide~` argument, or nothing at all with `off`:
 
 ```moonbit
-let app = @moongql.graphql_app(schema, resolvers)                     // the gilded page
+let app = @moongql.graphql_app(schema, resolvers)                     // the MoonQL page
 let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.graphiql)
 let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.apollo_sandbox)
 let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.off)   // no IDE, GET without ?query= is 405
 ```
 
-The gilded page is built by the library — one HTML string, nothing fetched from a CDN: a document on the left, the answer on the right, a schema drawer, a variables box, and the field linking the documentation uses (a field lit on one side lights the same field on the other, and names its path and declared type). It speaks HTTP; subscriptions are GraphiQL's and Altair's, whose CDN assets are pinned to an exact version, and which derive their socket from the page's own location unless one is configured. Any page is available on its own: `@moongql.gilded.html(endpoint="/graphql")`.
+The MoonQL page is built by the library — one HTML string, nothing fetched from a CDN: a document on the left, the answer on the right, a schema drawer, a variables box, and the field linking the documentation uses (a field lit on one side lights the same field on the other, and names its path and declared type). It speaks HTTP; subscriptions are GraphiQL's and Altair's, whose CDN assets are pinned to an exact version, and which derive their socket from the page's own location unless one is configured. Any page is available on its own: `@moongql.site.html(endpoint="/graphql")`.
 
 `Accept` picks the response media type. Ask for `application/graphql-response+json` and the status carries meaning — 400 for a request error, where the document never ran, and 200 for an operation that ran whatever its field errors say. Ask for `application/json`, or send no `Accept` at all, and every GraphQL response is a 200 with the errors in the body, which is what pre-specification clients expect. A client that accepts neither gets a 406.
 

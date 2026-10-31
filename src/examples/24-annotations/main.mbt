@@ -49,6 +49,8 @@ fn main {
     "{ author(id: \"1\") { name contact books(first: 1) { title status isbn } } }",
     "{ books(status: Draft) { id title author { name } } }", "mutation { addBook(input: { title: \"Dune\", authorId: \"2\", status: Published }) { id title status author { name } } }",
     "mutation { addBook(input: { title: \"\", authorId: \"2\" }) { id } }", "{ author(id: \"1\") { email } }",
+    "{ works { __typename id title ... on Book { status } ... on Magazine { issue } } }",
+    "{ search(text: \"e\") { __typename ... on Author { name } ... on Book { title } } }",
   ]
   for q in queries {
     reset()

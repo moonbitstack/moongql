@@ -1,7 +1,8 @@
 ///|
 /// `#gql.*` on structs, enums, fields, methods and free functions, turned into
 /// `register(schema, resolvers)` and the `ToGql`／`FromGql` of each annotated
-/// type.
+/// type. An enum whose constructors each wrap one `#gql.type` struct is a union
+/// or an interface over those structs.
 priv struct Gql {}
 
 ///|
@@ -27,6 +28,16 @@ fn root_spec(name : String) -> @attr.Spec {
   .optional("name", Str)
   .optional("description", Str)
   .optional("deprecation_reason", Str)
+}
+
+///|
+/// `#gql.enum`, `#gql.union`, and `#gql.interface` with the fields it names.
+fn enum_spec(name : String) -> @attr.Spec {
+  if name == "gql.interface" {
+    type_spec(name).many("field", Str)
+  } else {
+    type_spec(name)
+  }
 }
 
 ///|
@@ -89,8 +100,13 @@ fn labels(args : @attr.Args, keys : Array[String]) -> Array[String] {
 /// The generated file, built up declaration by declaration.
 priv struct Out {
   known : Map[String, Known]
+  // Each object's fields by GraphQL name, with the arguments and type they are
+  // written with, for the interfaces built over them.
+  field_types : Map[String, Map[String, (Array[String], String)]]
   scalars : Map[String, Unit]
   types : Array[String]
+  // Unions and interfaces, registered once every object and its fields are.
+  abstracts : Array[String]
   fields : Array[String]
   impls : Array[String]
   mut query : Bool
@@ -154,6 +170,11 @@ fn record(
             "\{at_field}: field `\{field.name}`: `\{field.ty}` has no GraphQL type; give `#gql.field(kind=...)`",
           )
         }
+        if known.shape == Input && output_core(field.ty, out.known) is Some(o) {
+          fail(
+            "\{at_field}: field `\{field.name}`: `\{o}` is an output type; an input field takes a `#gql.input` struct, an enum or a scalar",
+          )
+        }
         let extra = match args {
           Some(a) => labels(a, ["deprecation_reason", "description"])
           None => []
@@ -161,6 +182,7 @@ fn record(
         out.types.push(
           "\{obj}.field(\{[quoted(gql_name), t, ..extra].join(", ")})",
         )
+        field_type(out, name, gql_name, [], t)
         gql_name
       }
     }
@@ -234,6 +256,126 @@ fn enumeration(
 }
 
 ///|
+fn field_type(
+  out : Out,
+  owner : String,
+  gql_name : String,
+  args : Array[String],
+  t : String,
+) -> Unit {
+  match out.field_types.get(owner) {
+    Some(m) => m[gql_name] = (args, t)
+    None => out.field_types[owner] = Map([(gql_name, (args, t))])
+  }
+}
+
+///|
+/// The struct a constructor wraps, when it wraps exactly one, by plain name.
+fn payload(c : @syntax.ConstrDecl) -> String? {
+  guard c.args is Some(args) && args.to_array() is [param] else { return None }
+  match param.ty {
+    Name(constr_id={ id: Ident(name~), .. }, tys~, ..) if tys.is_empty() =>
+      Some(name)
+    _ => None
+  }
+}
+
+///|
+/// An enum whose constructors each wrap one `#gql.type` struct, as a union of
+/// those object types, or as an interface they implement with the fields
+/// `field=` names. A value converts by its constructor, and back by the
+/// `__typename` its object carries.
+fn abstract_type(
+  out : Out,
+  name : String,
+  known : Known,
+  raw : @syntax.Impl,
+  args : @attr.Args,
+  public : Bool,
+  where_ : String,
+) -> Unit raise {
+  let what = if known.shape == Union { "union" } else { "interface" }
+  guard raw is TopTypeDef({ components: Variant(constrs), .. }) else {
+    fail("\{where_}: `#gql.\{what}` goes on an enum")
+  }
+  let members = []
+  for c in constrs {
+    guard payload(c) is Some(ty) &&
+      out.known.get(ty) is Some({ shape: Object, name: gql_name, }) else {
+      fail(
+        "\{where_}: `\{name}::\{c.name.name}` does not wrap one `#gql.type` struct",
+      )
+    }
+    members.push((c.name.name, ty, gql_name))
+  }
+  if members.is_empty() {
+    fail("\{where_}: `\{name}` has no members")
+  }
+  let extra = labels(args, ["description"])
+  if known.shape == Union {
+    out.abstracts.push(
+      "schema.union(\{[quoted(known.name), "[\{members.map(m => quoted(m.2)).join(", ")}]", ..extra].join(", ")})",
+    )
+  } else {
+    let fields = args.strs("field")
+    if fields.is_empty() {
+      fail("\{where_}: `#gql.interface` names at least one `field`")
+    }
+    let iface = handle(name)
+    out.abstracts.push(
+      "let \{iface} = schema.interface(\{[quoted(known.name), ..extra].join(", ")})",
+    )
+    for field in fields {
+      let mut written = None
+      for m in members {
+        guard out.field_types.get(m.1).bind(f => f.get(field)) is Some(sig) else {
+          fail("\{where_}: `\{m.1}` has no field `\{field}`")
+        }
+        match written {
+          Some(w) if w != sig =>
+            fail(
+              "\{where_}: field `\{field}` is not the same in every member of `\{name}`",
+            )
+          _ => written = Some(sig)
+        }
+      }
+      let (args, t) = written.unwrap()
+      out.abstracts.push(
+        if args.is_empty() {
+          "\{iface}.field(\{quoted(field)}, \{t})"
+        } else {
+          "\{iface}.field_args(\{quoted(field)}, [\{args.join(", ")}], \{t})"
+        },
+      )
+    }
+    for m in members {
+      out.abstracts.push("\{handle(m.1)}.implements(\{quoted(known.name)})")
+    }
+  }
+  let writes = members.map(m => "\{m.0}(v) => @moongql.ToGql::to_gql(v)")
+  let reads = members.map(m => {
+    "{ \"__typename\": String(\{quoted(m.2)}), .. } => \{m.0}(@moongql.FromGql::from_gql(v))"
+  })
+  let vis = if public { "pub " } else { "" }
+  out.impls.push(
+    (
+      $|\{vis}impl @moongql.ToGql for \{name} with fn to_gql(self) {
+      $|  match self {
+      $|    \{writes.join("\n")}
+      $|  }
+      $|}
+      $|
+      $|\{vis}impl @moongql.FromGql for \{name} with fn from_gql(v) {
+      $|  match v {
+      $|    \{reads.join("\n")}
+      $|    other => raise @moongql.ResolverError::expected(\{quoted(known.name)}, other)
+      $|  }
+      $|}
+    ),
+  )
+}
+
+///|
 fn is_info(ty : String) -> Bool {
   ty is ("ResolveInfo" | "@moongql.ResolveInfo" | "@exec.ResolveInfo")
 }
@@ -271,6 +413,11 @@ fn call_of(
     }
     guard graphql_type(arg_ty, out.known, None, out.scalars) is Some(t) else {
       fail("\{where_}: parameter `\{name}`: `\{ty}` has no GraphQL type")
+    }
+    if output_core(ty, out.known) is Some(o) {
+      fail(
+        "\{where_}: parameter `\{name}`: `\{o}` is an output type; an argument takes a `#gql.input` struct, an enum or a scalar",
+      )
     }
     gql_args.push("(\{quoted(gql_name)}, \{t})")
     let read = "info.read(\{quoted(gql_name)})"
@@ -321,6 +468,9 @@ fn function_field(
     fail("\{where_}: `\{r}` has no GraphQL type; give `kind=`")
   }
   let (gql_args, call) = call_of(out, params, where_)
+  if self_type is Some(ty) {
+    field_type(out, ty, gql_name, gql_args, t)
+  }
   let extra = labels(args, ["deprecation_reason", "description"])
   out.fields.push(
     if gql_args.is_empty() {
@@ -344,8 +494,13 @@ fn function_field(
       "{ let self_ : \{ty} = @moongql.FromGql::from_gql(info.parent); \{value} }"
     None => value
   }
+  let info = if self_type is Some(_) || params.length() > 0 {
+    "info"
+  } else {
+    "_"
+  }
   out.fields.push(
-    "resolvers.field(\{owner}, \{quoted(gql_name)}, info => \{body})",
+    "resolvers.field(\{owner}, \{quoted(gql_name)}, \{info} => \{body})",
   )
 }
 
@@ -375,12 +530,23 @@ fn collect(decls : Array[@gen.Decl], out : Out) -> Unit raise {
           None => ()
         }
       Enum(name~, attrs~, file~, ..) =>
-        match single(gql_attrs(attrs, file), ["gql.enum"], "an enum", file) {
+        match
+          single(
+            gql_attrs(attrs, file),
+            ["gql.enum", "gql.union", "gql.interface"],
+            "an enum",
+            file,
+          ) {
           Some(attr) => {
-            let args = type_spec("gql.enum").bind(attr)
+            let full = @attr.name_of(attr).unwrap_or("")
+            let args = enum_spec(full).bind(attr)
             out.known.set(name, {
               name: args.str("name").unwrap_or(name),
-              shape: Enum,
+              shape: match full {
+                "gql.union" => Union
+                "gql.interface" => Interface
+                _ => Enum
+              },
             })
           }
           None => ()
@@ -394,6 +560,8 @@ fn collect(decls : Array[@gen.Decl], out : Out) -> Unit raise {
 impl @gen.Generator for Gql with fn generate(_, decls) {
   let out : Out = {
     known: Map([]),
+    field_types: Map([]),
+    abstracts: [],
     scalars: Map([]),
     types: [],
     fields: [],
@@ -402,6 +570,7 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
     mutation: false,
   }
   collect(decls, out)
+  let abstracts = []
   for decl in decls {
     match decl {
       Struct(name~, fields~, attrs~, public~, file~, ..) => {
@@ -428,8 +597,12 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
       Enum(name~, public~, file~, raw~, ..) => {
         guard out.known.get(name) is Some(known) else { continue }
         let attr = gql_attrs(decl.attrs(), file)[0]
-        let args = type_spec("gql.enum").bind(attr)
-        enumeration(out, name, known, raw, args, public, at(attr, file))
+        if known.shape == Enum {
+          let args = type_spec("gql.enum").bind(attr)
+          enumeration(out, name, known, raw, args, public, at(attr, file))
+        } else {
+          abstracts.push((name, known, raw, attr, public, file))
+        }
       }
       Func(owner~, name~, params~, returns~, is_async~, attrs~, file~, raw~, ..) => {
         let attr = match owner {
@@ -503,6 +676,19 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
       Other(..) => ()
     }
   }
+  for abs in abstracts {
+    let (name, known, raw, attr, public, file) = abs
+    let full = @attr.name_of(attr).unwrap_or("")
+    abstract_type(
+      out,
+      name,
+      known,
+      raw,
+      enum_spec(full).bind(attr),
+      public,
+      at(attr, file),
+    )
+  }
   if out.types.is_empty() && out.fields.is_empty() {
     return @quote.join([])
   }
@@ -513,6 +699,7 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
     )
   }
   setup.append(out.types)
+  setup.append(out.abstracts)
   if out.query {
     setup.push(
       "let gql_query = match schema.type_by_name(schema.query) { Some(t) => t; None => schema.object(schema.query) }",

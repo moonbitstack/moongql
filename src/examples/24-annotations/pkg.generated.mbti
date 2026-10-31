@@ -30,6 +30,21 @@ pub struct Book {
 pub impl @exec.FromGql for Book
 pub impl @exec.ToGql for Book
 
+pub enum Hit {
+  Writer(Author)
+  Title(Book)
+}
+pub impl @exec.FromGql for Hit
+pub impl @exec.ToGql for Hit
+
+pub struct Magazine {
+  id : Int64
+  title : String
+  issue : Int32
+}
+pub impl @exec.FromGql for Magazine
+pub impl @exec.ToGql for Magazine
+
 pub struct NewBook {
   title : String
   author_id : Int64
@@ -44,6 +59,13 @@ pub enum Status {
 } derive(Eq)
 pub impl @exec.FromGql for Status
 pub impl @exec.ToGql for Status
+
+pub enum Work {
+  Printed(Book)
+  Periodical(Magazine)
+}
+pub impl @exec.FromGql for Work
+pub impl @exec.ToGql for Work
 
 // Type aliases
 

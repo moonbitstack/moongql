@@ -4,6 +4,8 @@ priv enum Shape {
   Object
   Input
   Enum
+  Union
+  Interface
 } derive(Eq)
 
 ///|
@@ -38,6 +40,21 @@ fn inside(ty : StringView, name : String) -> String? {
     )
   } else {
     None
+  }
+}
+
+///|
+/// The annotated output type at the core of `ty`, past `T?` and `Array[T]`:
+/// what an argument or an input field cannot take.
+fn output_core(ty : String, known : Map[String, Known]) -> String? {
+  let base = inner_option(ty).unwrap_or(ty.trim(chars=" ").to_owned())
+  match inside(base, "Array") {
+    Some(item) => output_core(item, known)
+    None =>
+      match known.get(base) {
+        Some({ shape: Object | Union | Interface, .. }) => Some(base)
+        _ => None
+      }
   }
 }
 

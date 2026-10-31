@@ -74,7 +74,7 @@ pub using @server {
   type IdeKind,
   altair,
   apollo_sandbox,
-  gilded,
+  site,
   graphiql,
   graphiql_html,
   graphql_app,

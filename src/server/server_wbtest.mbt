@@ -83,15 +83,15 @@ test "graphql endpoint binds request variables" {
 }
 
 ///|
-/// A GET on the endpoint serves the library's own IDE as HTML — the gilded page,
+/// A GET on the endpoint serves the library's own IDE as HTML — the MoonQL page,
 /// not one loaded from a CDN.
-test "graphql endpoint serves the gilded IDE on GET" {
+test "graphql endpoint serves the MoonQL page on GET" {
   let (s, r) = server_schema()
   let client = @moonasgi.TestClient::new(graphql_handler(s, r))
   let resp = client.get("/graphql")
   assert_eq(resp.status, 200)
   assert_eq(resp.header("content-type"), Some("text/html; charset=utf-8"))
-  assert_eq(resp.text(), gilded.html(endpoint="/graphql"))
+  assert_eq(resp.text(), site.html(endpoint="/graphql"))
   assert_eq(resp.text().contains("const ENDPOINT = '/graphql'"), true)
   assert_eq(resp.text().contains("createGraphiQLFetcher"), false)
 }

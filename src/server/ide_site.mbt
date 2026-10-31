@@ -14,8 +14,8 @@
 /// from" is the question people actually ask.
 
 ///|
-/// The page up to the endpoint literal. Everything after it is `gilded_tail`.
-fn gilded_head() -> String {
+/// The page up to the endpoint literal. Everything after it is `site_tail`.
+fn site_head() -> String {
   let head =
     #|<!DOCTYPE html>
     #|<html lang="en">
@@ -355,7 +355,7 @@ fn gilded_head() -> String {
 
 ///|
 /// The rest of the page: the script, once the endpoint literal is closed.
-fn gilded_tail() -> String {
+fn site_tail() -> String {
   let tail =
     #|';
     #|(function(){
@@ -696,8 +696,8 @@ fn gilded_tail() -> String {
 }
 
 ///|
-/// The gilded page, wired to `endpoint`. The endpoint may be relative: the page
+/// The MoonQL page, wired to `endpoint`. The endpoint may be relative: the page
 /// is served by the endpoint it talks to, so a relative path is the normal case.
-fn gilded_page(endpoint : String) -> String {
-  gilded_head() + endpoint + gilded_tail()
+fn site_page(endpoint : String) -> String {
+  site_head() + endpoint + site_tail()
 }

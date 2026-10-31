@@ -8,11 +8,11 @@ fn pinned(page : String) -> Bool {
 ///|
 /// The default IDE is the library's own page: one string, no CDN, the endpoint
 /// baked in, and the same field linking the documentation has.
-test "the gilded page is the default, with nothing fetched from a CDN" {
-  assert_eq(gilded.kind == Gilded, true)
-  assert_eq(gilded.is_off(), false)
-  assert_eq(gilded.title(), "MoonQL")
-  let page = gilded.html(endpoint="/api/graphql")
+test "the MoonQL page is the default, with nothing fetched from a CDN" {
+  assert_eq(site.kind == Site, true)
+  assert_eq(site.is_off(), false)
+  assert_eq(site.title(), "MoonQL")
+  let page = site.html(endpoint="/api/graphql")
   assert_eq(page.contains("<title>MoonQL</title>"), true)
   assert_eq(page.contains("const ENDPOINT = '/api/graphql'"), true)
   assert_eq(page.contains("https://esm.sh"), false)
@@ -101,7 +101,7 @@ test "off serves no IDE" {
 ///|
 /// The titles, so a page can be told apart in a browser tab.
 test "each IDE names itself" {
-  assert_eq(gilded.title(), "MoonQL")
+  assert_eq(site.title(), "MoonQL")
   assert_eq(graphiql.title(), "GraphiQL")
   assert_eq(apollo_sandbox.title(), "Apollo Sandbox")
   assert_eq(altair.title(), "Altair")
@@ -111,7 +111,7 @@ test "each IDE names itself" {
 /// The endpoint serves whichever IDE it is given, as HTML.
 test "the endpoint serves the configured IDE" {
   let (s, r) = server_schema()
-  for ide in [gilded, graphiql, apollo_sandbox, altair] {
+  for ide in [site, graphiql, apollo_sandbox, altair] {
     let client = @moonasgi.TestClient::new(graphql_handler(s, r, ide~))
     let resp = client.get("/graphql")
     assert_eq(resp.status, 200)

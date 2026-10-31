@@ -26,8 +26,6 @@ pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, 
 
 pub fn field_error(Error) -> @exec.ResolverError
 
-pub let gilded : @server.Ide
-
 pub let graphiql : @server.Ide
 
 pub fn graphiql_html(endpoint? : String) -> String
@@ -43,6 +41,8 @@ pub let off : @server.Ide
 pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
 
 pub fn[T : @exec.FromGql] read(Json, String) -> T raise @exec.ResolverError
+
+pub let site : @server.Ide
 
 pub fn tokenize(String) -> Array[@lang.Token] raise @lang.GqlSyntaxError
 

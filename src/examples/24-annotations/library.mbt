@@ -38,6 +38,32 @@ pub struct NewBook {
 }
 
 ///|
+#gql.type
+pub struct Magazine {
+  id : Int64
+  title : String
+  issue : Int32
+}
+
+///|
+/// An enum whose constructors each wrap one `#gql.type` struct is an interface
+/// those structs implement, with the fields `field=` names; each member must
+/// have them, written the same way.
+#gql.interface(field="id", field="title", description="Anything on the shelf")
+pub enum Work {
+  Printed(Book)
+  Periodical(Magazine)
+}
+
+///|
+/// Without fields of its own, the same enum is a union.
+#gql.union
+pub enum Hit {
+  Writer(Author)
+  Title(Book)
+}
+
+///|
 /// A method marked `#gql.field` is a field of its type, resolved from the value
 /// it is asked on; its parameters are the field's arguments.
 #gql.field(description="Their books, at most `first`")
@@ -78,6 +104,19 @@ fn books(status? : Status) -> Array[Book] {
 }
 
 ///|
+#gql.query
+fn works() -> Array[Work] {
+  shelf.map(b => Printed(b)) + issues.map(m => Periodical(m))
+}
+
+///|
+#gql.query(description="Authors and titles that contain `text`")
+fn search(text : String) -> Array[Hit] {
+  writers.filter(a => a.name.contains(text)).map(a => Writer(a)) +
+  shelf.filter(b => b.title.contains(text)).map(b => Title(b))
+}
+
+///|
 /// A resolver that raises: any error becomes a field error, and a
 /// `ResolverError` keeps its message as written.
 #gql.mutation
@@ -101,6 +140,9 @@ let writers : Array[Author] = []
 
 ///|
 let shelf : Array[Book] = []
+
+///|
+let issues : Array[Magazine] = [{ id: 10, title: "Locus", issue: 754, }]
 
 ///|
 /// The same two authors and three books before every run.

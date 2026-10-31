@@ -192,6 +192,14 @@ type User {
 
 <span class="c">#gql.field(description="Books by this author")</span>
 <span class="k">fn</span> Author::books(self : <span class="ty">Author</span>) -> <span class="ty">Array</span>[<span class="ty">Book</span>] { ... }</pre>
+    <p>An enum whose constructors each wrap one annotated struct is a union of them, or an
+    interface they implement with the fields it names; every member has those fields, written
+    the same way.</p>
+<pre><span class="c">#gql.interface(field="id", field="title")</span>
+<span class="k">pub enum</span> <span class="ty">Work</span> { Printed(<span class="ty">Book</span>); Periodical(<span class="ty">Magazine</span>) }
+
+<span class="c">#gql.union</span>
+<span class="k">pub enum</span> <span class="ty">Hit</span> { Writer(<span class="ty">Author</span>); Title(<span class="ty">Book</span>) }</pre>
     <p class="tag">register it, then query it</p>
 <pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
 <span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
@@ -264,7 +272,7 @@ fed.install(schema)</pre>
     <code>{ data, errors }</code>; a <code>GET</code> without <code>?query=</code> serves the IDE —
     the library's own page, with nothing fetched from a CDN. The endpoint defaults to
     <code>/graphql</code> and the port to 12000.</p>
-<pre><span class="k">let</span> app = graphql_app(schema, resolvers)                        <span class="c">// the gilded page</span>
+<pre><span class="k">let</span> app = graphql_app(schema, resolvers)                        <span class="c">// the MoonQL page</span>
 <span class="k">let</span> app = graphql_app(schema, resolvers, ide=@moongql.graphiql)
 <span class="k">let</span> app = graphql_app(schema, resolvers, ide=@moongql.off)      <span class="c">// no IDE: 405</span></pre>
     <p class="tag">a POST, and what comes back</p>

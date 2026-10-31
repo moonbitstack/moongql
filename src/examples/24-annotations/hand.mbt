@@ -22,6 +22,16 @@ fn hand_register(s : @moongql.Schema, r : @moongql.Resolvers) -> Unit {
   input.field("title", NonNull(Scalar("String")))
   input.field("authorId", NonNull(Scalar("Int64")))
   input.field("status", Named("Status"))
+  let magazine = s.object("Magazine")
+  magazine.field("id", NonNull(Scalar("Int64")))
+  magazine.field("title", NonNull(Scalar("String")))
+  magazine.field("issue", NonNull(Scalar("Int")))
+  let work = s.interface("Work", description="Anything on the shelf")
+  work.field("id", NonNull(Scalar("Int64")))
+  work.field("title", NonNull(Scalar("String")))
+  book.implements("Work")
+  magazine.implements("Work")
+  s.union("Hit", ["Author", "Book"])
   let query = s.object("Query")
   s.set_mutation("Mutation")
   let mutation = s.object("Mutation")
@@ -76,6 +86,26 @@ fn hand_register(s : @moongql.Schema, r : @moongql.Resolvers) -> Unit {
     }
     Json::array(picked.map(book_json))
   })
+  query.field("works", NonNull(ListOf(NonNull(Named("Work")))))
+  r.field("Query", "works", _ => {
+    Json::array(shelf.map(book_json) + issues.map(magazine_json))
+  })
+  query.field_args(
+    "search",
+    [("text", NonNull(Scalar("String")))],
+    NonNull(ListOf(NonNull(Named("Hit")))),
+    description="Authors and titles that contain `text`",
+  )
+  r.field("Query", "search", info => {
+    let text = match info.arg("text") {
+      String(t) => t
+      _ => ""
+    }
+    Json::array(
+      writers.filter(a => a.name.contains(text)).map(author_json) +
+      shelf.filter(b => b.title.contains(text)).map(book_json),
+    )
+  })
   mutation.field_args(
     "addBook",
     [("input", NonNull(Named("NewBook")))],
@@ -129,6 +159,7 @@ fn status_name(s : Status) -> String {
 ///|
 fn author_json(a : Author) -> Json {
   {
+    "__typename": "Author",
     "id": Json::string(a.id.to_string()),
     "name": Json::string(a.name),
     "email": Json::string(a.email),
@@ -138,6 +169,7 @@ fn author_json(a : Author) -> Json {
 ///|
 fn book_json(b : Book) -> Json {
   {
+    "__typename": "Book",
     "id": Json::string(b.id.to_string()),
     "title": Json::string(b.title),
     "status": Json::string(status_name(b.status)),
@@ -146,5 +178,15 @@ fn book_json(b : Book) -> Json {
       Some(c) => Json::string(c)
       None => Json::null()
     },
+  }
+}
+
+///|
+fn magazine_json(m : Magazine) -> Json {
+  {
+    "__typename": "Magazine",
+    "id": Json::string(m.id.to_string()),
+    "title": Json::string(m.title),
+    "issue": Json::number(m.issue.to_double()),
   }
 }

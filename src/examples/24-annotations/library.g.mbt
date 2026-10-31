@@ -28,6 +28,16 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   gql_newbook.field("title", NonNull(Scalar("String")))
   gql_newbook.field("authorId", NonNull(Scalar("Int64")))
   gql_newbook.field("status", Named("Status"))
+  let gql_magazine = schema.object("Magazine")
+  gql_magazine.field("id", NonNull(Scalar("Int64")))
+  gql_magazine.field("title", NonNull(Scalar("String")))
+  gql_magazine.field("issue", NonNull(Scalar("Int")))
+  let gql_work = schema.interface("Work", description="Anything on the shelf")
+  gql_work.field("id", NonNull(Scalar("Int64")))
+  gql_work.field("title", NonNull(Scalar("String")))
+  gql_book.implements("Work")
+  gql_magazine.implements("Work")
+  schema.union("Hit", ["Author", "Book"])
   let gql_query = match schema.type_by_name(schema.query) {
     Some(t) => t
     None => schema.object(schema.query)
@@ -89,6 +99,19 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   resolvers.field(
     gql_query.name, "books", info => {
       @moongql.ToGql::to_gql(books(status?=info.read("status")))
+    },
+  )
+  gql_query.field("works", NonNull(ListOf(NonNull(Named("Work")))))
+  resolvers.field(gql_query.name, "works", _ => @moongql.ToGql::to_gql(works()))
+  gql_query.field_args(
+    "search",
+    [("text", NonNull(Scalar("String")))],
+    NonNull(ListOf(NonNull(Named("Hit")))),
+    description="Authors and titles that contain `text`",
+  )
+  resolvers.field(
+    gql_query.name, "search", info => {
+      @moongql.ToGql::to_gql(search(info.read("text")))
     },
   )
   gql_mutation.field_args(
@@ -181,5 +204,61 @@ pub impl @moongql.FromGql for NewBook with fn from_gql(v) {
     title: @moongql.read(v, "title"),
     author_id: @moongql.read(v, "authorId"),
     status: @moongql.read(v, "status"),
+  }
+}
+
+///|
+pub impl @moongql.ToGql for Magazine with fn to_gql(self) {
+  {
+    "__typename": "Magazine",
+    "id": @moongql.ToGql::to_gql(self.id),
+    "title": @moongql.ToGql::to_gql(self.title),
+    "issue": @moongql.ToGql::to_gql(self.issue),
+  }
+}
+
+///|
+pub impl @moongql.FromGql for Magazine with fn from_gql(v) {
+  Magazine::{
+    id: @moongql.read(v, "id"),
+    title: @moongql.read(v, "title"),
+    issue: @moongql.read(v, "issue"),
+  }
+}
+
+///|
+pub impl @moongql.ToGql for Work with fn to_gql(self) {
+  match self {
+    Printed(v) => @moongql.ToGql::to_gql(v)
+    Periodical(v) => @moongql.ToGql::to_gql(v)
+  }
+}
+
+///|
+pub impl @moongql.FromGql for Work with fn from_gql(v) {
+  match v {
+    { "__typename": String("Book"), .. } => 
+      Printed(@moongql.FromGql::from_gql(v))
+    { "__typename": String("Magazine"), .. } => 
+      Periodical(@moongql.FromGql::from_gql(v))
+    other => raise  @moongql.ResolverError::expected("Work", other)
+  }
+}
+
+///|
+pub impl @moongql.ToGql for Hit with fn to_gql(self) {
+  match self {
+    Writer(v) => @moongql.ToGql::to_gql(v)
+    Title(v) => @moongql.ToGql::to_gql(v)
+  }
+}
+
+///|
+pub impl @moongql.FromGql for Hit with fn from_gql(v) {
+  match v {
+    { "__typename": String("Author"), .. } => 
+      Writer(@moongql.FromGql::from_gql(v))
+    { "__typename": String("Book"), .. } => Title(@moongql.FromGql::from_gql(v))
+    other => raise  @moongql.ResolverError::expected("Hit", other)
   }
 }

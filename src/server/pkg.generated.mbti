@@ -14,8 +14,6 @@ pub let altair : Ide
 
 pub let apollo_sandbox : Ide
 
-pub let gilded : Ide
-
 pub let graphiql : Ide
 
 pub fn graphiql_html(endpoint? : String) -> String
@@ -27,6 +25,8 @@ pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : I
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
 
 pub let off : Ide
+
+pub let site : Ide
 
 // Errors
 
@@ -61,7 +61,7 @@ pub fn Ide::is_off(Self) -> Bool
 pub fn Ide::title(Self) -> String
 
 pub(all) enum IdeKind {
-  Gilded
+  Site
   GraphiQL
   ApolloSandbox
   Altair
