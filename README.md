@@ -12,19 +12,30 @@
 
 ## Quickstart
 
+Annotate your own types, and the schema and its resolvers are written for you:
+
 ```moonbit
-let s = @moongql.Schema::new()
+#gql.type
+pub struct User {
+  id : String
+  name : String
+  tags : Array[String]
+}
 
-let q = s.object("Query")
-q.field("hello", NonNull(Scalar("String")))
-q.field("user", Named("User"))
+#gql.query
+pub fn hello() -> String {
+  "hello"
+}
 
-let u = s.object("User")
-u.field("id", NonNull(Scalar("ID")))
-u.field("name", NonNull(Scalar("String")))
-u.field("tags", ListOf(NonNull(Scalar("String"))))
+#gql.query
+pub fn user(id : String) -> User? {
+  lookup(id)
+}
 
-let sdl = s.to_sdl()
+let schema = @moongql.Schema::new()
+let resolvers = @moongql.Resolvers::new()
+register(schema, resolvers)
+let sdl = schema.to_sdl()
 ```
 
 produces:
@@ -36,72 +47,17 @@ schema {
 
 type Query {
   hello: String!
-  user: User
+  user(id: String!): User
 }
 
 type User {
-  id: ID!
+  id: String!
   name: String!
-  tags: [String!]
+  tags: [String!]!
 }
 ```
 
 Verified across all backends (`wasm`, `wasm-gc`, `js`, `native`) in CI, 0 warnings under `--deny-warn`.
-
-## SDL, both ways
-
-`to_sdl` prints a schema; `Schema::of_sdl` parses one back. The two are a round
-trip — print a schema, parse the result, print it again, and the second print is
-byte-for-byte the same as the first (descriptions, `@deprecated(reason:)`,
-argument defaults, custom and built-in directives, `implements`, and the
-`schema { ... }` root block all survive the trip):
-
-```moonbit
-let s = @moongql.Schema::of_sdl(
-  #|type Query {
-  #|  "The user with this id."
-  #|  user(id: ID!): User
-  #|}
-  #|type User {
-  #|  id: ID!
-  #|  name: String!
-  #|  "Use `fullName` instead."
-  #|  legacyName: String! @deprecated(reason: "use name")
-  #|}
-  #|,
-)
-s.to_sdl()  // the same SDL, normalised
-```
-
-A definition that stops mid-way reports where it stopped (`2:1 expected a type
-system definition`), so a bad document is reported, not silently dropped.
-
-## Packages
-
-Each stage of a request is its own subpackage, so a program links the stages it
-uses and no others. The root re-exports all of them, so `@moongql.Schema` and
-`@moongql.execute` work as they always did.
-
-|  Package  | What it holds | Depends on |
-|:--:|:--|:--|
-| `moongql/lang` | the document syntax tree, `tokenize`, `parse`, `GqlError` | nothing |
-| `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL | `lang` |
-| `moongql/valid` | `validate` | `lang`, `schema` |
-| `moongql/exec` | `execute`, subscriptions, introspection | `lang`, `schema`, `valid` |
-| `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
-| `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
-| `moongql/loader` | `DataLoader` | nothing |
-| `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
-
-Running a query in-process needs nothing from `server`, so a test or a command
-line tool never links moonasgi.
-
-**Constructors are written without the package.** `pub using` re-exports types
-but not their constructors, so `@moongql.NonNull(...)` does not resolve.
-Wherever the expected type is known — a field's type, a match on a value — the
-bare name does, and reads better: `NonNull(Scalar("ID"))`. The one place it is
-not known is an error, because `raise` and `catch` work on any error; there the
-subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
 
 ## Annotations
 
@@ -228,6 +184,80 @@ representation. `extended=true` is `extend type`. The field directives are writt
 `provides`. The generator adds `register_federation(federation)`.
 
 [`26-annotated-subgraph`](src/examples/26-annotated-subgraph/) runs all of it.
+
+## Building a schema by hand
+
+Annotations generate these calls, and a schema built at run time is written the same way:
+
+```moonbit
+let s = @moongql.Schema::new()
+
+let q = s.object("Query")
+q.field("hello", NonNull(Scalar("String")))
+q.field("user", Named("User"))
+
+let u = s.object("User")
+u.field("id", NonNull(Scalar("ID")))
+u.field("name", NonNull(Scalar("String")))
+u.field("tags", ListOf(NonNull(Scalar("String"))))
+
+let sdl = s.to_sdl()
+```
+
+## SDL, both ways
+
+`to_sdl` prints a schema; `Schema::of_sdl` parses one back. The two are a round
+trip — print a schema, parse the result, print it again, and the second print is
+byte-for-byte the same as the first (descriptions, `@deprecated(reason:)`,
+argument defaults, custom and built-in directives, `implements`, and the
+`schema { ... }` root block all survive the trip):
+
+```moonbit
+let s = @moongql.Schema::of_sdl(
+  #|type Query {
+  #|  "The user with this id."
+  #|  user(id: ID!): User
+  #|}
+  #|type User {
+  #|  id: ID!
+  #|  name: String!
+  #|  "Use `fullName` instead."
+  #|  legacyName: String! @deprecated(reason: "use name")
+  #|}
+  #|,
+)
+s.to_sdl()  // the same SDL, normalised
+```
+
+A definition that stops mid-way reports where it stopped (`2:1 expected a type
+system definition`), so a bad document is reported, not silently dropped.
+
+## Packages
+
+Each stage of a request is its own subpackage, so a program links the stages it
+uses and no others. The root re-exports all of them, so `@moongql.Schema` and
+`@moongql.execute` work as they always did.
+
+|  Package  | What it holds | Depends on |
+|:--:|:--|:--|
+| `moongql/lang` | the document syntax tree, `tokenize`, `parse`, `GqlError` | nothing |
+| `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL | `lang` |
+| `moongql/valid` | `validate` | `lang`, `schema` |
+| `moongql/exec` | `execute`, subscriptions, introspection | `lang`, `schema`, `valid` |
+| `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
+| `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
+| `moongql/loader` | `DataLoader` | nothing |
+| `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
+
+Running a query in-process needs nothing from `server`, so a test or a command
+line tool never links moonasgi.
+
+**Constructors are written without the package.** `pub using` re-exports types
+but not their constructors, so `@moongql.NonNull(...)` does not resolve.
+Wherever the expected type is known — a field's type, a match on a value — the
+bare name does, and reads better: `NonNull(Scalar("ID"))`. The one place it is
+not known is an error, because `raise` and `catch` work on any error; there the
+subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
 
 ## Parser and execution
 

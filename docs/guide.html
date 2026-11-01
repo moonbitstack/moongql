@@ -117,8 +117,8 @@ p, li, .note { overflow-wrap: anywhere; }
 <article>
   <div class="kicker">Guide</div>
   <h1>From one type to a served endpoint.</h1>
-  <p class="lede">Nine steps, in the order a program grows: a type and a resolver, the schema as
-  text, annotations instead of hand-written builders, then variables, errors, subscriptions,
+  <p class="lede">Nine steps, in the order a program grows: your types as annotations, the same schema
+  by hand and as text, then variables, errors, subscriptions,
   batching, federation, and the endpoint that serves all of it. Every output below is what the
   matching example in <code>src/examples</code> prints.</p>
 
@@ -129,57 +129,9 @@ p, li, .note { overflow-wrap: anywhere; }
 <pre>moon add moonbitstack/moongql</pre>
   </section>
 
-  <section id="first">
-    <h2><span class="n">01</span>A type, a resolver, a query</h2>
-    <p>A schema is an object you build. A resolver is a function registered under
-    <code>"Type.field"</code>; the field's declared type tells the executor whether to treat the
-    result as a leaf, a list or an object, so a resolver only has to return JSON.</p>
-<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
-<span class="k">let</span> query = schema.object(<span class="c">"Query"</span>)
-query.field(<span class="c">"greeting"</span>, NonNull(Scalar(<span class="c">"String"</span>)))
-query.field(<span class="c">"luckyNumber"</span>, NonNull(Scalar(<span class="c">"Int"</span>)))
-
-<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
-resolvers.field(<span class="c">"Query"</span>, <span class="c">"greeting"</span>, <span class="k">fn</span>(_info) { Json(<span class="c">"qwq from moongql"</span>) })
-resolvers.field(<span class="c">"Query"</span>, <span class="c">"luckyNumber"</span>, <span class="k">fn</span>(_info) { Json(233) })
-
-<span class="k">let</span> res = execute(schema, resolvers, <span class="c">"{ greeting luckyNumber }"</span>)
-println(res.stringify())</pre>
-    <p class="tag">prints</p>
-<pre class="out">{"data":{"greeting":"qwq from moongql","luckyNumber":233}}</pre>
-  </section>
-
-  <section id="sdl">
-    <h2><span class="n">02</span>The same schema, as text</h2>
-    <p><code>to_sdl</code> writes the type system out — descriptions, argument defaults,
-    <code>@deprecated(reason:)</code>, directives and the <code>schema</code> block. Reading it
-    back with <code>Schema::of_sdl</code> gives the same schema, so the next print is identical.</p>
-<pre><span class="k">let</span> s = <span class="ty">Schema</span>::of_sdl(
-  <span class="c">#|type Query {</span>
-  <span class="c">#|  "Whoever is asking."</span>
-  <span class="c">#|  me: User</span>
-  <span class="c">#|}</span>
-  <span class="c">#|type User {</span>
-  <span class="c">#|  id: ID!</span>
-  <span class="c">#|  legacyName: String! @deprecated(reason: "use name")</span>
-  <span class="c">#|}</span>
-)
-s.to_sdl()</pre>
-    <p class="tag">prints the description and the deprecation back, unchanged</p>
-<pre class="out">type Query {
-  "Whoever is asking."
-  me: User
-}
-
-type User {
-  id: ID!
-  legacyName: String! @deprecated(reason: "use name")
-}</pre>
-  </section>
-
   <section id="annotations">
-    <h2><span class="n">03</span>Write the types you already have</h2>
-    <p>Instead of building the schema by hand, annotate ordinary MoonBit types. The generator
+    <h2><span class="n">01</span>Write the types you already have</h2>
+    <p>Annotate ordinary MoonBit types. The generator
     emits <code>register(schema, resolvers)</code>, which adds them to a schema you own — the two
     styles mix, and the SDL either way is byte-for-byte the same.</p>
 <pre><span class="c">#gql.type(description="Someone who writes books")</span>
@@ -205,6 +157,54 @@ type User {
 <span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
 register(schema, resolvers)
 execute(schema, resolvers, <span class="c">"{ authors { name books { title } } }"</span>)</pre>
+  </section>
+
+  <section id="first">
+    <h2><span class="n">02</span>The same thing, by hand</h2>
+    <p>A schema is an object you build. A resolver is a function registered under
+    <code>"Type.field"</code>; the field's declared type tells the executor whether to treat the
+    result as a leaf, a list or an object, so a resolver only has to return JSON.</p>
+<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
+<span class="k">let</span> query = schema.object(<span class="c">"Query"</span>)
+query.field(<span class="c">"greeting"</span>, NonNull(Scalar(<span class="c">"String"</span>)))
+query.field(<span class="c">"luckyNumber"</span>, NonNull(Scalar(<span class="c">"Int"</span>)))
+
+<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"greeting"</span>, <span class="k">fn</span>(_info) { Json(<span class="c">"qwq from moongql"</span>) })
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"luckyNumber"</span>, <span class="k">fn</span>(_info) { Json(233) })
+
+<span class="k">let</span> res = execute(schema, resolvers, <span class="c">"{ greeting luckyNumber }"</span>)
+println(res.stringify())</pre>
+    <p class="tag">prints</p>
+<pre class="out">{"data":{"greeting":"qwq from moongql","luckyNumber":233}}</pre>
+  </section>
+
+  <section id="sdl">
+    <h2><span class="n">03</span>The same schema, as text</h2>
+    <p><code>to_sdl</code> writes the type system out — descriptions, argument defaults,
+    <code>@deprecated(reason:)</code>, directives and the <code>schema</code> block. Reading it
+    back with <code>Schema::of_sdl</code> gives the same schema, so the next print is identical.</p>
+<pre><span class="k">let</span> s = <span class="ty">Schema</span>::of_sdl(
+  <span class="c">#|type Query {</span>
+  <span class="c">#|  "Whoever is asking."</span>
+  <span class="c">#|  me: User</span>
+  <span class="c">#|}</span>
+  <span class="c">#|type User {</span>
+  <span class="c">#|  id: ID!</span>
+  <span class="c">#|  legacyName: String! @deprecated(reason: "use name")</span>
+  <span class="c">#|}</span>
+)
+s.to_sdl()</pre>
+    <p class="tag">prints the description and the deprecation back, unchanged</p>
+<pre class="out">type Query {
+  "Whoever is asking."
+  me: User
+}
+
+type User {
+  id: ID!
+  legacyName: String! @deprecated(reason: "use name")
+}</pre>
   </section>
 
   <section id="variables">
@@ -289,9 +289,9 @@ fed.install(schema)</pre>
 <aside>
   <div class="t">Steps</div>
   <a href="#install">00 · Add it</a>
-  <a href="#first">01 · A type, a resolver</a>
-  <a href="#sdl">02 · The schema as text</a>
-  <a href="#annotations">03 · Annotations</a>
+  <a href="#annotations">01 · Annotations</a>
+  <a href="#first">02 · By hand</a>
+  <a href="#sdl">03 · The schema as text</a>
   <a href="#variables">04 · Variables, fragments</a>
   <a href="#errors">05 · Errors</a>
   <a href="#subscriptions">06 · Subscriptions</a>
