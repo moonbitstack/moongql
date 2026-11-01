@@ -16,6 +16,22 @@ priv struct Known {
 }
 
 ///|
+/// The type inside `Array[T]`.
+fn inner_array(ty : String) -> String? {
+  let ty = ty.trim(chars=" ")
+  if ty.has_prefix("Array[") && ty.has_suffix("]") {
+    Some(
+      ty
+      .view(start_offset="Array[".length(), end_offset=ty.length() - 1)
+      .trim(chars=" ")
+      .to_owned(),
+    )
+  } else {
+    None
+  }
+}
+
+///|
 /// The type inside `T?` or `Option[T]`, or `None` when `ty` is not optional.
 fn inner_option(ty : String) -> String? {
   let ty = ty.trim(chars=" ")

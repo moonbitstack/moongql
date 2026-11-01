@@ -17,6 +17,8 @@ pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, vari
 
 pub fn field_error(Error) -> ResolverError
 
+pub fn not_permitted() -> ResolverError
+
 pub fn operation_type(@schema.Schema, @lang.Document, String?) -> Result[@lang.OperationType, @lang.GqlError]
 
 pub fn[T : FromGql] read(Json, String) -> T raise ResolverError

@@ -1,0 +1,10 @@
+// Subscriptions, permissions and federation written as annotations. `schema.g.mbt`
+// comes from `cmd/gql`; a project wires it as a dev_build rule.
+import {
+  "moonbitstack/moongql",
+  "moonbitlang/core/json",
+}
+
+pkgtype(kind: "executable")
+
+formatter(ignore: [ "schema.g.mbt" ])

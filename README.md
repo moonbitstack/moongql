@@ -194,6 +194,41 @@ dev_build(rule: "gql", input: "schema.mbt", output: "schema.g.mbt")
 formatter(ignore: [ "schema.g.mbt" ])
 ```
 
+### Subscriptions, permissions and federation
+
+```moonbit
+#gql.type(key="id")
+pub struct User {
+  id : String
+  #gql.field(shareable=true)
+  name : String
+}
+
+#gql.reference
+pub fn user_by_id(id : String) -> User? { lookup(id) }
+
+pub fn signed_in(info : @moongql.ResolveInfo) -> Bool { info.ctx is String(_) }
+
+#gql.query(permission="signed_in")
+pub fn secret() -> String { "the answer" }
+
+#gql.subscription
+pub fn countdown(from : Int32) -> Array[Int32] { Array::makei(from, i => from - i) }
+```
+
+`#gql.subscription` returns its events as an `Array[T]`, and the generator adds
+`register_subscriptions(schema, resolvers, subscribers)`. `permission` names a
+function of `ResolveInfo`, repeated for several, and a resolver whose checks fail
+answers `not permitted` as a field error.
+
+`key` makes a type a federation entity, and `#gql.reference` is how a representation
+becomes one: its parameters are the key's fields, and without one an entity is its
+representation. `extended=true` is `extend type`. The field directives are written on
+`#gql.field` as `shareable`, `inaccessible`, `external`, `override_from`, `requires` and
+`provides`. The generator adds `register_federation(federation)`.
+
+[`26-annotated-subgraph`](src/examples/26-annotated-subgraph/) runs all of it.
+
 ## Parser and execution
 
 The code-first schema and SDL are here, with **field arguments** (`field_args`), **input object types** (`Schema::input`), **enum types** (`Schema::enum_`), and **interfaces** (`Schema::interface` + object `implements`). The **query parser** now lands too — a hand-written lexer and a recursive-descent parser that turn a query string into a `Document` AST:

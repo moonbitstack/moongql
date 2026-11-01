@@ -2,7 +2,8 @@
 /// `#gql.*` on structs, enums, fields, methods and free functions, turned into
 /// `register(schema, resolvers)` and the `ToGql`／`FromGql` of each annotated
 /// type. An enum whose constructors each wrap one `#gql.type` struct is a union
-/// or an interface over those structs.
+/// or an interface over those structs. `#gql.subscription` adds
+/// `register_subscriptions`, and a type with a `key` adds `register_federation`.
 priv struct Gql {}
 
 ///|
@@ -12,7 +13,14 @@ impl @gen.Generator for Gql with fn name(_) {
 
 ///|
 fn type_spec(name : String) -> @attr.Spec {
-  @attr.Spec::new(name).optional("name", Str).optional("description", Str)
+  let spec = @attr.Spec::new(name)
+    .optional("name", Str)
+    .optional("description", Str)
+  if name == "gql.type" {
+    spec.optional("key", Str).optional("extended", Bool)
+  } else {
+    spec
+  }
 }
 
 ///|
@@ -21,6 +29,13 @@ let field_spec : @attr.Spec = @attr.Spec::new("gql.field")
   .optional("description", Str)
   .optional("deprecation_reason", Str)
   .optional("kind", Str)
+  .many("permission", Str)
+  .optional("shareable", Bool)
+  .optional("inaccessible", Bool)
+  .optional("external", Bool)
+  .optional("override_from", Str)
+  .optional("requires", Str)
+  .optional("provides", Str)
 
 ///|
 fn root_spec(name : String) -> @attr.Spec {
@@ -28,7 +43,11 @@ fn root_spec(name : String) -> @attr.Spec {
   .optional("name", Str)
   .optional("description", Str)
   .optional("deprecation_reason", Str)
+  .many("permission", Str)
 }
+
+///|
+let reference_spec : @attr.Spec = @attr.Spec::new("gql.reference")
 
 ///|
 /// `#gql.enum`, `#gql.union`, and `#gql.interface` with the fields it names.
@@ -111,6 +130,56 @@ priv struct Out {
   impls : Array[String]
   mut query : Bool
   mut mutation : Bool
+  // What `register_subscriptions` runs.
+  subscriptions : Array[String]
+  // Field directives and entities, for `register_federation`.
+  directives : Array[String]
+  entities : Map[String, Entity]
+}
+
+///|
+/// A type with a federation key, and how a representation becomes one.
+priv struct Entity {
+  name : String
+  key : String
+  extended : Bool
+  external : Array[String]
+  mut resolve : String?
+}
+
+///|
+/// The federation directives written on a field, as calls.
+fn federate(
+  out : Out,
+  owner : String,
+  type_name : String,
+  field : String,
+  args : @attr.Args,
+  where_ : String,
+) -> Unit raise {
+  let place = "\{quoted(type_name)}, \{quoted(field)}"
+  if args.bool("shareable") is Some(true) {
+    out.directives.push("federation.shareable(\{place})")
+  }
+  if args.bool("inaccessible") is Some(true) {
+    out.directives.push("federation.inaccessible(\{place})")
+  }
+  if args.str("override_from") is Some(from) {
+    out.directives.push("federation.override_(\{place}, from=\{quoted(from)})")
+  }
+  for key in ["requires", "provides"] {
+    if args.str(key) is Some(fields) {
+      out.directives.push(
+        "federation.\{key}(\{place}, fields=\{quoted(fields)})",
+      )
+    }
+  }
+  if args.bool("external") is Some(true) {
+    match out.entities.get(owner) {
+      Some(entity) => entity.external.push(field)
+      None => fail("\{where_}: `external` is for a type with a `key`")
+    }
+  }
 }
 
 ///|
@@ -183,6 +252,14 @@ fn record(
           "\{obj}.field(\{[quoted(gql_name), t, ..extra].join(", ")})",
         )
         field_type(out, name, gql_name, [], t)
+        if args is Some(a) {
+          if !a.strs("permission").is_empty() {
+            fail(
+              "\{at_field}: a plain field has no resolver to guard; put `permission` on a method",
+            )
+          }
+          federate(out, name, known.name, gql_name, a, at_field)
+        }
         gql_name
       }
     }
@@ -489,12 +566,15 @@ fn function_field(
   } else {
     value
   }
+  let guarded = guarded(args, value)
   let body = match self_type {
     Some(ty) =>
-      "{ let self_ : \{ty} = @moongql.FromGql::from_gql(info.parent); \{value} }"
-    None => value
+      "{ let self_ : \{ty} = @moongql.FromGql::from_gql(info.parent); \{guarded} }"
+    None => guarded
   }
-  let info = if self_type is Some(_) || params.length() > 0 {
+  let info = if self_type is Some(_) ||
+    params.length() > 0 ||
+    !args.strs("permission").is_empty() {
     "info"
   } else {
     "_"
@@ -502,6 +582,102 @@ fn function_field(
   out.fields.push(
     "resolvers.field(\{owner}, \{quoted(gql_name)}, \{info} => \{body})",
   )
+}
+
+///|
+/// `value` behind the checks `permission` names, each a function of `ResolveInfo`.
+fn guarded(args : @attr.Args, value : String) -> String {
+  let checks = args.strs("permission").map(p => "\{p}(info)")
+  if checks.is_empty() {
+    value
+  } else {
+    "{ if !(\{checks.join(" && ")}) { raise @moongql.not_permitted() }; \{value} }"
+  }
+}
+
+///|
+/// A subscription root field: `Array[T]` is the events, each a `T`.
+fn subscription_field(
+  out : Out,
+  attr : @attribute.Attribute,
+  args : @attr.Args,
+  name : String,
+  params : ArrayView[@gen.Param],
+  returns : String?,
+  raw : @syntax.Impl,
+  file : String,
+) -> Unit raise {
+  let where_ = at(attr, file)
+  guard returns is Some(r) && inner_array(r) is Some(item) else {
+    fail("\{where_}: a subscription returns its events, an `Array[T]`")
+  }
+  guard graphql_type(item, out.known, None, out.scalars) is Some(t) else {
+    fail("\{where_}: `\{item}` has no GraphQL type")
+  }
+  let gql_name = args.str("name").unwrap_or(camel(name))
+  let (gql_args, call) = call_of(out, params, where_)
+  let extra = labels(args, ["deprecation_reason", "description"])
+  let root = "gql_subscription"
+  out.subscriptions.push(
+    if gql_args.is_empty() {
+      "\{root}.field(\{[quoted(gql_name), t, ..extra].join(", ")})"
+    } else {
+      "\{root}.field_args(\{[quoted(gql_name), "[\{gql_args.join(", ")}]", t, ..extra].join(", ")})"
+    },
+  )
+  let events = "\{name}(\{call.join(", ")})"
+  let events = if raises(raw) {
+    "\{events} catch { e => raise @moongql.field_error(e) }"
+  } else {
+    events
+  }
+  let source = guarded(args, "(\{events}).map(e => @moongql.ToGql::to_gql(e))")
+  let used = params.length() > 0 || !args.strs("permission").is_empty()
+  let info = if used { "info" } else { "_" }
+  out.subscriptions.push(
+    "subscribers.field(\{root}.name, \{quoted(gql_name)}, \{info} => \{source})",
+  )
+  out.subscriptions.push(
+    "resolvers.field(\{root}.name, \{quoted(gql_name)}, info => info.parent)",
+  )
+}
+
+///|
+/// The function that turns a representation back into an entity. Its parameters
+/// are read from the representation by their GraphQL names, and what it returns
+/// says which entity it is for.
+fn reference(
+  out : Out,
+  attr : @attribute.Attribute,
+  name : String,
+  params : Array[@gen.Param],
+  returns : String?,
+  raw : @syntax.Impl,
+  file : String,
+) -> Unit raise {
+  let where_ = at(attr, file)
+  ignore(reference_spec.bind(attr))
+  let ty = returns.map(r => inner_option(r).unwrap_or(r)).unwrap_or("")
+  guard out.entities.get(ty) is Some(entity) else {
+    fail("\{where_}: `#gql.reference` returns a type with a `key`, not `\{ty}`")
+  }
+  if entity.resolve is Some(_) {
+    fail("\{where_}: `\{ty}` has a reference function already")
+  }
+  let reads = []
+  for param in params {
+    guard param.name is Some(p) && param.pass is Positional else {
+      fail("\{where_}: a reference function takes plain parameters")
+    }
+    reads.push("@moongql.read(rep, \{quoted(camel(p))})")
+  }
+  let call = "\{name}(\{reads.join(", ")})"
+  let call = if raises(raw) {
+    "\{call} catch { e => raise @moongql.field_error(e) }"
+  } else {
+    call
+  }
+  entity.resolve = Some("@moongql.ToGql::to_gql(\{call})")
 }
 
 ///|
@@ -568,9 +744,13 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
     impls: [],
     query: false,
     mutation: false,
+    subscriptions: [],
+    directives: [],
+    entities: Map([]),
   }
   collect(decls, out)
   let abstracts = []
+  let references = []
   for decl in decls {
     match decl {
       Struct(name~, fields~, attrs~, public~, file~, ..) => {
@@ -589,6 +769,15 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
         let args = type_spec(full).bind(attr)
         let call = if known.shape == Object { "object" } else { "input" }
         let extra = labels(args, ["description"])
+        if full == "gql.type" && args.str("key") is Some(key) {
+          out.entities[name] = {
+            name: known.name,
+            key,
+            extended: args.bool("extended") is Some(true),
+            external: [],
+            resolve: None,
+          }
+        }
         out.types.push(
           "let \{handle(name)} = schema.\{call}(\{[quoted(known.name), ..extra].join(", ")})",
         )
@@ -611,7 +800,7 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
           None =>
             single(
               gql_attrs(attrs, file),
-              ["gql.query", "gql.mutation"],
+              ["gql.query", "gql.mutation", "gql.subscription", "gql.reference"],
               "a free function",
               file,
             )
@@ -648,7 +837,17 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
           }
           None => {
             let full = @attr.name_of(attr).unwrap_or("")
+            if full == "gql.reference" {
+              references.push((attr, name, params, returns, raw, file))
+              continue
+            }
             let args = root_spec(full).bind(attr)
+            if full == "gql.subscription" {
+              subscription_field(
+                out, attr, args, name, params, returns, raw, file,
+              )
+              continue
+            }
             let obj = if full == "gql.query" {
               out.query = true
               "gql_query"
@@ -676,6 +875,10 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
       Other(..) => ()
     }
   }
+  for found in references {
+    let (attr, name, params, returns, raw, file) = found
+    reference(out, attr, name, params, returns, raw, file)
+  }
   for abs in abstracts {
     let (name, known, raw, attr, public, file) = abs
     let full = @attr.name_of(attr).unwrap_or("")
@@ -689,7 +892,9 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
       at(attr, file),
     )
   }
-  if out.types.is_empty() && out.fields.is_empty() {
+  if out.types.is_empty() &&
+    out.fields.is_empty() &&
+    out.subscriptions.is_empty() {
     return @quote.join([])
   }
   let setup = []
@@ -716,11 +921,51 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
     )
   }
   setup.append(out.fields)
-  let source =
-    $|pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Unit {
-    $|  \{setup.join("\n")}
-    $|}
-    $|
-    $|\{out.impls.join("\n\n")}
-  @quote.items(source).render()
+  let sections = [
+    (
+      $|pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Unit {
+      $|  \{setup.join("\n")}
+      $|}
+    ),
+  ]
+  if !out.subscriptions.is_empty() {
+    sections.push(
+      (
+        $|pub fn register_subscriptions(schema : @moongql.Schema, resolvers : @moongql.Resolvers, subscribers : @moongql.Subscribers) -> Unit {
+        $|  let gql_subscription = match schema.subscription {
+        $|    Some(n) => match schema.type_by_name(n) { Some(t) => t; None => schema.object(n) }
+        $|    None => { schema.set_subscription("Subscription"); schema.object("Subscription") }
+        $|  }
+        $|  \{out.subscriptions.join("\n")}
+        $|}
+      ),
+    )
+  }
+  if !out.entities.is_empty() || !out.directives.is_empty() {
+    let calls = []
+    for _, entity in out.entities {
+      let parts = [
+        "name=\{quoted(entity.name)}",
+        "key=\{quoted(entity.key)}",
+        "resolve=(rep, _) => \{entity.resolve.unwrap_or("rep")}",
+      ]
+      if entity.extended {
+        parts.push("extends=true")
+      }
+      if !entity.external.is_empty() {
+        parts.push("external=[\{entity.external.map(quoted).join(", ")}]")
+      }
+      calls.push("federation.entity(\{parts.join(", ")})")
+    }
+    calls.append(out.directives)
+    sections.push(
+      (
+        $|pub fn register_federation(federation : @moongql.Federation) -> Unit {
+        $|  \{calls.join("\n")}
+        $|}
+      ),
+    )
+  }
+  sections.append(out.impls)
+  @quote.items(sections.join("\n\n")).render()
 }

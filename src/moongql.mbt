@@ -61,6 +61,7 @@ pub using @exec {
   execute,
   execute_subscription,
   field_error,
+  not_permitted,
   read,
 }
 

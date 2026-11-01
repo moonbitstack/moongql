@@ -36,6 +36,8 @@ pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
 
+pub fn not_permitted() -> @exec.ResolverError
+
 pub let off : @server.Ide
 
 pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError

@@ -166,6 +166,13 @@ pub fn[T : FromGql] read(value : Json, key : String) -> T raise ResolverError {
 ///|
 /// Any error a resolver raised, as the field error it becomes; a
 /// `ResolverError` passes through unchanged.
+pub fn not_permitted() -> ResolverError {
+  ResolverError("not permitted")
+}
+
+///|
+/// A resolver's error as a field error: a `ResolverError` as it is, anything else
+/// by its text.
 pub fn field_error(e : Error) -> ResolverError {
   match e {
     ResolverError(m) => ResolverError(m)

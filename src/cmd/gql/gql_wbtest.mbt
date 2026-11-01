@@ -490,3 +490,156 @@ test "mistakes are reported where they are written" {
     ).contains("one `#gql.*` per declaration"),
   )
 }
+
+///|
+test "a subscription is a root field whose events are the array it returns" {
+  let source =
+    #|#gql.subscription
+    #|pub fn countdown(from : Int32) -> Array[Int32] {
+    #|  [from]
+    #|}
+  let code = generate(source)
+  assert_true(code.contains("pubfnregister_subscriptions"))
+  assert_true(code.contains("schema.set_subscription"))
+  assert_true(code.contains("subscribers.field("))
+  assert_true(code.contains("countdown(info.read"))
+  assert_true(code.contains("info.parent"))
+}
+
+///|
+test "a subscription has to return its events" {
+  let source =
+    #|#gql.subscription
+    #|pub fn tick() -> Int32 {
+    #|  1
+    #|}
+  assert_true(refused(source).contains("an `Array[T]`"))
+}
+
+///|
+test "permission guards a resolver with the functions it names" {
+  let source =
+    #|#gql.query(permission="signed_in", permission="is_admin")
+    #|pub fn secret() -> String {
+    #|  "s"
+    #|}
+  let code = generate(source)
+  assert_true(
+    code.contains(
+      flat(
+        "if !(signed_in(info) && is_admin(info)) { raise @moongql.not_permitted() }",
+      ),
+    ),
+  )
+}
+
+///|
+test "permission has no resolver to guard on a plain field" {
+  let source =
+    #|#gql.type
+    #|pub struct T {
+    #|  #gql.field(permission="p")
+    #|  x : Int32
+    #|}
+  assert_true(refused(source).contains("put `permission` on a method"))
+}
+
+///|
+test "a key makes an entity, and its reference function resolves it" {
+  let source =
+    #|#gql.type(key="id")
+    #|pub struct User {
+    #|  id : String
+    #|  #gql.field(shareable=true)
+    #|  name : String
+    #|  #gql.field(requires="name", override_from="accounts", provides="id")
+    #|  label : String
+    #|  #gql.field(inaccessible=true)
+    #|  hidden : String
+    #|  #gql.field(external=true)
+    #|  email : String
+    #|}
+    #|
+    #|#gql.reference
+    #|pub fn user_by_id(id : String) -> User? raise {
+    #|  None
+    #|}
+  let code = generate(source)
+  assert_true(code.contains("pubfnregister_federation"))
+  assert_true(code.contains(flat("name=\"User\", key=\"id\"")))
+  assert_true(code.contains(flat("user_by_id(@moongql.read(rep, \"id\"))")))
+  assert_true(code.contains(flat("external=[\"email\"]")))
+  assert_true(code.contains(flat("federation.shareable(\"User\", \"name\")")))
+  assert_true(
+    code.contains(flat("federation.inaccessible(\"User\", \"hidden\")")),
+  )
+  assert_true(
+    code.contains(
+      flat("federation.override_(\"User\", \"label\", from=\"accounts\")"),
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat("federation.requires(\"User\", \"label\", fields=\"name\")"),
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat("federation.provides(\"User\", \"label\", fields=\"id\")"),
+    ),
+  )
+}
+
+///|
+test "an entity without a reference function is its representation" {
+  let source =
+    #|#gql.type(key="id", extended=true)
+    #|pub struct User {
+    #|  id : String
+    #|}
+  let code = generate(source)
+  assert_true(code.contains(flat("resolve=(rep, _) => rep")))
+  assert_true(code.contains("extends=true"))
+}
+
+///|
+test "a reference function returns an entity, once" {
+  let not_entity =
+    #|#gql.type
+    #|pub struct T {
+    #|  id : String
+    #|}
+    #|
+    #|#gql.reference
+    #|pub fn t(id : String) -> T {
+    #|  { id, }
+    #|}
+  assert_true(refused(not_entity).contains("a type with a `key`"))
+  let twice =
+    #|#gql.type(key="id")
+    #|pub struct T {
+    #|  id : String
+    #|}
+    #|
+    #|#gql.reference
+    #|pub fn a(id : String) -> T {
+    #|  { id, }
+    #|}
+    #|
+    #|#gql.reference
+    #|pub fn b(id : String) -> T {
+    #|  { id, }
+    #|}
+  assert_true(refused(twice).contains("has a reference function already"))
+}
+
+///|
+test "external needs a key" {
+  let source =
+    #|#gql.type
+    #|pub struct T {
+    #|  #gql.field(external=true)
+    #|  x : Int32
+    #|}
+  assert_true(refused(source).contains("is for a type with a `key`"))
+}

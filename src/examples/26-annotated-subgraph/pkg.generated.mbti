@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/examples/26-annotated-subgraph"
+
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/federation",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn countdown(Int32) -> Array[Int32]
+
+pub fn hello() -> String
+
+pub fn register(@schema.Schema, @exec.Resolvers) -> Unit
+
+pub fn register_federation(@federation.Federation) -> Unit
+
+pub fn register_subscriptions(@schema.Schema, @exec.Resolvers, @exec.Subscribers) -> Unit
+
+pub fn secret() -> String
+
+pub fn signed_in(@exec.ResolveInfo) -> Bool
+
+pub fn user_by_id(String) -> User?
+
+// Errors
+
+// Types and methods
+pub struct User {
+  id : String
+  name : String
+}
+pub impl @exec.FromGql for User
+pub impl @exec.ToGql for User
+
+// Type aliases
+
+// Traits
