@@ -140,7 +140,7 @@ generated schema against the same schema written by hand.
 Wire the generator into the build once. In `moon.mod`:
 
 ```
-rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.5 -C \"$mod_dir\" \"$input\" -o \"$output\"")
+rule(name: "gql", command: "moonx moonbitstack/moongql/cmd/gql@0.10.6 -C \"$mod_dir\" \"$input\" -o \"$output\"")
 ```
 
 and in the `moon.pkg` of the package holding the declarations:
@@ -184,6 +184,29 @@ representation. `extended=true` is `extend type`. The field directives are writt
 `provides`. The generator adds `register_federation(federation)`.
 
 [`26-annotated-subgraph`](src/examples/26-annotated-subgraph/) runs all of it.
+
+### Schema first
+
+The schema can come first instead. Put it in a `#|` string marked `#gql.sdl`, or in a file named by `#gql.sdl(file="schema.graphql")` on a `declare fn name() -> String`:
+
+```moonbit
+#gql.sdl
+let shop : String =
+  #|type Book { id: ID! title: String! author: Author! }
+  #|type Author { id: ID! name: String! }
+  #|type Query { book(id: ID!): Book }
+```
+
+The generator writes a struct for each object and input type, an enum for each enum, union and interface, and a `declare fn` for every resolver. A scalar or enum field is a struct field. A root field, a field with arguments and a field of an object type is a resolver, named `Type::field`, and the compiler names any you have not written:
+
+```moonbit
+fn Query::book(id : String) -> Book? raise { ... }
+fn Book::author(self : Book) -> Author raise { ... }
+```
+
+Declare a struct of the same name to keep what the schema does not show, such as the id behind `Book::author`. The generator binds to it, and a field it holds needs no resolver. Every resolver is declared `raise`, so a package whose resolvers cannot fail sets `warnings = "-unused_error_type"`.
+
+`#gql.sdl` and the other annotations can share a schema, each type in one or the other. A `Subscription` stays with `#gql.subscription`. [`27-schema-first`](src/examples/27-schema-first/) runs all of it.
 
 ## Building a schema by hand
 

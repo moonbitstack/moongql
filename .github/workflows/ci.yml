@@ -60,6 +60,9 @@ jobs:
       - name: generated subgraph is fresh
         run: moon run src/cmd/gql --target native -- -C . src/examples/26-annotated-subgraph/schema.mbt -o src/examples/26-annotated-subgraph/schema.g.mbt --check
 
+      - name: generated schema-first example is fresh
+        run: moon run src/cmd/gql --target native -- -C . src/examples/27-schema-first/shop.mbt -o src/examples/27-schema-first/shop.g.mbt --check
+
       - name: lint (fmt is clean)
         run: |
           moon fmt && git diff --exit-code

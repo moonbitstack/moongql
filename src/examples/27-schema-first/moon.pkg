@@ -1,0 +1,14 @@
+// A schema written in SDL, with `cmd/gql` generating the types and the `declare fn` of every
+// resolver. `shop.g.mbt` comes from `shop.mbt`; a project wires it as a dev_build rule.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}
+
+pkgtype(kind: "executable")
+
+// Every resolver is declared `raise`, and a definition must match, whether or not it can fail.
+
+warnings = "-unused_error_type"
+
+formatter(ignore: [ "shop.g.mbt" ])

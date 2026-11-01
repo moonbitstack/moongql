@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/examples/27-schema-first"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn register(@schema.Schema, @exec.Resolvers) -> Unit
+
+// Errors
+
+// Types and methods
+pub(all) struct Author {
+  id : String
+  name : String
+}
+pub impl @exec.FromGql for Author
+pub impl @exec.ToGql for Author
+
+pub(all) struct Book {
+  id : String
+  title : String
+  status : Status
+  author_id : String
+}
+pub impl @exec.FromGql for Book
+pub impl @exec.ToGql for Book
+
+pub(all) enum Hit {
+  Author(Author)
+  Book(Book)
+}
+pub impl @exec.FromGql for Hit
+pub impl @exec.ToGql for Hit
+
+pub(all) struct Mutation {
+}
+
+pub(all) struct NewBook {
+  title : String
+  author_id : String
+}
+pub impl @exec.FromGql for NewBook
+pub impl @exec.ToGql for NewBook
+
+pub(all) struct Query {
+}
+
+pub(all) enum Status {
+  DRAFT
+  PUBLISHED
+} derive(Eq, @debug.Debug)
+pub impl @exec.FromGql for Status
+pub impl @exec.ToGql for Status
+
+// Type aliases
+
+// Traits

@@ -78,7 +78,7 @@ fn gql_attrs(
       fail("\{at(attr, file)}: `\{attr.raw}` does not parse as an annotation")
     }
   }
-  @attr.under(attrs, "gql")
+  @attr.under(attrs, "gql").filter(a => @attr.name_of(a) != Some("gql.sdl"))
 }
 
 ///|
@@ -892,6 +892,7 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
       at(attr, file),
     )
   }
+  schema_first(decls, out)
   if out.types.is_empty() &&
     out.fields.is_empty() &&
     out.subscriptions.is_empty() {

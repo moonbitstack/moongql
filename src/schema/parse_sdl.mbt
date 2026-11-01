@@ -603,10 +603,27 @@ fn SdlCursor::directive_def(
 /// // s.type_by_name("Query") carries the description and the default value.
 /// ```
 pub fn Schema::of_sdl(text : String) -> Schema raise @lang.GqlSyntaxError {
-  let cur = SdlCursor::of(text)
   let schema = Schema::new()
-  while cur.until(@lang.Eof) {
-    cur.definition(schema)
-  }
+  schema.add_sdl(text)
   schema
+}
+
+///|
+/// Add the definitions in `text` to this schema, beside what it already has, so a schema can be
+/// part SDL and part built in code.
+pub fn Schema::add_sdl(
+  self : Schema,
+  text : String,
+) -> Unit raise @lang.GqlSyntaxError {
+  let cur = SdlCursor::of(text)
+  while cur.until(@lang.Eof) {
+    cur.definition(self)
+  }
+  // With no `schema` block the roots go by their default names (§3.3.1).
+  if self.mutation is None && self.type_by_name("Mutation") is Some(_) {
+    self.set_mutation("Mutation")
+  }
+  if self.subscription is None && self.type_by_name("Subscription") is Some(_) {
+    self.set_subscription("Subscription")
+  }
 }

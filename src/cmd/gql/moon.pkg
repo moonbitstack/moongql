@@ -13,6 +13,8 @@ import {
   "moonbitstack/moonast/cli",
   "moonbitlang/parser/attribute",
   "moonbitlang/parser/syntax",
+  "moonbitlang/x/fs",
+  "moonbitstack/moongql/schema",
   "moonbitlang/async",
   "moonbitlang/core/env",
   "moonbitlang/core/list",

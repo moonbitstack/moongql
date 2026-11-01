@@ -372,3 +372,43 @@ test "of_sdl reports where a definition stopped" {
     #|!
   assert_eq(sdl_error(text), "2:1 expected a type system definition")
 }
+
+///|
+test "add_sdl adds beside what the schema already has" {
+  let schema = Schema::new()
+  schema.object("Query").field("built", Scalar("Int"))
+  schema.add_sdl("type Extra { a: Int }")
+  assert_true(schema.type_by_name("Extra") is Some(_))
+  assert_true(schema.type_by_name("Query") is Some(_))
+}
+
+///|
+test "with no schema block the roots go by their default names" {
+  let schema = Schema::of_sdl(
+    (
+      #|type Query { a: Int }
+      #|type Mutation { b: Int }
+      #|type Subscription { c: Int }
+    ),
+  )
+  assert_eq(schema.mutation, Some("Mutation"))
+  assert_eq(schema.subscription, Some("Subscription"))
+}
+
+///|
+test "a schema block outranks the default names" {
+  let schema = Schema::of_sdl(
+    (
+      #|schema { query: Q mutation: Write }
+      #|type Q { a: Int }
+      #|type Write { b: Int }
+      #|type Mutation { c: Int }
+    ),
+  )
+  assert_eq(schema.mutation, Some("Write"))
+}
+
+///|
+test "a schema with neither has no mutation root" {
+  assert_eq(Schema::of_sdl("type Query { a: Int }").mutation, None)
+}

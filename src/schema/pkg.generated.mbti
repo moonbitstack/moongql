@@ -107,6 +107,7 @@ pub struct Schema {
   schema_directives : Array[AppliedDirective]
   directive_defs : Array[DirectiveDef]
 }
+pub fn Schema::add_sdl(Self, String) -> Unit raise @lang.GqlSyntaxError
 pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
 pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
 pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
