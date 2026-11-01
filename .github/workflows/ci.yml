@@ -56,6 +56,8 @@ jobs:
 
       - name: generated annotations are fresh
         run: moon run src/cmd/gql --target native -- -C . src/examples/24-annotations/library.mbt -o src/examples/24-annotations/library.g.mbt --check
+
+      - name: generated subgraph is fresh
         run: moon run src/cmd/gql --target native -- -C . src/examples/26-annotated-subgraph/schema.mbt -o src/examples/26-annotated-subgraph/schema.g.mbt --check
 
       - name: lint (fmt is clean)
