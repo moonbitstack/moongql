@@ -59,6 +59,13 @@ fn beside(file : String, path : String) -> String {
 }
 
 ///|
+/// `text` with `\n` line endings: a checkout may turn the file's into `\r\n`, and the same schema
+/// has to generate the same bytes on every system.
+fn line_feeds(text : String) -> String {
+  text.replace_all(old="\r\n", new="\n")
+}
+
+///|
 /// The body of a `declare fn` that `#gql.sdl(file=...)` gives its text through, and the source.
 fn file_source(
   attr : @attribute.Attribute,
@@ -74,9 +81,11 @@ fn file_source(
   guard raw is TopFuncDef(decl_body=DeclNone, ..) else {
     fail("\{where_}: `#gql.sdl` goes on a `declare fn`, which it gives a body")
   }
-  let text = @fs.read_file_to_string(beside(file, path)) catch {
-    _ => fail("\{where_}: cannot read `\{path}`")
-  }
+  let text = line_feeds(
+    @fs.read_file_to_string(beside(file, path)) catch {
+      _ => fail("\{where_}: cannot read `\{path}`")
+    },
+  )
   impls.push("fn \{name}() -> String {\n  \{quoted(text)}\n}")
   { text, expr: "\{name}()", where_, }
 }

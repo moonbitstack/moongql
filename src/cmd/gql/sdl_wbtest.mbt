@@ -283,6 +283,11 @@ test "a schema file is found beside the source" {
 }
 
 ///|
+test "a schema file reads the same under either line ending" {
+  inspect(line_feeds("type A\r\n{\r\n}\n"), content="type A\n{\n}\n")
+}
+
+///|
 test "camelCase names become snake_case" {
   inspect(snake("addBook"), content="add_book")
   inspect(snake("id"), content="id")
