@@ -147,16 +147,17 @@ fn snake(name : String) -> String {
 ///|
 /// The words a field may be called in GraphQL and an identifier may not in MoonBit.
 let reserved : Array[String] = [
-  "abstract", "alias", "anyframe", "anytype", "as", "asm", "assert", "async", "atomic",
-  "await", "break", "catch", "comptime", "const", "constructor", "continue", "declare",
-  "defer", "do", "dyn", "dynclass", "dynobj", "else", "enum", "export", "extern",
-  "false", "final", "finally", "fn", "for", "guard", "if", "impl", "in", "include",
-  "is", "lazy", "let", "local", "loop", "macro", "match", "method", "module", "move",
-  "mut", "namespace", "noasync", "noraise", "opaque", "orelse", "override", "package",
-  "priv", "protected", "pub", "raise", "ref", "resume", "return", "sealed", "self",
-  "static", "struct", "suberror", "super", "test", "threadlocal", "trait", "true",
-  "try", "type", "typealias", "typeof", "unreachable", "unsafe", "use", "using",
-  "virtual", "void", "volatile", "while", "with", "yield",
+  "abstract", "alias", "and", "anyframe", "anytype", "as", "asm", "assert", "async",
+  "atomic", "await", "break", "catch", "comptime", "const", "constructor", "continue",
+  "declare", "defer", "derive", "do", "dyn", "dynclass", "dynobj", "else", "enum",
+  "export", "extern", "false", "final", "finally", "fn", "for", "guard", "if", "impl",
+  "import", "in", "include", "is", "lazy", "let", "local", "loop", "macro", "match",
+  "member", "method", "module", "move", "mut", "namespace", "noasync", "noraise",
+  "opaque", "orelse", "override", "package", "priv", "protected", "pub", "raise",
+  "ref", "resume", "return", "sealed", "self", "static", "struct", "suberror", "super",
+  "test", "threadlocal", "throw", "trait", "true", "try", "type", "typealias", "typeof",
+  "unreachable", "unsafe", "use", "using", "var", "virtual", "void", "volatile",
+  "where", "while", "with", "yield",
 ]
 
 ///|

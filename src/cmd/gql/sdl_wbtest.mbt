@@ -293,3 +293,11 @@ test "camelCase names become snake_case" {
   inspect(snake("id"), content="id")
   inspect(snake("type"), content="type_")
 }
+
+///|
+test "a field named as a reserved word gets another name" {
+  for word in ["member", "where", "and", "var", "throw", "import", "derive"] {
+    assert_eq(snake(word), word + "_")
+  }
+  assert_eq(snake("createdAt"), "created_at")
+}

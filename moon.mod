@@ -1,6 +1,6 @@
 name = "moonbitstack/moongql"
 
-version = "0.10.6"
+version = "0.10.7"
 
 readme = "README.md"
 
