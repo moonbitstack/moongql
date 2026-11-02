@@ -22,7 +22,7 @@ fn inner_array(ty : String) -> String? {
   if ty.has_prefix("Array[") && ty.has_suffix("]") {
     Some(
       ty
-      .view(start_offset="Array[".length(), end_offset=ty.length() - 1)
+      .exact_view(start="Array[".length(), end=ty.length() - 1)
       .trim(chars=" ")
       .to_owned(),
     )
@@ -36,7 +36,7 @@ fn inner_array(ty : String) -> String? {
 fn inner_option(ty : String) -> String? {
   let ty = ty.trim(chars=" ")
   if ty.has_suffix("?") {
-    Some(ty.view(end_offset=ty.length() - 1).trim(chars=" ").to_owned())
+    Some(ty.exact_view(end=ty.length() - 1).trim(chars=" ").to_owned())
   } else {
     inside(ty, "Option")
   }
@@ -50,7 +50,7 @@ fn inside(ty : StringView, name : String) -> String? {
   if ty.has_prefix(open) && ty.has_suffix("]") {
     Some(
       ty
-      .view(start_offset=open.length(), end_offset=ty.length() - 1)
+      .exact_view(start=open.length(), end=ty.length() - 1)
       .trim(chars=" ")
       .to_owned(),
     )

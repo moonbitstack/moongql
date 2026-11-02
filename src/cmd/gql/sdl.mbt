@@ -53,7 +53,7 @@ fn beside(file : String, path : String) -> String {
     (None, None) => None
   }
   match cut {
-    Some(at) => file.view(end_offset=at + 1).to_owned() + path
+    Some(at) => file.exact_view(end=at + 1).to_owned() + path
     None => path
   }
 }
@@ -375,7 +375,7 @@ fn enum_of(e : @schema.EnumType, impls : Array[String]) -> Unit {
     match value.get_char(0) {
       Some(c) if c >= 'a' && c <= 'z' =>
         c.to_ascii_uppercase().to_string() +
-        value.view(start_offset=1).to_owned()
+        value.exact_view(start=1).to_owned()
       _ => value
     }
   }
