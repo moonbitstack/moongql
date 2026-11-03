@@ -296,8 +296,10 @@ pub fn server() -> (@moongql.Schema, @moongql.Resolvers) {
 `to_sdl` prints a schema; `Schema::of_sdl` parses one back. The two are a round
 trip — print a schema, parse the result, print it again, and the second print is
 byte-for-byte the same as the first (descriptions, `@deprecated(reason:)`,
-argument defaults, custom and built-in directives, `implements`, and the
-`schema { ... }` root block all survive the trip):
+argument and input-field defaults, custom and built-in directives, `implements`,
+and the `schema { ... }` root block all survive the trip). A default value is
+printed against the type it is a default for, so an enum value stays `GUEST`
+where a string stays `"all"`:
 
 ```moonbit
 let s = @moongql.Schema::of_sdl(
@@ -317,7 +319,9 @@ s.to_sdl()  // the same SDL, normalised
 ```
 
 A definition that stops mid-way reports where it stopped (`2:1 expected a type
-system definition`), so a bad document is reported, not silently dropped.
+system definition`), so a bad document is reported, not silently dropped. The
+same round trip is a command: `moon run src/cmd/sdl -- schema.graphql` prints a
+document the way this printer writes it.
 
 ## Packages
 
