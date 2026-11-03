@@ -591,6 +591,26 @@ test "a key makes an entity, and its reference function resolves it" {
 }
 
 ///|
+test "a tag goes on a type and on a field" {
+  let source =
+    #|#gql.type(key="id", tag="catalog")
+    #|pub struct Product {
+    #|  id : String
+    #|  #gql.field(tag="measured", external=true)
+    #|  weight : Int32
+    #|}
+  let code = generate(source)
+  assert_true(
+    code.contains(flat("federation.tag(\"Product\", name=\"catalog\")")),
+  )
+  assert_true(
+    code.contains(
+      flat("federation.tag_field(\"Product\", \"weight\", name=\"measured\")"),
+    ),
+  )
+}
+
+///|
 test "an entity without a reference function is its representation" {
   let source =
     #|#gql.type(key="id", extended=true)

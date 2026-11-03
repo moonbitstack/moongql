@@ -37,14 +37,15 @@ pub(all) struct EntityDef {
 /// The federation configuration for a subgraph: the set of entity types it
 /// contributes, whether it is a Federation **v2** subgraph (which opts in with an
 /// `@link` to the federation spec and unlocks `@shareable` / `@inaccessible` /
-/// `@override`), and the field-level federation directives it declares. Build it
-/// with `new`, register entities with `entity`, mark fields with `shareable` /
-/// `inaccessible` / `override_` / `requires` / `provides`, then `apply` it to a
-/// schema and resolver map.
+/// `@override` / `@tag`), and the type- and field-level federation directives it
+/// declares. Build it with `new`, register entities with `entity`, mark fields
+/// with `shareable` / `inaccessible` / `override_` / `requires` / `provides` /
+/// `tag`, then `apply` it to a schema and resolver map.
 pub struct Federation {
   entities : Array[EntityDef]
   v2 : Bool
   field_dirs : Array[(String, String, @schema.AppliedDirective)]
+  type_dirs : Array[(String, @schema.AppliedDirective)]
 }
 
 ///|
@@ -53,7 +54,7 @@ pub struct Federation {
 /// which may use the v2-only directives (`@shareable`, `@inaccessible`,
 /// `@override`).
 pub fn Federation::new(v2~ : Bool = false) -> Federation {
-  { entities: [], v2, field_dirs: [], }
+  { entities: [], v2, field_dirs: [], type_dirs: [], }
 }
 
 ///|
@@ -68,6 +69,7 @@ fn federation_link_directive() -> @schema.AppliedDirective {
     Json("@external"),
     Json("@requires"),
     Json("@provides"),
+    Json("@tag"),
     Json("@extends"),
   ]
   @schema.AppliedDirective::new("link", args=[
@@ -158,6 +160,40 @@ pub fn Federation::provides(
 }
 
 ///|
+/// Mark the type `type_name` `@tag(name: tag_name)` (v2) — a label the router can
+/// filter or route by. `@tag` is repeatable, so a type may carry several.
+pub fn Federation::tag(
+  self : Federation,
+  type_name : String,
+  name~ : String,
+) -> Unit {
+  self.type_dirs.push(
+    (
+      type_name,
+      @schema.AppliedDirective::new("tag", args=[("name", Json(name))]),
+    ),
+  )
+}
+
+///|
+/// Mark `type_name.field_name` `@tag(name: tag_name)` (v2), repeatable like the
+/// type-level form.
+pub fn Federation::tag_field(
+  self : Federation,
+  type_name : String,
+  field_name : String,
+  name~ : String,
+) -> Unit {
+  self.field_dirs.push(
+    (
+      type_name,
+      field_name,
+      @schema.AppliedDirective::new("tag", args=[("name", Json(name))]),
+    ),
+  )
+}
+
+///|
 /// Register an entity type. `name` is the object type (which must also be
 /// declared on the schema), `key` is its `@key` field set (`"id"`, or space-
 /// separated `"upc sku"` for a compound key), `resolve` turns a representation
@@ -193,6 +229,132 @@ fn is_federation_internal(name : String) -> Bool {
 }
 
 ///|
+/// The fields a field set names on `type_name`, checked against the schema. Each
+/// name is a field of the type it is written under, and a sub-selection is read
+/// against that field's own type — which is what the gateway will ask this
+/// subgraph to resolve, so a path that does not exist has to be caught here.
+fn check_field_set(
+  schema : @schema.Schema,
+  type_name : String,
+  entries : Array[FieldSetEntry],
+  written : String,
+  out : Array[String],
+  where_ : String,
+) -> Unit {
+  let owner = match schema.type_by_name(type_name) {
+    Some(t) => t
+    None => {
+      out.push("\{where_}: '\{type_name}' is not a type of this schema")
+      return
+    }
+  }
+  for e in entries {
+    match owner.field_by_name(e.name) {
+      None =>
+        out.push(
+          "\{where_}: '\{type_name}' has no field '\{e.name}', which `\{written}` names",
+        )
+      Some(f) =>
+        if !e.children.is_empty() {
+          let inner = f.typ.named_base()
+          // A sub-selection only makes sense on a composite type.
+          if schema.type_by_name(inner) is Some(_) {
+            check_field_set(schema, inner, e.children, written, out, where_)
+          } else {
+            out.push(
+              "\{where_}: '\{type_name}.\{e.name}' is '\{inner}', which has no fields to select",
+            )
+          }
+        }
+    }
+  }
+}
+
+///|
+/// Everything a subgraph has to get right before a gateway can compose it: an
+/// `@requires` or `@provides` field set whose paths exist, the entity types the
+/// subgraph registers, and the directives it declares. Answers one line per
+/// problem, empty when there is none.
+///
+/// `@requires` needs nothing at run time beyond what the executor already does —
+/// the gateway sends the named fields in the representation, and `_entities`
+/// keeps them on the value the entity resolver returned, so the resolver of the
+/// requiring field can read them. `@provides` needs nothing either: the fields
+/// are resolved here like any others, and this check is what lets the gateway
+/// rely on that.
+pub fn Federation::check(
+  self : Federation,
+  schema : @schema.Schema,
+) -> Array[String] {
+  let out : Array[String] = []
+  for e in self.entities {
+    match schema.type_by_name(e.name) {
+      None =>
+        out.push(
+          "entity '\{e.name}' is registered but not a type of this schema",
+        )
+      Some(t) =>
+        for f in e.external {
+          if t.field_by_name(f) is None {
+            out.push(
+              "entity '\{e.name}' marks '\{f}' external, but the type has no such field",
+            )
+          }
+        }
+    }
+    let fields = read_field_set(e.key)
+    match fields {
+      Some(key) => check_field_set(schema, e.name, key, e.key, out, "@key")
+      None =>
+        out.push(
+          "entity '\{e.name}': `@key(fields: \"\{e.key}\")` is not a field set",
+        )
+    }
+  }
+  for fd in self.field_dirs {
+    let (type_name, field_name, dir) = fd
+    if dir.name != "requires" && dir.name != "provides" {
+      continue
+    }
+    let written = match dir.args.iter().find_first(a => a.0 == "fields") {
+      Some((_, String(text))) => text
+      _ => ""
+    }
+    let where_ = "@\{dir.name} on \{type_name}.\{field_name}"
+    let owner = match schema.type_by_name(type_name) {
+      Some(t) => t
+      None => {
+        out.push("\{where_}: '\{type_name}' is not a type of this schema")
+        continue
+      }
+    }
+    let field = match owner.field_by_name(field_name) {
+      Some(f) => f
+      None => {
+        out.push("\{where_}: '\{type_name}' has no field '\{field_name}'")
+        continue
+      }
+    }
+    let entries = match read_field_set(written) {
+      Some(e) => e
+      None => {
+        out.push("\{where_}: `fields: \"\{written}\"` is not a field set")
+        continue
+      }
+    }
+    // `@requires` names fields of the type being resolved — the externals the
+    // gateway sends along. `@provides` names fields of what the field returns.
+    let target = if dir.name == "requires" {
+      type_name
+    } else {
+      field.typ.named_base()
+    }
+    check_field_set(schema, target, entries, written, out, where_)
+  }
+  out
+}
+
+///|
 /// Render the subgraph SDL: the schema as the developer wrote it, annotated with
 /// `@key` on entity types (prefixed `extend` when the type is an extension),
 /// `@external` on external fields, and with the federation-internal additions
@@ -205,6 +367,11 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
       "extend schema\n  " +
       @schema.applied_directive_sdl(federation_link_directive()) +
       "\n\n"
+  }
+  // A directive this subgraph defines is part of what it publishes, or the
+  // gateway has no definition to compose against.
+  for d in schema.directive_defs {
+    out = out + @schema.directive_def_sdl(d) + "\n\n"
   }
   for obj in schema.types {
     if is_federation_internal(obj.name) {
@@ -237,13 +404,17 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
       Some(e) => out = out + " @key(fields: \"" + e.key + "\")"
       None => ()
     }
+    out = out +
+      @schema.applied_directives_sdl(schema.type_applied_directives(obj.name))
     out = out + " {\n"
     for f in obj.fields {
       if obj.name == schema.query &&
         (f.name == "_service" || f.name == "_entities") {
         continue
       }
-      out = out + @schema.description_sdl(f.description) + @schema.field_sdl(f)
+      out = out +
+        @schema.description_sdl(f.description, indent=1) +
+        @schema.field_sdl(f)
       if str_in(external, f.name) {
         out = out + " @external"
       }
@@ -257,11 +428,21 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
   }
   for en in schema.enums {
     out = out + @schema.description_sdl(en.description)
-    out = out + "enum " + en.name + " {\n"
+    out = out +
+      "enum " +
+      en.name +
+      @schema.applied_directives_sdl(schema.type_applied_directives(en.name)) +
+      " {\n"
     for v in en.values {
       out = out +
         @schema.description_sdl(en.value_descriptions.get(v), indent=1)
-      out = out + "  " + v + "\n"
+      out = out + "  " + v
+      match en.deprecations.get(v) {
+        Some(r) =>
+          out = out + " @deprecated(reason: \"" + @lang.escape_string(r) + "\")"
+        None => ()
+      }
+      out = out + "\n"
     }
     out = out + "}\n\n"
   }
@@ -270,7 +451,11 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
       continue
     }
     out = out + @schema.description_sdl(un.description)
-    out = out + "union " + un.name + " = "
+    out = out +
+      "union " +
+      un.name +
+      @schema.applied_directives_sdl(schema.type_applied_directives(un.name)) +
+      " = "
     for i, m in un.members {
       if i > 0 {
         out = out + " | "
@@ -284,7 +469,11 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
       continue
     }
     out = out + @schema.description_sdl(sc.description)
-    out = out + "scalar " + sc.name + "\n\n"
+    out = out +
+      "scalar " +
+      sc.name +
+      @schema.applied_directives_sdl(schema.type_applied_directives(sc.name)) +
+      "\n\n"
   }
   out
 }
@@ -304,12 +493,24 @@ fn representation_typename(rep : Json) -> String {
 
 ///|
 /// Stamp `__typename` onto a resolved entity so the executor's union completion
-/// can pick the concrete member type. A non-object value passes through unchanged.
-fn tag_typename(value : Json, typename : String) -> Json {
+/// can pick the concrete member type, and keep every field the representation
+/// carried that the resolver did not produce: those are the `@requires` fields,
+/// which another subgraph owns and the gateway sent along for this one to read.
+/// A non-object value passes through unchanged.
+fn entity_from(value : Json, rep : Json, typename : String) -> Json {
   match value {
-    Object(m) => {
-      m["__typename"] = Json(typename)
-      Json(m)
+    Object(resolved) => {
+      match rep {
+        Object(sent) =>
+          for key in sent.keys() {
+            if key != "__typename" && resolved.get(key) is None {
+              resolved[key] = sent[key]
+            }
+          }
+        _ => ()
+      }
+      resolved["__typename"] = Json(typename)
+      Json(resolved)
     }
     _ => value
   }
@@ -332,6 +533,9 @@ pub fn Federation::apply(
   }
   for fd in self.field_dirs {
     schema.apply_field_directive(fd.0, fd.1, fd.2)
+  }
+  for td in self.type_dirs {
+    schema.apply_type_directive(td.0, td.1)
   }
   schema.scalar("_Any")
   let service = schema.object("_Service")
@@ -374,7 +578,7 @@ pub fn Federation::apply(
     for rep in reps {
       let tn = representation_typename(rep)
       match fed.entity_def(tn) {
-        Some(ed) => out.push(tag_typename((ed.resolve)(rep, info.ctx), tn))
+        Some(ed) => out.push(entity_from((ed.resolve)(rep, info.ctx), rep, tn))
         None => out.push(Json::null())
       }
     }

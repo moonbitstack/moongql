@@ -17,7 +17,7 @@ fn type_spec(name : String) -> @attr.Spec {
     .optional("name", Str)
     .optional("description", Str)
   if name == "gql.type" {
-    spec.optional("key", Str).optional("extended", Bool)
+    spec.optional("key", Str).optional("extended", Bool).optional("tag", Str)
   } else {
     spec
   }
@@ -36,6 +36,7 @@ let field_spec : @attr.Spec = @attr.Spec::new("gql.field")
   .optional("override_from", Str)
   .optional("requires", Str)
   .optional("provides", Str)
+  .optional("tag", Str)
 
 ///|
 fn root_spec(name : String) -> @attr.Spec {
@@ -166,6 +167,9 @@ fn federate(
   }
   if args.str("override_from") is Some(from) {
     out.directives.push("federation.override_(\{place}, from=\{quoted(from)})")
+  }
+  if args.str("tag") is Some(name) {
+    out.directives.push("federation.tag_field(\{place}, name=\{quoted(name)})")
   }
   for key in ["requires", "provides"] {
     if args.str(key) is Some(fields) {
@@ -777,6 +781,11 @@ impl @gen.Generator for Gql with fn generate(_, decls) {
             external: [],
             resolve: None,
           }
+        }
+        if args.str("tag") is Some(tag) {
+          out.directives.push(
+            "federation.tag(\{quoted(known.name)}, name=\{quoted(tag)})",
+          )
         }
         out.types.push(
           "let \{handle(name)} = schema.\{call}(\{[quoted(known.name), ..extra].join(", ")})",

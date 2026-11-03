@@ -213,3 +213,167 @@ test "federation v2 @requires resolver reads the external field" {
     ),
   )
 }
+
+///|
+/// A v2 subgraph whose `Product` is tagged at the type level and on one field,
+/// with a `shipping` field that reads the `@external weight` the gateway sends
+/// rather than the entity resolver computing it.
+fn tagged_setup() -> (@schema.Schema, @exec.Resolvers, Federation) {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("product", Named("Product"))
+  let p = s.object("Product")
+  p.field("upc", NonNull(@schema.Scalar("String")))
+  p.field("weight", Scalar("Int"))
+  p.field("shipping", Scalar("Int"))
+  let r = @exec.Resolvers::new()
+  // The entity resolver only knows the upc; `weight` arrives in the
+  // representation, and `_entities` keeps it on the value this resolver returns.
+  r.field("Product", "shipping", info => {
+    match info.parent {
+      Object(m) =>
+        match m.get("weight") {
+          Some(Number(n, ..)) => Json(n.to_int() * 2)
+          _ => Json::null()
+        }
+      _ => Json::null()
+    }
+  })
+  let fed = Federation::new(v2=true)
+  fed.entity(name="Product", key="upc", extends=true, external=["weight"], resolve=(
+    rep,
+    _ctx,
+  ) => jobj([("upc", Json(rep_str(rep, "upc")))]))
+  fed.tag("Product", name="catalog")
+  fed.tag_field("Product", "weight", name="measured")
+  fed.requires("Product", "shipping", fields="weight")
+  fed.apply(s, r)
+  (s, r, fed)
+}
+
+///|
+test "a tag sits on the type and the field of the subgraph SDL" {
+  let (s, r, _) = tagged_setup()
+  let sdl = service_sdl(@exec.execute(s, r, "{ _service { sdl } }"))
+  assert_eq(
+    sdl.contains("type Product @key(fields: \"upc\") @tag(name: \"catalog\") {"),
+    true,
+  )
+  assert_eq(
+    sdl.contains("weight: Int @external @tag(name: \"measured\")"),
+    true,
+  )
+  // The directive is imported by the spec link, or a gateway cannot compose it.
+  assert_eq(sdl.contains("Json(\"@tag\")"), false)
+  assert_eq(sdl.contains("\"@tag\""), true)
+}
+
+///|
+test "the representation's fields stay on the entity its resolvers read" {
+  let (s, r, _) = tagged_setup()
+  let reps : Array[Json] = [
+    jobj([
+      ("__typename", Json("Product")),
+      ("upc", Json("abc")),
+      ("weight", Json(7)),
+    ]),
+  ]
+  let vars : Map[String, Json] = Map([("reps", Json(reps))])
+  let res = @exec.execute(
+    s,
+    r,
+    (
+      #|query ($reps: [_Any!]!) { _entities(representations: $reps) { ... on Product { upc shipping } } }
+    ),
+    variables=vars,
+  )
+  assert_eq(
+    res.stringify(),
+    "{\"data\":{\"_entities\":[{\"upc\":\"abc\",\"shipping\":14}]}}",
+  )
+}
+
+///|
+test "check is silent on a subgraph the gateway can compose" {
+  let (s, _, fed) = tagged_setup()
+  assert_eq(fed.check(s).length(), 0)
+}
+
+///|
+test "check names a requires field the type does not declare" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("p", Named("Product"))
+  let p = s.object("Product")
+  p.field("upc", NonNull(@schema.Scalar("String")))
+  p.field("shipping", Scalar("Int"))
+  let r = @exec.Resolvers::new()
+  let fed = Federation::new(v2=true)
+  fed.entity(name="Product", key="upc", resolve=(rep, _ctx) => rep)
+  fed.requires("Product", "shipping", fields="weight")
+  fed.apply(s, r)
+  let why = fed.check(s)
+  assert_eq(why.length(), 1)
+  assert_eq(
+    why[0],
+    "@requires on Product.shipping: 'Product' has no field 'weight', which `weight` names",
+  )
+}
+
+///|
+test "check reads a provides field set against what the field returns" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("p", Named("Product"))
+  let p = s.object("Product")
+  p.field("upc", NonNull(@schema.Scalar("String")))
+  p.field("owner", Named("User"))
+  let u = s.object("User")
+  u.field("id", NonNull(@schema.Scalar("ID")))
+  let r = @exec.Resolvers::new()
+  let fed = Federation::new(v2=true)
+  fed.entity(name="Product", key="upc", resolve=(rep, _ctx) => rep)
+  fed.provides("Product", "owner", fields="id name")
+  fed.apply(s, r)
+  let why = fed.check(s)
+  assert_eq(why.length(), 1)
+  assert_eq(
+    why[0],
+    "@provides on Product.owner: 'User' has no field 'name', which `id name` names",
+  )
+}
+
+///|
+test "check reads a nested field set, and refuses one that is not a field set" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("p", Named("Product"))
+  let p = s.object("Product")
+  p.field("upc", NonNull(@schema.Scalar("String")))
+  p.field("owner", Named("User"))
+  let u = s.object("User")
+  u.field("id", NonNull(@schema.Scalar("ID")))
+  u.field("name", NonNull(@schema.Scalar("String")))
+  let r = @exec.Resolvers::new()
+  let fed = Federation::new(v2=true)
+  fed.entity(name="Product", key="upc", resolve=(rep, _ctx) => rep)
+  fed.provides("Product", "owner", fields="id owner { name }")
+  fed.apply(s, r)
+  let why = fed.check(s)
+  assert_eq(why.length(), 1)
+  assert_eq(
+    why[0],
+    "@provides on Product.owner: 'User' has no field 'owner', which `id owner { name }` names",
+  )
+  let (s2, _, fed2) = tagged_setup()
+  let broken = Federation::new(v2=true)
+  broken.entity(name="Product", key="upc", resolve=(rep, _ctx) => rep)
+  broken.requires("Product", "shipping", fields="weight {")
+  broken.apply(s2, @exec.Resolvers::new())
+  assert_eq(broken.check(s2).length(), 1)
+  assert_eq(
+    broken.check(s2)[0],
+    "@requires on Product.shipping: `fields: \"weight {\"` is not a field set",
+  )
+  ignore(fed2)
+}
