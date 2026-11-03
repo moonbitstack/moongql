@@ -42,9 +42,13 @@ pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise ResolverError
 
 pub struct Resolvers {
   map : Map[String, (ResolveInfo) -> Json raise ResolverError]
+  type_hooks : Map[String, (Json, Json) -> String?]
+  instance_hooks : Map[String, (Json, Json) -> Bool]
 }
 pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> Json raise ResolverError) -> Unit
+pub fn Resolvers::is_type_of(Self, String, (Json, Json) -> Bool) -> Unit
 pub fn Resolvers::new() -> Self
+pub fn Resolvers::resolve_type(Self, String, (Json, Json) -> String?) -> Unit
 
 pub struct Subscribers {
   map : Map[String, (ResolveInfo) -> Array[Json] raise ResolverError]

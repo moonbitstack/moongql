@@ -46,14 +46,20 @@ pub(all) suberror ResolverError {
 /// no registered resolver fall back to the default resolver, which reads the
 /// field's name off the parent JSON object (matching graphql-core's
 /// `default_field_resolver`).
+///
+/// It also holds the two hooks that answer "which object type is this value?" at
+/// an interface or union position, the equivalents of graphql-core's
+/// `resolve_type` and `is_type_of`.
 pub struct Resolvers {
   map : Map[String, (ResolveInfo) -> Json raise ResolverError]
+  type_hooks : Map[String, (Json, Json) -> String?]
+  instance_hooks : Map[String, (Json, Json) -> Bool]
 }
 
 ///|
 /// Create an empty resolver registry.
 pub fn Resolvers::new() -> Resolvers {
-  { map: Map([]), }
+  { map: Map([]), type_hooks: Map([]), instance_hooks: Map([]), }
 }
 
 ///|
@@ -65,6 +71,32 @@ pub fn Resolvers::field(
   resolver : (ResolveInfo) -> Json raise ResolverError,
 ) -> Unit {
   self.map[type_name + "." + field_name] = resolver
+}
+
+///|
+/// Answer which object type a value at the interface or union `type_name` is.
+/// The hook receives the value and the request context and returns the object
+/// type's name, or `None` when it is not one this hook knows. It is asked before
+/// the value's own `__typename`, so a resolver that classifies values itself does
+/// not depend on the executor's convention.
+pub fn Resolvers::resolve_type(
+  self : Resolvers,
+  type_name : String,
+  hook : (Json, Json) -> String?,
+) -> Unit {
+  self.type_hooks[type_name] = hook
+}
+
+///|
+/// Answer whether a value belongs to the object type `type_name` — the
+/// counterpart of graphql-core's `is_type_of`, asked of each possible type in
+/// turn when neither a `resolve_type` hook nor a `__typename` decided it.
+pub fn Resolvers::is_type_of(
+  self : Resolvers,
+  type_name : String,
+  hook : (Json, Json) -> Bool,
+) -> Unit {
+  self.instance_hooks[type_name] = hook
 }
 
 ///|
@@ -471,25 +503,113 @@ fn Exec::resolve_raw(
 }
 
 ///|
-/// Choose the concrete object type for a value at an interface position: if the
-/// value carries a `__typename`, resolve to that object type; otherwise keep the
-/// declared type.
+/// The object types a value at `name` (an interface or a union) can be: the
+/// members of a union, or the objects declaring the interface.
+fn Exec::possible_types(
+  self : Exec,
+  name : String,
+) -> Array[@schema.ObjectType] {
+  let out : Array[@schema.ObjectType] = []
+  if self.schema.union_by_name(name) is Some(u) {
+    for m in u.members {
+      if self.schema.type_by_name(m) is Some(t) {
+        out.push(t)
+      }
+    }
+    return out
+  }
+  for t in self.schema.types {
+    if t.kind is @schema.Object && t.interfaces.contains(name) {
+      out.push(t)
+    }
+  }
+  out
+}
+
+///|
+/// The name of the object type a value at `abstract_name` is, from the hooks this
+/// resolver registry supplies: an explicit `resolve_type` first, then the value's
+/// own `__typename`, then each possible type's `is_type_of`. `None` when nothing
+/// answered.
+fn Exec::hook_typename(
+  self : Exec,
+  abstract_name : String,
+  value : Json,
+) -> String? {
+  match self.resolvers.type_hooks.get(abstract_name) {
+    Some(hook) =>
+      match hook(value, self.ctx) {
+        Some(tn) => return Some(tn)
+        None => ()
+      }
+    None => ()
+  }
+  let carried = match value {
+    Object(m) =>
+      match m.get("__typename") {
+        Some(String(tn)) => Some(tn)
+        _ => None
+      }
+    _ => None
+  }
+  if carried is Some(_) {
+    return carried
+  }
+  for t in self.possible_types(abstract_name) {
+    match self.resolvers.instance_hooks.get(t.name) {
+      Some(hook) => if hook(value, self.ctx) { return Some(t.name) }
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+/// Whether `name` is one of the object types a value at `abstract_name` may be.
+fn Exec::is_possible_type(
+  self : Exec,
+  abstract_name : String,
+  name : String,
+) -> Bool {
+  for t in self.possible_types(abstract_name) {
+    if t.name == name {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Choose the concrete object type for a value at an interface position: the
+/// hooks answer first, then the value's `__typename`; a name that is not an
+/// implementation of the interface is a field error, and a value nothing
+/// answered for stays at the declared type (its fields are the interface's).
 fn Exec::concrete_type(
   self : Exec,
   declared : @schema.ObjectType,
   value : Json,
-) -> @schema.ObjectType {
-  match value {
-    Object(m) =>
-      match m.get("__typename") {
-        Some(String(tn)) =>
-          match self.schema.type_by_name(tn) {
-            Some(t) => t
-            None => declared
-          }
-        _ => declared
+  path : Array[Json],
+  pos : @lang.Pos,
+) -> @schema.ObjectType? {
+  match self.hook_typename(declared.name, value) {
+    None => Some(declared)
+    Some(tn) =>
+      if tn == declared.name {
+        Some(declared)
+      } else if !self.is_possible_type(declared.name, tn) {
+        self.add_error(
+          "Runtime Object type '" +
+          tn +
+          "' is not a possible type for '" +
+          declared.name +
+          "'",
+          path,
+          pos,
+        )
+        None
+      } else {
+        self.schema.type_by_name(tn)
       }
-    _ => declared
   }
 }
 
@@ -504,9 +624,10 @@ fn Exec::serialize_leaf(self : Exec, name : String, value : Json) -> Json {
 }
 
 ///|
-/// Resolve the concrete member type for a value at a union position: read its
-/// `__typename`, check that name is one of the union's members, and return that
-/// object type. A missing or non-member `__typename` is a field error.
+/// Resolve the concrete member type for a value at a union position: ask the
+/// hooks, then read the value's `__typename`, and check that the name is one of
+/// the union's members. A value nothing answered for, or a non-member name, is a
+/// field error.
 fn Exec::union_member(
   self : Exec,
   u : @schema.UnionType,
@@ -514,13 +635,9 @@ fn Exec::union_member(
   path : Array[Json],
   pos : @lang.Pos,
 ) -> @schema.ObjectType? {
-  let tn = match value {
-    Object(m) =>
-      match m.get("__typename") {
-        Some(String(s)) => s
-        _ => ""
-      }
-    _ => ""
+  let tn = match self.hook_typename(u.name, value) {
+    Some(name) => name
+    None => ""
   }
   if tn == "" {
     self.add_error(
@@ -632,15 +749,17 @@ fn Exec::complete(
               }
             } else {
               match self.output_type(name) {
-                Some(decl) => {
-                  let obj = self.concrete_type(decl, value)
-                  self.execute_selection_set(
-                    obj,
-                    merge_subselections(fields),
-                    value,
-                    path,
-                  )
-                }
+                Some(decl) =>
+                  match self.concrete_type(decl, value, path, pos) {
+                    Some(obj) =>
+                      self.execute_selection_set(
+                        obj,
+                        merge_subselections(fields),
+                        value,
+                        path,
+                      )
+                    None => Json::null()
+                  }
                 None => {
                   self.add_error(
                     "Unknown output type '" + name + "'",
