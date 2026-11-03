@@ -236,11 +236,42 @@ test "an annotated struct with a name in the schema is refused" {
 }
 
 ///|
-test "a subscription in SDL says what to do instead" {
-  let why = refused(
-    with_sdl("type Query { a: Int! }\ntype Subscription { b: Int! }"),
+test "a subscription in SDL declares its events and registers its source" {
+  let code = generate(
+    with_sdl(
+      "type Query { a: Int! }\ntype Subscription { ticks(from: Int!): Int! }",
+    ),
   )
-  assert_true(why.contains("mark the function `#gql.subscription`"))
+  assert_true(
+    code.contains(
+      flat("declare fn Subscription::ticks(from : Int32) -> Array[Int32] raise"),
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat(
+        "pub fn register_subscriptions(schema : @moongql.Schema, resolvers : @moongql.Resolvers, subscribers : @moongql.Subscribers) -> Unit",
+      ),
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat(
+        "subscribers.field(gql_subscription.name, \"ticks\", info => {(try { Subscription::ticks(info.read(\"from\")) } catch { e => raise @moongql.field_error(e) }).map(e => @moongql.ToGql::to_gql(e))})",
+      ),
+    ),
+  )
+  assert_true(
+    code.contains(
+      flat(
+        "resolvers.field(gql_subscription.name, \"ticks\", info => info.parent)",
+      ),
+    ),
+  )
+  // The field is in the schema already, so nothing declares it a second time.
+  assert_false(code.contains(flat("gql_subscription.field(")))
+  // The subscription root is not a struct of data, like the query root.
+  assert_true(code.contains(flat("pub(all) struct Subscription {  }")))
 }
 
 ///|

@@ -31,6 +31,10 @@ let shop_sdl : String =
   #|  book(id: ID!): Book
   #|  search(text: String!): [Hit!]!
   #|}
+  #|
+  #|type Subscription {
+  #|  bookAdded(authorId: ID): Book!
+  #|}
 
 ///|
 /// A schema can also live in its own file; this one is read when the code is generated.

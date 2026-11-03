@@ -22,4 +22,14 @@ fn main {
   ask(
     "mutation { addBook(input: { title: \"Lost\", authorId: \"zz\" }) { id } }",
   )
+  // A subscription in the same schema: `register_subscriptions` wires its source, and every event
+  // becomes one response payload.
+  let subscribers = @moongql.Subscribers::new()
+  register_subscriptions(schema, resolvers, subscribers)
+  let events = @moongql.execute_subscription(
+    schema, resolvers, subscribers, "subscription { bookAdded { title } }",
+  )
+  println(
+    "subscription -> \{events.length()} events, first \{events[0].stringify()}",
+  )
 }

@@ -67,6 +67,37 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   )
 }
 ///|
+pub fn register_subscriptions(
+  schema : @moongql.Schema,
+  resolvers : @moongql.Resolvers,
+  subscribers : @moongql.Subscribers,
+) -> Unit {
+  let gql_subscription = match schema.subscription {
+    Some(n) => {
+      match schema.type_by_name(n) {
+        Some(t) => t
+        None => schema.object(n)
+      }
+    }
+    None => {
+      schema.set_subscription("Subscription")
+      schema.object("Subscription")
+    }
+  }
+  subscribers.field(
+    gql_subscription.name, "bookAdded", info => {
+      (
+        try {
+          Subscription::book_added(author_id?=info.read("authorId"))
+        } catch{
+          e => raise  @moongql.field_error(e)
+        }
+      ).map(e => @moongql.ToGql::to_gql(e))
+    },
+  )
+  resolvers.field(gql_subscription.name, "bookAdded", info => info.parent)
+}
+///|
 fn mutations_sdl() -> String {
   "type Mutation {\n  addBook(input: NewBook!): Book!\n}\n"
 }
@@ -140,6 +171,13 @@ declare fn Query::book(id : String) -> Book? raise
 
 ///|
 declare fn Query::search(text : String) -> Array[Hit] raise
+
+///|
+pub(all) struct Subscription {
+  
+}
+///|
+declare fn Subscription::book_added(author_id? : String) -> Array[Book] raise
 
 ///|
 pub(all) struct Mutation {

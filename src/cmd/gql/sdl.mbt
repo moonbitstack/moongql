@@ -297,6 +297,44 @@ fn resolver(
 }
 
 ///|
+/// A subscription root field: its events are the array the declared function returns, so the
+/// schema's field type is the type of one event. The field itself is in the schema already —
+/// `add_sdl` put it there — so what is generated is the declaration and the two registry entries.
+fn subscription_resolver(
+  schema : @schema.Schema,
+  owner : String,
+  field : @schema.Field,
+  out : Out,
+) -> Unit {
+  let params = []
+  let call = []
+  for arg in field.args {
+    let (name, ty) = arg
+    let read = "info.read(\{quoted(name)})"
+    if ty is NonNull(_) {
+      params.push("\{snake(name)} : \{moon_type(schema, ty)}")
+      call.push(read)
+    } else {
+      let bare = moon_type(schema, NonNull(ty))
+      params.push("\{snake(name)}? : \{bare}")
+      call.push("\{snake(name)}?=\{read}")
+    }
+  }
+  let callee = snake(field.name)
+  let event = moon_type(schema, field.typ)
+  out.impls.push(
+    "declare fn \{owner}::\{callee}(\{params.join(", ")}) -> Array[\{event}] raise",
+  )
+  let events = "\{owner}::\{callee}(\{call.join(", ")}) catch { e => raise @moongql.field_error(e) }"
+  out.subscriptions.push(
+    "subscribers.field(gql_subscription.name, \{quoted(field.name)}, info => (\{events}).map(e => @moongql.ToGql::to_gql(e)))",
+  )
+  out.subscriptions.push(
+    "resolvers.field(gql_subscription.name, \{quoted(field.name)}, info => info.parent)",
+  )
+}
+
+///|
 /// The struct of an object type, the package's own when it declares one, and a resolver for each
 /// field the struct does not answer.
 fn object_type(
@@ -443,6 +481,7 @@ fn schema_first(decls : Array[@gen.Decl], out : Out) -> Unit raise {
   if schema.mutation is Some(name) {
     roots.push(name)
   }
+  let subscription = schema.subscription
   for t in schema.types {
     match t.kind {
       Input => input_type(schema, t, out.impls)
@@ -453,10 +492,11 @@ fn schema_first(decls : Array[@gen.Decl], out : Out) -> Unit raise {
           for f in t.fields {
             resolver(schema, t.name, true, f, out)
           }
-        } else if schema.subscription == Some(t.name) {
-          fail(
-            "\{first.where_}: a `Subscription` in SDL is not generated; mark the function `#gql.subscription`",
-          )
+        } else if Some(t.name) == subscription {
+          out.impls.push("pub(all) struct \{t.name} {}")
+          for f in t.fields {
+            subscription_resolver(schema, t.name, f, out)
+          }
         } else {
           object_type(schema, t, bound, out)
         }

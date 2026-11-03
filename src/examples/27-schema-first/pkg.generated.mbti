@@ -10,6 +10,8 @@ import {
 // Values
 pub fn register(@schema.Schema, @exec.Resolvers) -> Unit
 
+pub fn register_subscriptions(@schema.Schema, @exec.Resolvers, @exec.Subscribers) -> Unit
+
 // Errors
 
 // Types and methods
@@ -55,6 +57,9 @@ pub(all) enum Status {
 } derive(Eq, @debug.Debug)
 pub impl @exec.FromGql for Status
 pub impl @exec.ToGql for Status
+
+pub(all) struct Subscription {
+}
 
 // Type aliases
 

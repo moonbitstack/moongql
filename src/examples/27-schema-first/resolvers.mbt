@@ -64,3 +64,13 @@ fn Book::author(self : Book) -> Author raise {
   }
   a
 }
+
+///|
+/// A subscription is a function whose array is the stream of events, so `bookAdded` delivers the
+/// books it finds — one event each — and the executor maps every event to a response.
+fn Subscription::book_added(author_id? : String) -> Array[Book] raise {
+  match author_id {
+    Some(id) => books.filter(b => b.author_id == id)
+    None => books.copy()
+  }
+}
