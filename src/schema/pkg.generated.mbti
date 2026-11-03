@@ -111,6 +111,7 @@ pub fn Schema::add_sdl(Self, String) -> Unit raise @lang.GqlSyntaxError
 pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
 pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
 pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
+pub fn Schema::check(Self) -> Array[@lang.GqlError]
 pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json) -> Unit
 pub fn Schema::directive_def_by_name(Self, String) -> DirectiveDef?
 pub fn Schema::enum_(Self, String, Array[String], deprecated? : Array[(String, String)], description? : String, descriptions? : Array[(String, String)]) -> Unit
