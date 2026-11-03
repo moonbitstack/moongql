@@ -328,13 +328,14 @@ uses and no others. The root re-exports all of them, so `@moongql.Schema` and
 |  Package  | What it holds | Depends on |
 |:--:|:--|:--|
 | `moongql/lang` | the document syntax tree, `tokenize`, `parse`, `GqlError` | nothing |
-| `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL | `lang` |
+| `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL, and `Schema::check` | `lang` |
 | `moongql/valid` | `validate` | `lang`, `schema` |
 | `moongql/exec` | `execute`, subscriptions, introspection | `lang`, `schema`, `valid` |
 | `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
 | `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
 | `moongql/loader` | `DataLoader` | nothing |
 | `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
+| `moongql/cmd/sdl` | `moongql-sdl` on the command line: a document's schema, normalised | `schema` |
 
 Running a query in-process needs nothing from `server`, so a test or a command
 line tool never links moonasgi.
