@@ -19,6 +19,8 @@ pub(all) struct Author {
   id : String
   name : String
 }
+pub fn Author::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Author::to_gql(Self) -> Json
 pub impl @exec.FromGql for Author
 pub impl @exec.ToGql for Author
 
@@ -28,6 +30,8 @@ pub(all) struct Book {
   status : Status
   author_id : String
 }
+pub fn Book::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Book::to_gql(Self) -> Json
 pub impl @exec.FromGql for Book
 pub impl @exec.ToGql for Book
 
@@ -35,6 +39,8 @@ pub(all) enum Hit {
   Author(Author)
   Book(Book)
 }
+pub fn Hit::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Hit::to_gql(Self) -> Json
 pub impl @exec.FromGql for Hit
 pub impl @exec.ToGql for Hit
 
@@ -45,6 +51,8 @@ pub(all) struct NewBook {
   title : String
   author_id : String
 }
+pub fn NewBook::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn NewBook::to_gql(Self) -> Json
 pub impl @exec.FromGql for NewBook
 pub impl @exec.ToGql for NewBook
 
@@ -55,6 +63,8 @@ pub(all) enum Status {
   DRAFT
   PUBLISHED
 } derive(Eq, @debug.Debug)
+pub fn Status::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Status::to_gql(Self) -> Json
 pub impl @exec.FromGql for Status
 pub impl @exec.ToGql for Status
 

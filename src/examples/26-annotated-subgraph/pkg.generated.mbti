@@ -31,6 +31,8 @@ pub struct User {
   id : String
   name : String
 }
+pub fn User::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn User::to_gql(Self) -> Json
 pub impl @exec.FromGql for User
 pub impl @exec.ToGql for User
 

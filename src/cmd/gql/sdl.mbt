@@ -222,6 +222,17 @@ fn members_of(schema : @schema.Schema, name : String) -> Array[String] {
 }
 
 ///|
+/// The two extensions that make the impls real methods of the type. An `impl` in the type's own
+/// package promotes its methods to methods of the type, and the compiler now warns about the
+/// promotion being implicit; a library package has to say it out loud.
+fn extensions(name : String) -> String {
+  (
+    $|pub extend \{name} with @moongql.ToGql::{to_gql}
+    $|pub extend \{name} with @moongql.FromGql::{from_gql}
+  )
+}
+
+///|
 /// The impls of a type carried as keyed fields, `pairs` being (MoonBit field, GraphQL key).
 fn keyed_impls(
   name : String,
@@ -243,6 +254,8 @@ fn keyed_impls(
     $|pub impl @moongql.FromGql for \{name} with fn from_gql(v) {
     $|  \{name}::{ \{reads.join(", ")} }
     $|}
+    $|
+    $|\{extensions(name)}
   )
 }
 
@@ -402,6 +415,8 @@ fn abstract_of(
       $|    other => raise @moongql.ResolverError::expected(\{quoted(name)}, other)
       $|  }
       $|}
+      $|
+      $|\{extensions(name)}
     ),
   )
 }
@@ -437,6 +452,8 @@ fn enum_of(e : @schema.EnumType, impls : Array[String]) -> Unit {
       $|    other => raise @moongql.ResolverError::expected(\{quoted(e.name)}, other)
       $|  }
       $|}
+      $|
+      $|\{extensions(e.name)}
     ),
   )
 }

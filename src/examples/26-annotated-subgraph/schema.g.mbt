@@ -78,3 +78,9 @@ pub impl @moongql.ToGql for User with fn to_gql(self) {
 pub impl @moongql.FromGql for User with fn from_gql(v) {
   User::{ id: @moongql.read(v, "id"), name: @moongql.read(v, "name") }
 }
+
+///|
+pub extend User with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend User with @moongql.FromGql::{ from_gql }

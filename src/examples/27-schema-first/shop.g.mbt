@@ -119,6 +119,10 @@ pub impl @moongql.FromGql for Author with fn from_gql(v) {
   Author::{ id: @moongql.read(v, "id"), name: @moongql.read(v, "name") }
 }
 ///|
+pub extend Author with @moongql.ToGql::{ to_gql }
+///|
+pub extend Author with @moongql.FromGql::{ from_gql }
+///|
 declare fn Author::books(self : Author, first? : Int32) -> Array[Book] raise
 
 ///|
@@ -141,6 +145,10 @@ pub impl @moongql.FromGql for Book with fn from_gql(v) {
   }
 }
 ///|
+pub extend Book with @moongql.ToGql::{ to_gql }
+///|
+pub extend Book with @moongql.FromGql::{ from_gql }
+///|
 declare fn Book::author(self : Book) -> Author raise
 
 ///|
@@ -162,6 +170,10 @@ pub impl @moongql.FromGql for NewBook with fn from_gql(v) {
     author_id: @moongql.read(v, "authorId"),
   }
 }
+///|
+pub extend NewBook with @moongql.ToGql::{ to_gql }
+///|
+pub extend NewBook with @moongql.FromGql::{ from_gql }
 ///|
 pub(all) struct Query {
   
@@ -207,6 +219,10 @@ pub impl @moongql.FromGql for Status with fn from_gql(v) {
   }
 }
 ///|
+pub extend Status with @moongql.ToGql::{ to_gql }
+///|
+pub extend Status with @moongql.FromGql::{ from_gql }
+///|
 pub(all) enum Hit {
   Author(Author)
   Book(Book)
@@ -227,3 +243,7 @@ pub impl @moongql.FromGql for Hit with fn from_gql(v) {
     other => raise  @moongql.ResolverError::expected("Hit", other)
   }
 }
+///|
+pub extend Hit with @moongql.ToGql::{ to_gql }
+///|
+pub extend Hit with @moongql.FromGql::{ from_gql }

@@ -150,6 +150,12 @@ pub impl @moongql.FromGql for Author with fn from_gql(v) {
 }
 
 ///|
+pub extend Author with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Author with @moongql.FromGql::{ from_gql }
+
+///|
 pub impl @moongql.ToGql for Status with fn to_gql(self) {
   match self {
     Draft => "Draft"
@@ -165,6 +171,12 @@ pub impl @moongql.FromGql for Status with fn from_gql(v) {
     other => raise  @moongql.ResolverError::expected("Status", other)
   }
 }
+
+///|
+pub extend Status with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Status with @moongql.FromGql::{ from_gql }
 
 ///|
 pub impl @moongql.ToGql for Book with fn to_gql(self) {
@@ -190,6 +202,12 @@ pub impl @moongql.FromGql for Book with fn from_gql(v) {
 }
 
 ///|
+pub extend Book with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Book with @moongql.FromGql::{ from_gql }
+
+///|
 pub impl @moongql.ToGql for NewBook with fn to_gql(self) {
   {
     "title": @moongql.ToGql::to_gql(self.title),
@@ -206,6 +224,12 @@ pub impl @moongql.FromGql for NewBook with fn from_gql(v) {
     status: @moongql.read(v, "status"),
   }
 }
+
+///|
+pub extend NewBook with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend NewBook with @moongql.FromGql::{ from_gql }
 
 ///|
 pub impl @moongql.ToGql for Magazine with fn to_gql(self) {
@@ -227,6 +251,12 @@ pub impl @moongql.FromGql for Magazine with fn from_gql(v) {
 }
 
 ///|
+pub extend Magazine with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Magazine with @moongql.FromGql::{ from_gql }
+
+///|
 pub impl @moongql.ToGql for Work with fn to_gql(self) {
   match self {
     Printed(v) => @moongql.ToGql::to_gql(v)
@@ -246,6 +276,12 @@ pub impl @moongql.FromGql for Work with fn from_gql(v) {
 }
 
 ///|
+pub extend Work with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Work with @moongql.FromGql::{ from_gql }
+
+///|
 pub impl @moongql.ToGql for Hit with fn to_gql(self) {
   match self {
     Writer(v) => @moongql.ToGql::to_gql(v)
@@ -262,3 +298,9 @@ pub impl @moongql.FromGql for Hit with fn from_gql(v) {
     other => raise  @moongql.ResolverError::expected("Hit", other)
   }
 }
+
+///|
+pub extend Hit with @moongql.ToGql::{ to_gql }
+
+///|
+pub extend Hit with @moongql.FromGql::{ from_gql }

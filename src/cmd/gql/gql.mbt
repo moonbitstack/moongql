@@ -286,6 +286,9 @@ fn record(
       $|}
     ),
   )
+  if public {
+    out.impls.push(extensions(name))
+  }
 }
 
 ///|
@@ -334,6 +337,9 @@ fn enumeration(
       $|}
     ),
   )
+  if public {
+    out.impls.push(extensions(name))
+  }
 }
 
 ///|
@@ -454,6 +460,9 @@ fn abstract_type(
       $|}
     ),
   )
+  if public {
+    out.impls.push(extensions(name))
+  }
 }
 
 ///|
