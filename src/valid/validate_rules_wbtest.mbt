@@ -402,3 +402,80 @@ test "a variable used inside a fragment must be defined by the operation" {
   )
   assert_eq(unbound.contains("'$missing' is not defined"), true)
 }
+
+///|
+/// §5.1.1: a document that carries a type-system definition is not executable.
+test "a type system definition in a document is not executable" {
+  let s = rules_schema()
+  assert_eq(
+    verr_text(s, "type Report { id: ID }"),
+    "The 'Report' definition is not executable\nDocument contains no operations\n",
+  )
+  // The definition is read, not mistaken for a syntax error: the position points
+  // at the keyword.
+  let doc = @lang.parse("type Report { id: ID }") catch {
+    GqlSyntaxError(m, _, _) => abort(m)
+  }
+  assert_eq(doc.definitions.length(), 1)
+  match doc.definitions[0] {
+    @lang.TypeSystemDef(t) => {
+      assert_eq(t.keyword, "type")
+      assert_eq(t.name, "Report")
+      assert_eq(t.pos.line, 1)
+      assert_eq(t.pos.col, 1)
+    }
+    _ => abort("expected a type system definition")
+  }
+}
+
+///|
+test "each kind of type system definition is named in the error" {
+  let s = rules_schema()
+  let cases = [
+    ("schema { query: Query }", "The 'schema' definition is not executable"),
+    (
+      "extend type User @key(fields: \"id\")", "The 'User' definition is not executable",
+    ),
+    (
+      "directive @tag(name: String) repeatable on OBJECT | FIELD_DEFINITION", "The 'tag' definition is not executable",
+    ),
+    ("enum Role { ADMIN }", "The 'Role' definition is not executable"),
+    ("union Thing = User", "The 'Thing' definition is not executable"),
+    ("input Filter { id: ID }", "The 'Filter' definition is not executable"),
+    ("scalar DateTime", "The 'DateTime' definition is not executable"),
+    ("interface Node { id: ID! }", "The 'Node' definition is not executable"),
+    (
+      "extend schema @link(url: \"x\")", "The 'schema' definition is not executable",
+    ),
+  ]
+  for c in cases {
+    assert_eq(verr_text(s, c.0).contains(c.1), true)
+  }
+}
+
+///|
+test "an operation beside a type system definition still validates" {
+  let s = rules_schema()
+  assert_eq(
+    verr_text(s, "type Report { id: ID }\n\nquery Q { hello }"),
+    "The 'Report' definition is not executable\n",
+  )
+  // …and a bad operation is reported as well, one error each.
+  let both = verr_text(s, "type Report { id: ID }\n\nquery Q { nope }")
+  assert_eq(both.contains("The 'Report' definition is not executable"), true)
+  assert_eq(both.contains("Cannot query field 'nope'"), true)
+}
+
+///|
+test "a document of type system definitions alone has no operations" {
+  let s = rules_schema()
+  assert_eq(
+    verr_text(s, "type A { a: Int } type B { b: Int }"),
+    (
+      #|The 'A' definition is not executable
+      #|The 'B' definition is not executable
+      #|Document contains no operations
+    ) +
+    "\n",
+  )
+}

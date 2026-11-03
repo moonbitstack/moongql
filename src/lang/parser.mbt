@@ -144,7 +144,8 @@ fn Parser::parse_document(self : Parser) -> Document raise GqlSyntaxError {
 
 ///|
 /// Parse one top-level definition: an operation (long form or `{ ... }`
-/// shorthand) or a fragment definition.
+/// shorthand), a fragment definition, or a type-system definition the document
+/// reader keeps only so that validation can reject it.
 fn Parser::parse_definition(self : Parser) -> Definition raise GqlSyntaxError {
   if self.at(BraceL) {
     return OperationDef(self.parse_operation())
@@ -157,10 +158,131 @@ fn Parser::parse_definition(self : Parser) -> Definition raise GqlSyntaxError {
   if self.at_keyword("fragment") {
     return FragmentDef(self.parse_fragment())
   }
+  // A description belongs to the definition under it, so it is part of where the
+  // definition starts — and a top-level string can only introduce SDL.
+  if self.at(StringVal) || self.at(BlockStringVal) {
+    let pos = self.pos()
+    ignore(self.advance())
+    if self.at(Name) && is_type_system_keyword(self.current.value) {
+      let t = self.parse_type_system_definition()
+      return TypeSystemDef({
+        keyword: t.keyword,
+        kind: t.kind,
+        name: t.name,
+        pos,
+      })
+    }
+    self.fail(
+      "expected a type system definition after a description, found " +
+      self.current_desc(),
+    )
+  }
+  if self.at(Name) && is_type_system_keyword(self.current.value) {
+    return TypeSystemDef(self.parse_type_system_definition())
+  }
   self.fail(
     "expected 'query', 'mutation', 'subscription', 'fragment' or '{', found " +
     self.current_desc(),
   )
+}
+
+///|
+/// Whether `word` opens a type-system definition (§3.1 to §3.9).
+fn is_type_system_keyword(word : String) -> Bool {
+  match word {
+    "schema"
+    | "scalar"
+    | "type"
+    | "interface"
+    | "union"
+    | "enum"
+    | "input"
+    | "directive"
+    | "extend" => true
+    _ => false
+  }
+}
+
+///|
+/// Read a type-system definition's header and discard its body. The body is
+/// token-skipped rather than parsed: the definition exists in the document only
+/// to be reported, so the reader's job is to find where it ends and get back to
+/// the top level.
+fn Parser::parse_type_system_definition(
+  self : Parser,
+) -> TypeSystemDefinition raise GqlSyntaxError {
+  let pos = self.pos()
+  let keyword = self.advance().value
+  let mut kind = ""
+  let mut name = ""
+  if keyword == "extend" {
+    if !self.at(Name) {
+      self.fail("expected a kind after 'extend', found " + self.current_desc())
+    }
+    kind = self.advance().value
+    if self.at(Name) {
+      name = self.advance().value
+    }
+  } else if keyword == "schema" {
+    // A schema block defines no type, so it has no name to keep.
+    ()
+  } else if keyword == "directive" {
+    if self.at(At) {
+      ignore(self.advance())
+    }
+    if self.at(Name) {
+      name = self.advance().value
+    }
+  } else if self.at(Name) {
+    name = self.advance().value
+  } else {
+    self.fail(
+      "expected a name after '" + keyword + "', found " + self.current_desc(),
+    )
+  }
+  self.skip_type_system_body()
+  { keyword, kind, name, pos, }
+}
+
+///|
+/// Consume tokens up to the end of the current type-system definition: at the
+/// top level, another definition's keyword ends it, and a `{` ends it once the
+/// definition has had its own block.
+fn Parser::skip_type_system_body(self : Parser) -> Unit raise GqlSyntaxError {
+  let mut depth = 0
+  let mut seen_block = false
+  while !self.at(Eof) {
+    let k = self.current.kind
+    if depth == 0 {
+      if k == BraceL {
+        if seen_block {
+          return
+        }
+        seen_block = true
+      } else if k == Name && starts_definition(self.current.value) {
+        return
+      }
+    }
+    match k {
+      BraceL | ParenL | BracketL => depth = depth + 1
+      BraceR | ParenR | BracketR => if depth > 0 { depth = depth - 1 }
+      _ => ()
+    }
+    ignore(self.advance())
+  }
+}
+
+///|
+/// Whether `word` begins a definition at the top level, so a reader skipping a
+/// type-system definition knows it has reached the next one.
+fn starts_definition(word : String) -> Bool {
+  if is_type_system_keyword(word) {
+    return true
+  }
+  match word {
+    "query" | "mutation" | "subscription" | "fragment" => true
+    _ => false
+  }
 }
 
 ///|

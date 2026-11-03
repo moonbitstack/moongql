@@ -906,7 +906,7 @@ fn select_operation(
   for def in doc.definitions {
     match def {
       @lang.OperationDef(op) => ops.push(op)
-      @lang.FragmentDef(_) => ()
+      @lang.FragmentDef(_) | @lang.TypeSystemDef(_) => ()
     }
   }
   if ops.length() == 0 {

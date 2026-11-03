@@ -430,3 +430,64 @@ test "syntax errors carry a position and message" {
   }
   assert_eq(bad_spread, true)
 }
+
+///|
+/// A document may carry the type system: the reader keeps the definition so
+/// validation can refuse it, and finds its way to whatever follows.
+test "a type system definition is read, and the reader walks past it" {
+  let doc = parse(
+    (
+      #|"""a report""" type Report implements Node & Item @key(fields: "id") {
+      #|  id: ID!
+      #|  nested(input: { a: [1, 2] }): [String!]!
+      #|}
+      #|
+      #|query Q { hello }
+    ),
+  ) catch {
+    GqlSyntaxError(m, _, _) => abort(m)
+  }
+  assert_eq(doc.definitions.length(), 2)
+  match doc.definitions[0] {
+    TypeSystemDef(t) => {
+      assert_eq(t.keyword, "type")
+      assert_eq(t.name, "Report")
+      assert_eq(t.kind, "")
+      assert_eq(t.pos.line, 1)
+    }
+    _ => abort("expected a type system definition first")
+  }
+  match doc.definitions[1] {
+    OperationDef(op) => assert_eq(op.name, Some("Q"))
+    _ => abort("expected the operation second")
+  }
+  // Its printed form is its header: a document like this never executes.
+  assert_eq(doc.to_query(), "type Report\n\nquery Q {\n  hello\n}")
+}
+
+///|
+test "definitions with no body do not swallow the next one" {
+  let doc = parse(
+    (
+      #|scalar DateTime
+      #|directive @tag(name: String) repeatable on OBJECT | FIELD_DEFINITION
+      #|extend schema @link(url: "https://specs.apollo.dev/federation/v2.3")
+      #|schema { query: Query }
+      #|{ hello }
+    ),
+  ) catch {
+    GqlSyntaxError(m, _, _) => abort(m)
+  }
+  assert_eq(doc.definitions.length(), 5)
+  match doc.definitions[3] {
+    TypeSystemDef(t) => {
+      assert_eq(t.keyword, "schema")
+      assert_eq(t.name, "")
+    }
+    _ => abort("expected the schema block fourth")
+  }
+  match doc.definitions[4] {
+    OperationDef(op) => assert_eq(op.name, None)
+    _ => abort("expected the shorthand query last")
+  }
+}

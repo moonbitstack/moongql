@@ -21,10 +21,29 @@ pub(all) struct Document {
 }
 
 ///|
-/// A top-level executable definition: an operation or a named fragment.
+/// A top-level executable definition: an operation or a named fragment. A
+/// document may also carry type-system definitions, which are read so that the
+/// document can be told they are not executable (§5.1.1) rather than failing to
+/// parse; `TypeSystemDef` is that third case.
 pub(all) enum Definition {
   OperationDef(OperationDefinition)
   FragmentDef(FragmentDefinition)
+  TypeSystemDef(TypeSystemDefinition)
+}
+
+///|
+/// A type-system definition standing in a document: `type`, `interface`, `union`,
+/// `enum`, `input`, `scalar`, `schema`, `directive`, or `extend` of any of them.
+/// Only its header is kept — the keyword, the name it defines, and where it
+/// starts — because a document that holds one is not executable and nothing
+/// downstream resolves against it. `keyword` is the word as written (`extend`
+/// included), `name` the type or directive it defines (`""` for a `schema` block),
+/// and `kind` the kind word after `extend` (`""` otherwise).
+pub(all) struct TypeSystemDefinition {
+  keyword : String
+  kind : String
+  name : String
+  pos : Pos
 }
 
 ///|
@@ -397,6 +416,18 @@ pub fn Document::to_query(self : Document) -> String {
     match def {
       OperationDef(op) => sb.write_string(operation_sdl(op))
       FragmentDef(fr) => sb.write_string(fragment_sdl(fr))
+      // A type-system definition prints as its header: the document it belongs to
+      // is not executable, so its printed form is only ever read for its names.
+      TypeSystemDef(t) =>
+        sb.write_string(
+          if t.name == "" {
+            t.keyword
+          } else if t.kind == "" {
+            t.keyword + " " + t.name
+          } else {
+            t.keyword + " " + t.kind + " " + t.name
+          },
+        )
     }
   }
   sb.to_string()

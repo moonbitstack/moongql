@@ -34,7 +34,7 @@ fn Validator::check_operation_names(
           None => anon.push(op.pos)
         }
       }
-      @lang.FragmentDef(_) => ()
+      @lang.FragmentDef(_) | @lang.TypeSystemDef(_) => ()
     }
   }
   if anon.length() > 0 && total > 1 {
@@ -64,7 +64,7 @@ fn Validator::check_fragment_uniqueness(
         }
         names.push(fr.name)
       }
-      @lang.OperationDef(_) => ()
+      @lang.OperationDef(_) | @lang.TypeSystemDef(_) => ()
     }
   }
 }
@@ -106,11 +106,12 @@ fn Validator::check_fragments_used(
     match def {
       @lang.OperationDef(op) =>
         self.collect_spreads(op.selection_set, reachable)
-      @lang.FragmentDef(_) => ()
+      @lang.FragmentDef(_) | @lang.TypeSystemDef(_) => ()
     }
   }
   for def in doc.definitions {
     match def {
+      @lang.TypeSystemDef(_) => ()
       @lang.FragmentDef(fr) =>
         if !str_in(reachable, fr.name) {
           self.err_at("Fragment '" + fr.name + "' is never used", fr.pos)
@@ -178,6 +179,7 @@ fn Validator::check_fragment_cycles(
 ) -> Unit {
   for def in doc.definitions {
     match def {
+      @lang.TypeSystemDef(_) => ()
       @lang.FragmentDef(fr) =>
         if self.fragment_reaches(fr.name, fr.name, []) {
           self.err_at(

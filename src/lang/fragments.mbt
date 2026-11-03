@@ -5,7 +5,7 @@ pub fn collect_fragments(doc : Document) -> Map[String, FragmentDefinition] {
   for def in doc.definitions {
     match def {
       FragmentDef(frag) => m[frag.name] = frag
-      OperationDef(_) => ()
+      OperationDef(_) | TypeSystemDef(_) => ()
     }
   }
   m

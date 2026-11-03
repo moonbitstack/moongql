@@ -1260,6 +1260,26 @@ fn Validator::check_fragment(
 }
 
 ///|
+/// §5.1.1: a document is only executable when every definition in it is. A
+/// type-system definition — the SDL a schema is written in — is not, so a document
+/// that carries one is refused here rather than executed with it silently
+/// ignored.
+fn Validator::check_executable_def(
+  self : Validator,
+  t : @lang.TypeSystemDefinition,
+) -> Unit {
+  let named = if t.name != "" {
+    t.name
+  } else if t.kind != "" {
+    // `extend schema` names the schema, which is the kind it extends.
+    t.kind
+  } else {
+    t.keyword
+  }
+  self.err_at("The '" + named + "' definition is not executable", t.pos)
+}
+
+///|
 /// Validate a whole document against `schema`, returning all errors found (an
 /// empty array means the document is valid and ready to execute).
 pub fn validate(
@@ -1283,6 +1303,7 @@ pub fn validate(
         v.check_operation(op)
       }
       @lang.FragmentDef(frag) => v.check_fragment(frag)
+      @lang.TypeSystemDef(t) => v.check_executable_def(t)
     }
   }
   if !has_op {

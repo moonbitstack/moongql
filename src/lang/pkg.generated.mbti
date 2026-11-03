@@ -28,6 +28,7 @@ pub(all) struct Argument {
 pub(all) enum Definition {
   OperationDef(OperationDefinition)
   FragmentDef(FragmentDefinition)
+  TypeSystemDef(TypeSystemDefinition)
 }
 
 pub(all) struct Directive {
@@ -138,6 +139,13 @@ pub(all) enum TypeRef {
 pub fn TypeRef::equal(Self, Self) -> Bool
 pub fn TypeRef::not_equal(Self, Self) -> Bool
 pub fn TypeRef::to_query(Self) -> String
+
+pub(all) struct TypeSystemDefinition {
+  keyword : String
+  kind : String
+  name : String
+  pos : Pos
+}
 
 pub(all) enum Value {
   Variable(String)
