@@ -1,0 +1,10 @@
+// `moongql-sdl`: print the SDL a schema describes, from a type-system document.
+supported_targets = "+native"
+
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moongql/schema",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+}
