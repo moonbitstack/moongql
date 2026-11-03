@@ -41,16 +41,19 @@ pub fn AppliedDirective::new(
 pub type FieldDirectiveHook = (Json, Map[String, Json]) -> Json
 
 ///|
-/// A directive definition: its `name`, the `locations` it may appear at (the
-/// `__DirectiveLocation` enum values, e.g. `"FIELD"`, `"FIELD_DEFINITION"`), its
-/// declared `args`, whether it `is_repeatable`, and an optional executable
-/// `on_field` hook. A definition with locations that include executable ones and
-/// an `on_field` hook is applied during execution; one with only type-system
-/// locations is a pure schema directive (SDL + introspection only).
+/// A directive definition: its `name`, its `description`, the `locations` it may
+/// appear at (the `__DirectiveLocation` enum values, e.g. `"FIELD"`,
+/// `"FIELD_DEFINITION"`), its declared `args` with their default values, whether
+/// it `is_repeatable`, and an optional executable `on_field` hook. A definition
+/// with locations that include executable ones and an `on_field` hook is applied
+/// during execution; one with only type-system locations is a pure schema
+/// directive (SDL + introspection only).
 pub(all) struct DirectiveDef {
   name : String
+  description : String?
   locations : Array[String]
   args : Array[(String, GqlType)]
+  arg_defaults : Map[String, Json]
   is_repeatable : Bool
   on_field : FieldDirectiveHook?
 }
@@ -60,17 +63,28 @@ pub(all) struct DirectiveDef {
 /// be used (`"FIELD"`, `"FRAGMENT_SPREAD"`, `"INLINE_FRAGMENT"`, `"OBJECT"`,
 /// `"FIELD_DEFINITION"`, ...); `args` declares its arguments; `on_field` — when
 /// given and the directive targets fields — transforms the resolved value of any
-/// field the directive is applied to. The directive then appears in introspection
-/// (`__schema { directives }`) and is accepted by the validator.
+/// field the directive is applied to. `defaults` supplies the default value of the
+/// arguments a use of the directive may leave out. The directive then appears in
+/// introspection (`__schema { directives }`) and is accepted by the validator.
 pub fn Schema::directive(
   self : Schema,
   name : String,
   locations~ : Array[String],
   args~ : Array[(String, GqlType)] = [],
+  defaults~ : Array[(String, Json)] = [],
   is_repeatable~ : Bool = false,
   on_field? : FieldDirectiveHook,
+  description? : String,
 ) -> Unit {
-  self.directive_defs.push({ name, locations, args, is_repeatable, on_field, })
+  self.directive_defs.push({
+    name,
+    description,
+    locations,
+    args,
+    arg_defaults: Map(defaults),
+    is_repeatable,
+    on_field,
+  })
 }
 
 ///|
@@ -256,8 +270,14 @@ pub fn builtin_exec_directive(name : String) -> DirectiveDef? {
     "skip" | "include" =>
       Some({
         name,
+        description: Some(
+          "Directs the executor to " +
+          (if name == "skip" { "skip" } else { "include" }) +
+          " this field or fragment when the `if` argument is true.",
+        ),
         locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
         args: [("if", NonNull(Scalar("Boolean")))],
+        arg_defaults: Map([]),
         is_repeatable: false,
         on_field: None,
       })

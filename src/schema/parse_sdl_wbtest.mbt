@@ -412,3 +412,115 @@ test "a schema block outranks the default names" {
 test "a schema with neither has no mutation root" {
   assert_eq(Schema::of_sdl("type Query { a: Int }").mutation, None)
 }
+
+///|
+/// A schema carrying every part of the type system the printer has to render.
+fn complete_schema() -> Schema {
+  let s = Schema::new()
+  s.enum_(
+    "Role",
+    ["ADMIN", "GUEST", "OLD"],
+    description="Who may see this.",
+    deprecated=[("OLD", "use GUEST")],
+    descriptions=[("ADMIN", "Can do anything.")],
+  )
+  s.scalar(
+    "DateTime",
+    spec_url="https://example.invalid/dt",
+    description="An instant.",
+  )
+  let q = s.object("Query", description="The root.")
+  q.field("now", NonNull(Named("DateTime")), description="The current instant.")
+  q.field_args(
+    "search",
+    [("term", NonNull(Scalar("String"))), ("first", Scalar("Int"))],
+    NonNull(ListOf(NonNull(Scalar("String")))),
+    defaults=[("first", Json(10)), ("term", Json("all"))],
+    description="Finds text.",
+    deprecation_reason="use find",
+  )
+  let m = s.object("Mutation")
+  m.field("noop", Scalar("Boolean"))
+  s.set_mutation("Mutation")
+  let sub = s.object("Subscription")
+  sub.field("ticks", Scalar("Int"))
+  s.set_subscription("Subscription")
+  s.directive(
+    "tag",
+    locations=["OBJECT", "FIELD_DEFINITION"],
+    args=[("name", NonNull(Scalar("String"))), ("weight", Scalar("Int"))],
+    defaults=[("weight", Json(1))],
+    is_repeatable=true,
+    description="A label.",
+  )
+  s.apply_type_directive(
+    "Query",
+    AppliedDirective::new("tag", args=[("name", Json("root"))]),
+  )
+  s.apply_field_directive(
+    "Query",
+    "now",
+    AppliedDirective::new("tag", args=[
+      ("name", Json("clock")),
+      ("weight", Json(3)),
+    ]),
+  )
+  s
+}
+
+///|
+/// Every part of the type system the printer carries, byte for byte: descriptions,
+/// `@deprecated(reason:)`, argument defaults, a described repeatable directive
+/// with a defaulted argument, applied directives, and the schema block naming all
+/// three roots.
+test "SDL renders every part of the type system" {
+  let expected = (
+      #|schema {
+      #|  query: Query
+      #|  mutation: Mutation
+      #|  subscription: Subscription
+      #|}
+      #|
+      #|"A label."
+      #|directive @tag(name: String!, weight: Int = 1) repeatable on OBJECT | FIELD_DEFINITION
+      #|
+      #|"The root."
+      #|type Query @tag(name: "root") {
+      #|  "The current instant."
+      #|  now: DateTime! @tag(name: "clock", weight: 3)
+      #|  "Finds text."
+      #|  search(term: String! = "all", first: Int = 10): [String!]! @deprecated(reason: "use find")
+      #|}
+      #|
+      #|type Mutation {
+      #|  noop: Boolean
+      #|}
+      #|
+      #|type Subscription {
+      #|  ticks: Int
+      #|}
+      #|
+      #|"Who may see this."
+      #|enum Role {
+      #|  "Can do anything."
+      #|  ADMIN
+      #|  GUEST
+      #|  OLD @deprecated(reason: "use GUEST")
+      #|}
+      #|
+      #|"An instant."
+      #|scalar DateTime @specifiedBy(url: "https://example.invalid/dt")
+    ) +
+    "\n\n"
+  assert_eq(complete_schema().to_sdl(), expected)
+}
+
+///|
+/// …and reading that text back describes the same schema, so the printed form is
+/// not lossy for anything SDL can say.
+test "SDL reads back what it printed" {
+  let once = complete_schema().to_sdl()
+  let again = Schema::of_sdl(once) catch { e => abort(e.to_string()) }
+  assert_eq(again.to_sdl(), once)
+  assert_eq(again.check().length(), 0)
+}

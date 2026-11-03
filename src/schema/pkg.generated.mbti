@@ -41,8 +41,10 @@ pub fn AppliedDirective::new(String, args? : Array[(String, Json)]) -> Self
 
 pub(all) struct DirectiveDef {
   name : String
+  description : String?
   locations : Array[String]
   args : Array[(String, GqlType)]
+  arg_defaults : Map[String, Json]
   is_repeatable : Bool
   on_field : ((Json, Map[String, Json]) -> Json)?
 }
@@ -112,7 +114,7 @@ pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> 
 pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
 pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
 pub fn Schema::check(Self) -> Array[@lang.GqlError]
-pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json) -> Unit
+pub fn Schema::directive(Self, String, locations~ : Array[String], args? : Array[(String, GqlType)], defaults? : Array[(String, Json)], is_repeatable? : Bool, on_field? : (Json, Map[String, Json]) -> Json, description? : String) -> Unit
 pub fn Schema::directive_def_by_name(Self, String) -> DirectiveDef?
 pub fn Schema::enum_(Self, String, Array[String], deprecated? : Array[(String, String)], description? : String, descriptions? : Array[(String, String)]) -> Unit
 pub fn Schema::enum_by_name(Self, String) -> EnumType?

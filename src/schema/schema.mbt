@@ -435,6 +435,10 @@ pub fn directive_def_sdl(d : DirectiveDef) -> String {
         out = out + ", "
       }
       out = out + a.0 + ": " + type_sdl(a.1)
+      match d.arg_defaults.get(a.0) {
+        Some(v) => out = out + " = " + json_to_gql_literal(v)
+        None => ()
+      }
     }
     out = out + ")"
   }
@@ -475,7 +479,7 @@ pub fn Schema::to_sdl(self : Schema) -> String {
   }
   out = out + "}\n\n"
   for d in self.directive_defs {
-    out = out + directive_def_sdl(d) + "\n\n"
+    out = out + description_sdl(d.description) + directive_def_sdl(d) + "\n\n"
   }
   for obj in self.types {
     out = out + description_sdl(obj.description)

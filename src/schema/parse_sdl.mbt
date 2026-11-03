@@ -310,7 +310,7 @@ fn SdlCursor::definition(
     }
     "directive" => {
       self.bump() |> ignore
-      self.directive_def(schema)
+      self.directive_def(schema, description)
     }
     _ =>
       raise @lang.GqlSyntaxError(
@@ -548,13 +548,16 @@ fn SdlCursor::scalar_def(
 fn SdlCursor::directive_def(
   self : SdlCursor,
   schema : Schema,
+  description : String?,
 ) -> Unit raise @lang.GqlSyntaxError {
   self.take(@lang.At, "'@' before a directive name") |> ignore
   let name = self.name("a directive name")
   let mut args : Array[(String, GqlType)] = []
+  let mut defaults : Map[String, Json] = Map([])
   if self.at(@lang.ParenL) {
-    let (a, _) = self.arguments()
+    let (a, d) = self.arguments()
     args = a
+    defaults = d
   }
   let is_repeatable = self.word("repeatable")
   if !self.word("on") {
@@ -573,8 +576,10 @@ fn SdlCursor::directive_def(
   }
   schema.directive_defs.push({
     name,
+    description,
     locations,
     args,
+    arg_defaults: defaults,
     is_repeatable,
     on_field: None,
   })
