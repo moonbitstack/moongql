@@ -297,6 +297,9 @@ test "the representation's fields stay on the entity its resolvers read" {
 test "check is silent on a subgraph the gateway can compose" {
   let (s, _, fed) = tagged_setup()
   assert_eq(fed.check(s).length(), 0)
+  // The machinery `apply` installs is a valid schema too: _Any, _Service, the
+  // _Entity union and the two root fields all hold up.
+  assert_eq(s.check().length(), 0)
 }
 
 ///|

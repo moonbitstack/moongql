@@ -101,6 +101,19 @@ fn main {
     }
   }
   println("_entities -> \{entity}")
+  // The three schemas are also held to the type system's own rules.
+  for
+    way in [
+      ("annotations", @annotations.server()),
+      ("functions", @functions.server()),
+      ("classes", @classes.server()),
+    ] {
+    let (schema, _, _) = way.1
+    for problem in schema.check() {
+      differs = true
+      println("\{way.0} schema: \{problem.message}")
+    }
+  }
   if differs {
     println("DIFFERS")
   } else {
