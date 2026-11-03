@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/examples/guide/functions"
+
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn federated(@schema.Schema, @exec.Resolvers) -> Unit
+
+pub fn server() -> (@schema.Schema, @exec.Resolvers, @exec.Subscribers)
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

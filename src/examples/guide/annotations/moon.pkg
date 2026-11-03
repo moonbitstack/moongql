@@ -1,0 +1,13 @@
+// The guide's examples written as `#gql` annotations. `app.g.mbt` comes from
+// `app.mbt`.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}
+
+// A resolver is declared `raise` whether or not it can fail, so the ones that
+// cannot would warn.
+
+warnings = "-unused_error_type"
+
+formatter(ignore: [ "app.g.mbt" ])

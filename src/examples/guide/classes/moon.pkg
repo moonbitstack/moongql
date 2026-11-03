@@ -1,0 +1,5 @@
+// The guide's examples written as types with conversions.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}

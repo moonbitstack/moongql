@@ -57,7 +57,7 @@ type User {
 }
 ```
 
-Verified across all backends (`wasm`, `wasm-gc`, `js`, `native`) in CI, 0 warnings under `--deny-warn`.
+The whole schema above is written for you; the sections below show the same thing written the other two ways.
 
 ## Annotations
 
@@ -206,11 +206,25 @@ fn Book::author(self : Book) -> Author raise { ... }
 
 Declare a struct of the same name to keep what the schema does not show, such as the id behind `Book::author`. The generator binds to it, and a field it holds needs no resolver. Every resolver is declared `raise`, so a package whose resolvers cannot fail sets `warnings = "-unused_error_type"`.
 
-`#gql.sdl` and the other annotations can share a schema, each type in one or the other. A `Subscription` stays with `#gql.subscription`. [`27-schema-first`](src/examples/27-schema-first/) runs all of it.
+A subscription root is generated the same way: a field of the `Subscription` type becomes a `declare fn` returning its events, one array, and `register_subscriptions` wires them to the executor.
 
-## Building a schema by hand
+```moonbit
+#|type Subscription {
+#|  bookAdded: Book!
+#|}
 
-Annotations generate these calls, and a schema built at run time is written the same way:
+fn Subscription::book_added() -> Array[Book] raise { ... }
+```
+
+`#gql.sdl` and the other annotations can share a schema, each type in one or the other. [`27-schema-first`](src/examples/27-schema-first/) runs all of it.
+
+## Without annotations
+
+The generator is a convenience, not the only door: everything it writes is ordinary API. These are the same server written the other two ways — the [guide](https://moonbitstack.github.io/moongql/guide.html) shows every block in all three, side by side.
+
+### Functions
+
+Calls on the schema and the resolver map. A field's declared type says whether its value is a leaf, a list or an object, and a resolver only returns JSON:
 
 ```moonbit
 let s = @moongql.Schema::new()
@@ -225,6 +239,56 @@ u.field("name", NonNull(Scalar("String")))
 u.field("tags", ListOf(NonNull(Scalar("String"))))
 
 let sdl = s.to_sdl()
+```
+
+### Classes
+
+A struct per type, its two conversions, and a method per field — what the generator writes for an annotated struct, written by hand instead. A type that joins the executor this way is yours: it can carry fields the schema does not show, and the conversions decide how it crosses the wire.
+
+```moonbit
+pub(all) struct User {
+  id : String
+  name : String
+}
+
+pub impl @moongql.ToGql for User with fn to_gql(self) {
+  { "id": self.id, "name": self.name }
+}
+
+pub impl @moongql.FromGql for User with fn from_gql(v) {
+  { id: @moongql.read(v, "id"), name: @moongql.read(v, "name") }
+}
+
+// The compiler wants the promotion said out loud: the impls make these methods
+// of the type.
+pub extend User with @moongql.ToGql::{to_gql}
+pub extend User with @moongql.FromGql::{from_gql}
+
+let users : Array[User] = []
+
+pub(all) struct Query {}
+
+fn Query::user(id : String) -> User? {
+  users.iter().find_first(u => u.id == id)
+}
+
+pub fn server() -> (@moongql.Schema, @moongql.Resolvers) {
+  let schema = @moongql.Schema::new()
+  let user = schema.object("User")
+  user.field("id", NonNull(Scalar("String")))
+  user.field("name", NonNull(Scalar("String")))
+  let query = schema.object("Query")
+  query.field_args(
+    "user",
+    [("id", NonNull(Scalar("String")))],
+    Named("User"),
+  )
+  let resolvers = @moongql.Resolvers::new()
+  resolvers.field("Query", "user", info => {
+    @moongql.ToGql::to_gql(Query::user(info.read("id")))
+  })
+  (schema, resolvers)
+}
 ```
 
 ## SDL, both ways
@@ -389,6 +453,24 @@ s.scalar("DateTime",
 
 Both show up in SDL (`union SearchResult = Book | Author`, `scalar DateTime`) and in introspection (`kind: UNION` with `possibleTypes`, `kind: SCALAR`).
 
+### Which type is it?
+
+A value at an interface or union position is normally told apart by the `__typename` it carries. A value that does not carry one — a database row, a decoded message — is classified by a hook instead. `resolve_type` answers the object type's name for the whole abstract type, and `is_type_of` answers whether a value belongs to one object type; it is asked of each possible type in turn:
+
+```moonbit
+resolvers.resolve_type("Animal", fn(value, _ctx) {
+  match value {
+    Object(m) => if m.get("barks") is Some(_) { Some("Dog") } else { Some("Cat") }
+    _ => None
+  }
+})
+
+// or, per object type:
+resolvers.is_type_of("Dog", fn(value, _ctx) { has_barks(value) })
+```
+
+A hook is asked before `__typename`, so a resolver that classifies values itself does not depend on the tag; a name that is not a possible type of the abstract type is a field error, not a silent fallback.
+
 ## Subscriptions
 
 A subscription has one root field backed by a source stream. `execute_subscription` returns the ordered payloads a client would receive, one `{ data, errors }` per event. The stream is a pull source — a resolver returning `Array[Json]` — so the whole pipeline runs on every backend; the async native variant over a WebSocket wraps the same per-event core.
@@ -514,7 +596,29 @@ fed.inaccessible("User", "ssn")   // present in the subgraph, hidden from the co
 fed.apply(schema, resolvers)
 ```
 
+`@tag(name:)` labels a type or a field for the router to filter or route by; it is repeatable, so a type may carry several:
+
+```moonbit
+fed.tag("Product", name="catalog")
+fed.tag_field("Product", "weight", name="measured")
+```
+
 `@inaccessible` is the one v2 directive with a runtime effect beyond SDL: the field stays resolvable inside the subgraph but is **hidden from introspection**, so a gateway composing the public schema never sees it.
+
+`@requires` and `@provides` have a runtime side too. The gateway ships the `@requires` fields inside the representation, and `_entities` keeps whatever the representation carried on the value the entity resolver returns — so a field resolver can read an external field the entity resolver knows nothing about:
+
+```moonbit
+resolvers.field("Product", "shipping", info => {
+  // `weight` is @external: the gateway sent it with the representation.
+  Json(shipping_cost(info.parent, "weight"))
+})
+```
+
+`Federation::check` reads every `@key`, `@requires` and `@provides` field set against the schema and answers one line per path that does not exist, so a subgraph that would fail at composition fails in a test instead:
+
+```moonbit
+let problems = fed.check(schema)   // [] when the gateway can compose it
+```
 
 ## Custom directives
 
@@ -529,6 +633,17 @@ s.directive("prefix",
     _ => value
   }))
 // { greeting @prefix(text: "Hello, ") } -> "Hello, world"
+```
+
+A definition carries a description and its arguments' default values, which `to_sdl` and introspection both report:
+
+```moonbit
+s.directive("prefix",
+  locations=["FIELD"],
+  args=[("text", NonNull(Scalar("String"))), ("times", Scalar("Int"))],
+  defaults=[("times", Json(1))],
+  description="Repeats the prefix.")
+// directive @prefix(text: String!, times: Int = 1) on FIELD
 ```
 
 Registered directives show up in `__schema { directives }` beside the built-ins, and the validator accepts them only where they are declared.
@@ -550,6 +665,15 @@ The validator implements a broad slice of the GraphQL spec's §5 validation tabl
 | Directive repeatability | §5.7.3 |
 | Variable uniqueness | §5.8.1 |
 | All variables used | §5.8.4 |
+| Executable definitions (§5.1.1: a document carrying the type system is refused by name) | §5.1.1 |
+
+`Schema::check` asks the other half — chapter 3, of the schema itself rather than of a document: names are unique and none begins with `__`, fields and arguments are unique and on the right side of the schema (output on objects and interfaces, input on inputs), an input object does not reach itself through required fields, a union's members are object types named once, an enum's values are names once each, a directive definition is declared once with real locations and input arguments, and every interface an object claims is one it actually satisfies — same field names, sub-types where the interface widens, arguments that match exactly — with the interfaces of its interfaces declared too. It answers one message per problem, empty when the schema holds:
+
+```moonbit
+for problem in schema.check() {
+  println(problem.message)
+}
+```
 
 ## License
 

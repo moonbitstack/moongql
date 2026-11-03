@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/examples/guide/classes"
+
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+}
+
+// Values
+pub fn federated(@schema.Schema, @exec.Resolvers) -> Unit
+
+pub fn server() -> (@schema.Schema, @exec.Resolvers, @exec.Subscribers)
+
+// Errors
+
+// Types and methods
+pub(all) struct Author {
+  id : String
+  name : String
+}
+pub fn Author::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Author::to_gql(Self) -> Json
+pub impl @exec.FromGql for Author
+pub impl @exec.ToGql for Author
+
+pub(all) struct Book {
+  id : String
+  title : String
+  author_id : String
+}
+pub fn Book::from_gql(Json) -> Self raise @exec.ResolverError
+pub fn Book::to_gql(Self) -> Json
+pub impl @exec.FromGql for Book
+pub impl @exec.ToGql for Book
+
+pub(all) struct Mutation {
+}
+
+pub(all) struct NewBook {
+  title : String
+  author_id : String
+}
+pub fn NewBook::from_gql(Json) -> Self raise @exec.ResolverError
+pub impl @exec.FromGql for NewBook
+
+pub(all) struct Query {
+}
+
+pub(all) struct Subscription {
+}
+
+// Type aliases
+
+// Traits

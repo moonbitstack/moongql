@@ -1,0 +1,5 @@
+// The guide's examples written as calls on the schema.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}

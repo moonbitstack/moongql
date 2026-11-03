@@ -16,6 +16,12 @@
     m=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";
   }
   document.documentElement.setAttribute("data-theme",m);
+  var style="annotations";
+  try{
+    var stored=localStorage.getItem("moongql-style");
+    if(stored==="functions"||stored==="classes"){style=stored}
+  }catch(e){}
+  document.documentElement.setAttribute("data-style",style);
 })();
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -44,7 +50,8 @@ article{min-width:0}
 h1{font-family:var(--serif);font-weight:400;font-size:clamp(2rem,4.4vw,2.9rem);line-height:1.12;
   letter-spacing:-.015em;margin:.7rem 0 0;max-width:20ch}
 .lede{color:var(--muted);max-width:60ch;margin:1rem 0 0;font-size:1.03rem}
-section{margin-top:2.9rem;padding-top:2rem;border-top:1px solid var(--line)}
+section{margin-top:2.9rem;padding-top:2rem;border-top:1px solid var(--line);
+  scroll-margin-top:7.5rem}
 section > h2{font-family:var(--serif);font-weight:400;font-size:1.55rem;margin:0;letter-spacing:-.01em;
   display:flex;gap:.7rem;align-items:baseline}
 section > h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--bronze);letter-spacing:.1em;margin-right:.9rem;opacity:.9}
@@ -93,8 +100,42 @@ html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
 }
 p, li, .note { overflow-wrap: anywhere; }
 
+
+/* ---------- the writing-style switch ---------- */
+.style-bar{border-top:1px solid var(--line)}
+.style-bar .wrap{display:flex;align-items:center;gap:.9rem;height:46px}
+.style-label{font-family:var(--caps);font-size:.66rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--bronze-dim)}
+.style-switch{display:flex;border:1px solid var(--gold-hair);border-radius:2px;overflow:hidden}
+.style-switch button{background:none;border:0;border-right:1px solid var(--gold-hair);
+  color:var(--muted);font-family:var(--caps);font-size:.66rem;letter-spacing:.16em;
+  text-transform:uppercase;padding:.34rem .7rem;cursor:pointer;
+  transition:color .25s,background .25s}
+.style-switch button:last-child{border-right:0}
+.style-switch button:hover{color:var(--ink)}
+.style-switch button[aria-pressed="true"]{color:var(--ink);
+  background:color-mix(in oklab,var(--gold) 14%,transparent)}
+.style-hint{font-family:var(--sans);font-size:.74rem;color:var(--faint)}
+
+/* one block, three writings; the switch on the bar shows one of them */
+.styles > .variant{display:none}
+html[data-style="annotations"] .styles > .variant[data-style="annotations"],
+html[data-style="functions"] .styles > .variant[data-style="functions"],
+html[data-style="classes"] .styles > .variant[data-style="classes"]{display:block}
+.styles > .variant > .way{font-family:var(--caps);font-size:.62rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--bronze-dim);margin:1.1rem 0 0}
+.why{font-size:.88rem;color:var(--muted);margin:.5rem 0 0;max-width:64ch}
+
 @media (width <= 900px){
-  main{grid-template-columns:minmax(0,1fr);gap:0;padding-top:2.2rem}
+  .style-hint,.style-label{display:none}
+  .style-bar .wrap{height:auto;padding:.55rem 1.5rem;flex-wrap:wrap;gap:.5rem}
+  .style-switch{width:100%;min-width:0}
+  .style-switch button{flex:1 1 0;min-width:0;padding:.42rem .1rem;
+    letter-spacing:.06em;font-size:.6rem;white-space:nowrap}
+  .styles > .variant > .way{margin-top:.9rem}}
+
+@media (width <= 900px){
+  main.wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:2.2rem 1rem 3.4rem}
   aside{display:none}}
 </style>
 </head>
@@ -111,76 +152,460 @@ p, li, .note { overflow-wrap: anywhere; }
     <a href="https://github.com/moonbitstack/moongql">GitHub</a>
     <button class="theme" id="theme" aria-label="toggle light or night theme" aria-live="polite">◐ night</button>
   </nav>
-</div></header>
+</div>
+<div class="style-bar"><div class="wrap">
+  <span class="style-label">Written as</span>
+  <div class="style-switch" role="group" aria-label="how the code is written">
+    <button type="button" data-pick="annotations" aria-pressed="true">Annotations</button>
+    <button type="button" data-pick="functions" aria-pressed="false">Functions</button>
+    <button type="button" data-pick="classes" aria-pressed="false">Classes</button>
+  </div>
+  <span class="style-hint">every block below switches with it</span>
+</div></div>
+</header>
 
 <main class="wrap">
 <article>
   <div class="kicker">Guide</div>
   <h1>From one type to a served endpoint.</h1>
-  <p class="lede">Nine steps, in the order a program grows: your types as annotations, the same schema
-  by hand and as text, then variables, errors, subscriptions,
-  batching, federation, and the endpoint that serves all of it. Every output below is what the
-  matching example in <code>src/examples</code> prints.</p>
+  <p class="lede">Eleven steps, in the order a program grows: the types, what resolves their
+  fields, the roots, an input object and the errors a resolver can raise, subscriptions,
+  federation, the schema as text, then the endpoint that serves all of it. The code comes from
+  <code>src/examples/guide</code> and the output is what that program prints.</p>
 
   <section id="install">
     <h2><span class="n">00</span>Add it</h2>
     <p>One line, and the same code runs on <code>wasm</code>, <code>wasm-gc</code>,
     <code>js</code> and <code>native</code>.</p>
 <pre>moon add moonbitstack/moongql</pre>
+    <p>The three packages beside this guide build one server each — the same types, the same
+    answers, three ways of writing them. <code>src/examples/guide/check</code> runs every document
+    below against all three and stops if they disagree, so what you see here is the output of the
+    way you picked.</p>
   </section>
 
-  <section id="annotations">
-    <h2><span class="n">01</span>Write the types you already have</h2>
-    <p>Annotate ordinary MoonBit types. The generator
-    emits <code>register(schema, resolvers)</code>, which adds them to a schema you own — the two
-    styles mix, and the SDL either way is byte-for-byte the same.</p>
-<pre><span class="c">#gql.type(description="Someone who writes books")</span>
-<span class="k">pub struct</span> <span class="ty">Author</span> {
-  id : Int64
-  name : String
-  <span class="c">#gql.skip</span>
-  email : String
+  <!-- ============ 1. TYPE ============ -->
+<section id="type">
+    <h2><span class="n">01</span>One type, three ways</h2>
+    <p>A schema is types with fields. Write them as <code>#gql</code> annotations on the structs you
+    already have, as calls on the schema, or as types with an <code>impl</code> saying how they
+    cross the wire. The switch at the top of the page picks which way every block here is written;
+    all three build the same schema and answer the same documents.</p>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// A struct's fields become the type's fields. `key=` makes it a federated</span>
+<span class="c">// entity; `description=` is what introspection reports.</span>
+<span class="c">#gql.type</span>(description=<span class="c">"Someone who writes books"</span>)
+<span class="k">pub</span> <span class="k">struct</span> <span class="ty">Author</span> {
+  id : <span class="ty">String</span>
+  name : <span class="ty">String</span>
 }
 
-<span class="c">#gql.field(description="Books by this author")</span>
-<span class="k">fn</span> Author::books(self : <span class="ty">Author</span>) -> <span class="ty">Array</span>[<span class="ty">Book</span>] { ... }</pre>
-    <p>An enum whose constructors each wrap one annotated struct is a union of them, or an
-    interface they implement with the fields it names; every member has those fields, written
-    the same way.</p>
-<pre><span class="c">#gql.interface(field="id", field="title")</span>
-<span class="k">pub enum</span> <span class="ty">Work</span> { Printed(<span class="ty">Book</span>); Periodical(<span class="ty">Magazine</span>) }
+<span class="c">#gql.type</span>(key=<span class="c">"id"</span>)
+<span class="k">pub</span> <span class="k">struct</span> <span class="ty">Book</span> {
+  id : <span class="ty">String</span>
+  title : <span class="ty">String</span>
+  author_id : <span class="ty">String</span>
+}</code></pre>
+      <p class="why">The generator reads the annotations and writes the calls the other two ways write by hand.</p>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code><span class="k">let</span> author = schema.object(<span class="c">"Author"</span>, description=<span class="c">"Someone who writes books"</span>)
+author.field(<span class="c">"id"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
+author.field(<span class="c">"name"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
 
-<span class="c">#gql.union</span>
-<span class="k">pub enum</span> <span class="ty">Hit</span> { Writer(<span class="ty">Author</span>); Title(<span class="ty">Book</span>) }</pre>
-    <p class="tag">register it, then query it</p>
-<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
-<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
-register(schema, resolvers)
-execute(schema, resolvers, <span class="c">"{ authors { name books { title } } }"</span>)</pre>
+<span class="k">let</span> book = schema.object(<span class="c">"Book"</span>)
+book.field(<span class="c">"id"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
+book.field(<span class="c">"title"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
+<span class="c">// The author id is data on the type, and what `Author.books` is resolved from.</span>
+book.field(<span class="c">"authorId"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))</code></pre>
+      <p class="why">Each call names a type and gives it a field; a field's type says how its value is read.</p>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="c">// A struct holds the type's data; the two impls say how it crosses the wire,</span>
+<span class="c">// under the names the schema uses.</span>
+<span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">Author</span> {
+  id : <span class="ty">String</span>
+  name : <span class="ty">String</span>
+}
+
+<span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">ToGql</span> <span class="k">for</span> <span class="ty">Author</span> <span class="k">with</span> <span class="k">fn</span> to_gql(<span class="k">self</span>) {
+  { <span class="c">"id"</span>: <span class="k">self</span>.id, <span class="c">"name"</span>: <span class="k">self</span>.name }
+}
+
+<span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">FromGql</span> <span class="k">for</span> <span class="ty">Author</span> <span class="k">with</span> <span class="k">fn</span> from_gql(v) {
+  { id: @moongql.read(v, <span class="c">"id"</span>), name: @moongql.read(v, <span class="c">"name"</span>) }
+}
+
+<span class="k">pub</span> <span class="k">extend</span> <span class="ty">Author</span> <span class="k">with</span> @moongql.<span class="ty">ToGql</span>::{to_gql}
+
+<span class="k">pub</span> <span class="k">extend</span> <span class="ty">Author</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}
+
+<span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">Book</span> {
+  id : <span class="ty">String</span>
+  title : <span class="ty">String</span>
+  author_id : <span class="ty">String</span>
+}
+
+<span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">ToGql</span> <span class="k">for</span> <span class="ty">Book</span> <span class="k">with</span> <span class="k">fn</span> to_gql(<span class="k">self</span>) {
+  { <span class="c">"id"</span>: <span class="k">self</span>.id, <span class="c">"title"</span>: <span class="k">self</span>.title, <span class="c">"authorId"</span>: <span class="k">self</span>.author_id }
+}
+
+<span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">FromGql</span> <span class="k">for</span> <span class="ty">Book</span> <span class="k">with</span> <span class="k">fn</span> from_gql(v) {
+  {
+    id: @moongql.read(v, <span class="c">"id"</span>),
+    title: @moongql.read(v, <span class="c">"title"</span>),
+    author_id: @moongql.read(v, <span class="c">"authorId"</span>),
+  }
+}
+
+<span class="k">pub</span> <span class="k">extend</span> <span class="ty">Book</span> <span class="k">with</span> @moongql.<span class="ty">ToGql</span>::{to_gql}
+
+<span class="k">pub</span> <span class="k">extend</span> <span class="ty">Book</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}</code></pre>
+      <p class="why">The two impls are exactly what the generator writes for an annotated struct; writing them yourself is how a type joins the executor.</p>
+    </div>
+  </div>
+
   </section>
 
-  <section id="first">
-    <h2><span class="n">02</span>The same thing, by hand</h2>
-    <p>A schema is an object you build. A resolver is a function registered under
-    <code>"Type.field"</code>; the field's declared type tells the executor whether to treat the
-    result as a leaf, a list or an object, so a resolver only has to return JSON.</p>
-<pre><span class="k">let</span> schema = <span class="ty">Schema</span>::new()
-<span class="k">let</span> query = schema.object(<span class="c">"Query"</span>)
-query.field(<span class="c">"greeting"</span>, NonNull(Scalar(<span class="c">"String"</span>)))
-query.field(<span class="c">"luckyNumber"</span>, NonNull(Scalar(<span class="c">"Int"</span>)))
+  <!-- ============ 2. FIELD ============ -->
+<section id="field">
+    <h2><span class="n">02</span>A field that resolves</h2>
+    <p>A field whose value is not already on the parent is resolved by a function: a method on the
+    type, or a closure registered under <code>"Type.field"</code>. The field's declared type tells
+    the executor whether what comes back is a leaf, a list or an object.</p>
 
-<span class="k">let</span> resolvers = <span class="ty">Resolvers</span>::new()
-resolvers.field(<span class="c">"Query"</span>, <span class="c">"greeting"</span>, <span class="k">fn</span>(_info) { Json(<span class="c">"qwq from moongql"</span>) })
-resolvers.field(<span class="c">"Query"</span>, <span class="c">"luckyNumber"</span>, <span class="k">fn</span>(_info) { Json(233) })
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// A method is a field of its type, asked on the value it belongs to.</span>
+<span class="c">#gql.field</span>(description=<span class="c">"Their books, in the order they were added"</span>)
+<span class="k">fn</span> <span class="ty">Author</span>::books(<span class="k">self</span> : <span class="ty">Author</span>) -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.filter(b =&gt; b.author_id == <span class="k">self</span>.id)
+}</code></pre>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code>author.field(<span class="c">"books"</span>, <span class="ty">NonNull</span>(<span class="ty">ListOf</span>(<span class="ty">NonNull</span>(<span class="ty">Named</span>(<span class="c">"Book"</span>)))))
 
-<span class="k">let</span> res = execute(schema, resolvers, <span class="c">"{ greeting luckyNumber }"</span>)
-println(res.stringify())</pre>
-    <p class="tag">prints</p>
-<pre class="out">{"data":{"greeting":"qwq from moongql","luckyNumber":233}}</pre>
+resolvers.field(<span class="c">"Author"</span>, <span class="c">"books"</span>, info =&gt; {
+  <span class="k">let</span> id = key_of(info.parent, <span class="c">"id"</span>)
+  <span class="ty">Json</span>(shelf.filter(b =&gt; key_of(b, <span class="c">"authorId"</span>) == id))
+})</code></pre>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="c">// A method is a field: it is asked on the value it belongs to, and whatever it</span>
+<span class="c">// returns is turned back into JSON.</span>
+<span class="k">fn</span> <span class="ty">Author</span>::books(<span class="k">self</span> : <span class="ty">Author</span>) -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.filter(b =&gt; b.author_id == <span class="k">self</span>.id)
+}
+
+resolvers.field(<span class="c">"Author"</span>, <span class="c">"books"</span>, info =&gt; {
+  @moongql.<span class="ty">ToGql</span>::to_gql(
+    <span class="ty">Author</span>::books(@moongql.<span class="ty">FromGql</span>::from_gql(info.parent)),
+  )
+})</code></pre>
+    </div>
+  </div>
+
+    <p>Only the fields the document selects are resolved, and a resolver's value is read under the
+    names the schema uses — which is why <code>author_id</code> is written out as
+    <code>authorId</code> once, in the conversion.</p>
   </section>
 
+  <!-- ============ 3. ROOT ============ -->
+<section id="root">
+    <h2><span class="n">03</span>Root fields and arguments</h2>
+    <p><code>Query</code> is a type like any other, and its fields are the entry points. An argument
+    is declared with its type, and a resolver reads it by name.</p>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// A free function is a root field; its parameters are the field's arguments.</span>
+<span class="c">#gql.query</span>
+<span class="k">fn</span> author(id : <span class="ty">String</span>) -&gt; <span class="ty">Author</span>? {
+  writers.iter().find_first(a =&gt; a.id == id)
+}
+
+<span class="c">#gql.query</span>
+<span class="k">fn</span> books() -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.copy()
+}</code></pre>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code><span class="k">let</span> query = schema.object(<span class="c">"Query"</span>)
+query.field_args(
+  <span class="c">"author"</span>,
+  [(<span class="c">"id"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))],
+  <span class="ty">Named</span>(<span class="c">"Author"</span>),
+)
+query.field(<span class="c">"books"</span>, <span class="ty">NonNull</span>(<span class="ty">ListOf</span>(<span class="ty">NonNull</span>(<span class="ty">Named</span>(<span class="c">"Book"</span>)))))
+
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"author"</span>, info =&gt; {
+  <span class="k">let</span> id = info.arg(<span class="c">"id"</span>)
+  <span class="k">match</span> writers.iter().find_first(a =&gt; key_of(a, <span class="c">"id"</span>) == id) {
+    <span class="ty">Some</span>(a) =&gt; a
+    <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
+  }
+})
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"books"</span>, _info =&gt; <span class="ty">Json</span>(shelf.copy()))</code></pre>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="c">// The roots are types too — the operations hang off them.</span>
+<span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">Query</span> {}
+
+<span class="k">fn</span> <span class="ty">Query</span>::author(id : <span class="ty">String</span>) -&gt; <span class="ty">Author</span>? {
+  writers.iter().find_first(a =&gt; a.id == id)
+}
+
+<span class="k">fn</span> <span class="ty">Query</span>::books() -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.copy()
+}
+
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"author"</span>, info =&gt; {
+  @moongql.<span class="ty">ToGql</span>::to_gql(<span class="ty">Query</span>::author(info.read(<span class="c">"id"</span>)))
+})
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"books"</span>, _info =&gt; {
+  @moongql.<span class="ty">ToGql</span>::to_gql(<span class="ty">Query</span>::books())
+})</code></pre>
+    </div>
+  </div>
+
+    <p class="tag">recorded · the same answer from all three</p>
+<pre class="out">{"data":{"author":{"name":"Ursula","books":[{"title":"The Dispossessed"},{"title":"Lathe"}]}}}</pre>
+<pre class="out">{"data":{"books":[{"title":"The Dispossessed"},{"title":"Lathe"},{"title":"Exhalation"}]}}</pre>
+
+    <p>A nullable argument may be left out, and a nullable field may answer <code>null</code>; a
+    non-null field that answers <code>null</code> is a field error, and it takes the nearest
+    nullable parent with it.</p>
+  </section>
+
+  <!-- ============ 4. INPUT ============ -->
+<section id="input">
+    <h2><span class="n">04</span>An input object, a mutation, an error</h2>
+    <p>A mutation takes its payload as an input object: a type whose fields are the caller's to
+    send. A resolver that declares <code>raise</code> may fail, and its error becomes a field error
+    carrying the path and the place in the document.</p>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// What a mutation takes: an input object is a struct too, and every field of it</span>
+<span class="c">// is data the caller sends.</span>
+<span class="c">#gql.input</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="ty">NewBook</span> {
+  title : <span class="ty">String</span>
+  author_id : <span class="ty">String</span>
+}</code></pre>
+      <p class="why">`#gql.input` and `#gql.mutation`; the input struct's reading side is generated with it.</p>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code><span class="k">let</span> new_book = schema.input(<span class="c">"NewBook"</span>)
+new_book.field(<span class="c">"title"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
+new_book.field(<span class="c">"authorId"</span>, <span class="ty">NonNull</span>(<span class="ty">Scalar</span>(<span class="c">"String"</span>)))
+
+<span class="k">let</span> mutation = schema.object(<span class="c">"Mutation"</span>)
+mutation.field_args(
+  <span class="c">"addBook"</span>,
+  [(<span class="c">"input"</span>, <span class="ty">NonNull</span>(<span class="ty">Named</span>(<span class="c">"NewBook"</span>)))],
+  <span class="ty">NonNull</span>(<span class="ty">Named</span>(<span class="c">"Book"</span>)),
+)
+schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
+      <p class="why">The input is a type with fields, and the payload is one argument declared with it.</p>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="c">// What a mutation takes: a struct whose fields are the caller's to send.</span>
+<span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">NewBook</span> {
+  title : <span class="ty">String</span>
+  author_id : <span class="ty">String</span>
+}
+
+<span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">FromGql</span> <span class="k">for</span> <span class="ty">NewBook</span> <span class="k">with</span> <span class="k">fn</span> from_gql(v) {
+  { title: @moongql.read(v, <span class="c">"title"</span>), author_id: @moongql.read(v, <span class="c">"authorId"</span>) }
+}
+
+<span class="k">pub</span> <span class="k">extend</span> <span class="ty">NewBook</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}</code></pre>
+      <p class="why">The input is a struct with the reading half only — nothing sends one back out.</p>
+    </div>
+  </div>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// A resolver that declares `raise` may fail; the error becomes a field error in</span>
+<span class="c">// the response, with the path and the place in the document.</span>
+<span class="c">#gql.mutation</span>
+<span class="k">fn</span> add_book(input : <span class="ty">NewBook</span>) -&gt; <span class="ty">Book</span> <span class="k">raise</span> {
+  <span class="k">if</span> input.title == <span class="c">""</span> {
+    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+  }
+  <span class="k">let</span> book : <span class="ty">Book</span> = {
+    id: <span class="c">"b\{(shelf.length() + 1)}"</span>,
+    title: input.title,
+    author_id: input.author_id,
+  }
+  shelf.push(book)
+  book
+}</code></pre>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code>resolvers.field(<span class="c">"Mutation"</span>, <span class="c">"addBook"</span>, info =&gt; {
+  <span class="k">let</span> input = info.arg(<span class="c">"input"</span>)
+  <span class="k">let</span> title = <span class="k">match</span> key_of(input, <span class="c">"title"</span>) {
+    <span class="ty">String</span>(t) =&gt; t
+    _ =&gt; <span class="c">""</span>
+  }
+  <span class="k">if</span> title == <span class="c">""</span> {
+    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+  }
+  <span class="k">let</span> book : <span class="ty">Json</span> = {
+    <span class="c">"id"</span>: <span class="ty">Json</span>(<span class="c">"b\{shelf.length() + 1}"</span>),
+    <span class="c">"title"</span>: <span class="ty">Json</span>(title),
+    <span class="c">"authorId"</span>: key_of(input, <span class="c">"authorId"</span>),
+  }
+  shelf.push(book)
+  book
+})</code></pre>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">Mutation</span> {}
+
+<span class="k">fn</span> <span class="ty">Mutation</span>::add_book(input : <span class="ty">NewBook</span>) -&gt; <span class="ty">Book</span> <span class="k">raise</span> {
+  <span class="k">if</span> input.title == <span class="c">""</span> {
+    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+  }
+  <span class="k">let</span> book : <span class="ty">Book</span> = {
+    id: <span class="c">"b\{(shelf.length() + 1)}"</span>,
+    title: input.title,
+    author_id: input.author_id,
+  }
+  shelf.push(book)
+  book
+}
+
+resolvers.field(<span class="c">"Mutation"</span>, <span class="c">"addBook"</span>, info =&gt; {
+  <span class="k">let</span> result = <span class="ty">Mutation</span>::add_book(info.read(<span class="c">"input"</span>)) <span class="k">catch</span> {
+    e =&gt; <span class="k">raise</span> @moongql.field_error(e)
+  }
+  @moongql.<span class="ty">ToGql</span>::to_gql(result)
+})</code></pre>
+    </div>
+  </div>
+
+    <p class="tag">recorded · one book added, one refused</p>
+<pre class="out">{"data":{"addBook":{"id":"b4","title":"Dune"}}}</pre>
+<pre class="out">{"data":null,"errors":[{"message":"a book needs a title","locations":[{"line":1,"column":12}],"path":["addBook"]}]}</pre>
+
+  </section>
+
+  <!-- ============ 5. SUBSCRIPTION ============ -->
+<section id="subscription">
+    <h2><span class="n">05</span>Subscriptions</h2>
+    <p>A subscription field answers with the stream of its events; the executor resolves the
+    selection set against each one. Over the wire the same thing is carried by
+    <code>graphql-transport-ws</code>: <code>connection_init</code>, <code>subscribe</code>, then
+    <code>next</code> for each payload and <code>complete</code> at the end.</p>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// A subscription returns the events it produces, one array; every event becomes</span>
+<span class="c">// one response payload.</span>
+<span class="c">#gql.subscription</span>
+<span class="k">fn</span> book_added() -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.copy()
+}</code></pre>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code>subscription.field(<span class="c">"bookAdded"</span>, <span class="ty">NonNull</span>(<span class="ty">Named</span>(<span class="c">"Book"</span>)))</code></pre>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="k">pub</span>(all) <span class="k">struct</span> <span class="ty">Subscription</span> {}
+
+<span class="k">fn</span> <span class="ty">Subscription</span>::book_added() -&gt; <span class="ty">Array</span>[<span class="ty">Book</span>] {
+  shelf.copy()
+}
+
+<span class="k">let</span> subscribers = @moongql.<span class="ty">Subscribers</span>::new()
+subscribers.field(<span class="c">"Subscription"</span>, <span class="c">"bookAdded"</span>, _info =&gt; {
+  <span class="ty">Subscription</span>::book_added().map(b =&gt; @moongql.<span class="ty">ToGql</span>::to_gql(b))
+})</code></pre>
+    </div>
+  </div>
+
+    <p class="tag">recorded · one payload per event</p>
+<pre class="out">{"data":{"bookAdded":{"title":"The Dispossessed"}}} {"data":{"bookAdded":{"title":"Lathe"}}} {"data":{"bookAdded":{"title":"Exhalation"}}} {"data":{"bookAdded":{"title":"Dune"}}}</pre>
+
+    <p>Four events, because the mutation above added a fourth book before this ran. A real source
+    would be an event bus; the shape a subgraph fills in is the same.</p>
+  </section>
+
+  <!-- ============ 6. FEDERATION ============ -->
+<section id="federation">
+    <h2><span class="n">06</span>Subgraphs that compose</h2>
+    <p>An entity is a type with a <code>@key</code> and a way to turn a representation — a
+    <code>{__typename, key}</code> pair — back into the object. The subgraph then answers
+    <code>_service { sdl }</code> and <code>_entities(representations:)</code>, and a gateway can
+    join it to its siblings.</p>
+
+<div class="styles">
+    <div class="variant" data-style="annotations">
+      <p class="way">annotations</p>
+      <pre class="hl"><code><span class="c">// With `key=` on the type, a reference function is all a subgraph needs to turn</span>
+<span class="c">// a representation back into the object.</span>
+<span class="c">#gql.reference</span>
+<span class="k">fn</span> book_by_id(id : <span class="ty">String</span>) -&gt; <span class="ty">Book</span>? <span class="k">raise</span> {
+  shelf.iter().find_first(b =&gt; b.id == id)
+}</code></pre>
+    </div>
+    <div class="variant" data-style="functions">
+      <p class="way">functions</p>
+      <pre class="hl"><code><span class="k">let</span> fed = @moongql.<span class="ty">Federation</span>::new(v2=<span class="k">true</span>)
+fed.entity(name=<span class="c">"Book"</span>, key=<span class="c">"id"</span>, resolve=(rep, _ctx) =&gt; {
+  <span class="k">let</span> id = key_of(rep, <span class="c">"id"</span>)
+  <span class="k">match</span> shelf.iter().find_first(b =&gt; key_of(b, <span class="c">"id"</span>) == id) {
+    <span class="ty">Some</span>(b) =&gt; b
+    <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
+  }
+})</code></pre>
+    </div>
+    <div class="variant" data-style="classes">
+      <p class="way">classes</p>
+      <pre class="hl"><code><span class="k">let</span> fed = @moongql.<span class="ty">Federation</span>::new(v2=<span class="k">true</span>)
+fed.entity(name=<span class="c">"Book"</span>, key=<span class="c">"id"</span>, resolve=(rep, _ctx) =&gt; {
+  <span class="k">let</span> id : <span class="ty">String</span> = @moongql.read(rep, <span class="c">"id"</span>)
+  <span class="k">match</span> shelf.iter().find_first(b =&gt; b.id == id) {
+    <span class="ty">Some</span>(b) =&gt; @moongql.<span class="ty">ToGql</span>::to_gql(b)
+    <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
+  }
+})</code></pre>
+    </div>
+  </div>
+
+    <p class="tag">recorded · a representation resolved</p>
+<pre class="out">{"data":{"_entities":[{"id":"b2","title":"Lathe"}]}}</pre>
+
+    <p>What comes back is the object, and the fields named by <code>@requires</code> that the
+    gateway sent along stay on it for this subgraph's resolvers to read.</p>
+  </section>
+
+  
   <section id="sdl">
-    <h2><span class="n">03</span>The same schema, as text</h2>
+    <h2><span class="n">07</span>The same schema, as text</h2>
     <p><code>to_sdl</code> writes the type system out — descriptions, argument defaults,
     <code>@deprecated(reason:)</code>, directives and the <code>schema</code> block. Reading it
     back with <code>Schema::of_sdl</code> gives the same schema, so the next print is identical.</p>
@@ -208,7 +633,7 @@ type User {
   </section>
 
   <section id="schema-first">
-    <h2><span class="n">04</span>The schema first</h2>
+    <h2><span class="n">08</span>The schema first</h2>
     <p>Write the SDL and mark it <code>#gql.sdl</code>, or point <code>#gql.sdl(file="schema.graphql")</code>
     at a file from a <code>declare fn</code>. The generator writes the structs and enums, and a
     <code>declare fn</code> for every root field, every field with arguments and every field of an
@@ -226,7 +651,7 @@ type User {
   </section>
 
   <section id="variables">
-    <h2><span class="n">05</span>Variables, fragments, directives</h2>
+    <h2><span class="n">09</span>Variables, fragments, directives</h2>
     <p>A document can take its values from outside. Variables are declared in the operation and
     passed as a map; fragments and <code>@skip</code> / <code>@include</code> work as the
     specification describes.</p>
@@ -236,34 +661,13 @@ execute(schema, resolvers,
   variables=vars)</pre>
     <p class="tag">prints</p>
 <pre class="out">{"data":{"hero":{"id":"1","name":"Alice"}}}</pre>
-  </section>
-
-  <section id="errors">
-    <h2><span class="n">06</span>Errors carry their place</h2>
-    <p>A field error is a value, not an exception: it lands in <code>errors</code> with the path
-    into the result and the line and column of the field it is about. A non-null field that
-    fails propagates to its nearest nullable parent, as the specification requires.</p>
-<pre class="out">{"data":null,"errors":[{"message":"Cannot return null for non-nullable field",
-  "locations":[{"line":1,"column":3}],"path":["mustFail"]}]}
-
-{"data":{"boom":null},"errors":[{"message":"plain failure",
-  "locations":[{"line":1,"column":3}],"path":["boom"]}]}</pre>
-    <p>A server's own entry rides alongside the result as <code>extensions</code> — a trace id,
-    a timing, whatever the deployment wants to say.</p>
-  </section>
-
-  <section id="subscriptions">
-    <h2><span class="n">07</span>Subscriptions</h2>
-    <p>A source stream returns the payloads a subscription produces; the executor walks each one
-    with the selection set. Over the wire the same thing is carried by
-    <code>graphql-transport-ws</code>: <code>connection_init</code>, <code>subscribe</code>, then
-    <code>next</code> for each payload and <code>complete</code> at the end.</p>
-<pre><span class="k">let</span> stream = create_source_event_stream(resolvers, <span class="c">"Subscription"</span>, <span class="c">"countdown"</span>, info)
-execute_subscription(schema, stream, document)</pre>
+    <p>A document that carries the type system instead — an SDL definition where an operation
+    belongs — is not executable, and validation says so by name rather than letting the executor
+    walk past it.</p>
   </section>
 
   <section id="dataloader">
-    <h2><span class="n">08</span>Batch the N+1 away</h2>
+    <h2><span class="n">10</span>Batch the N+1 away</h2>
     <p>A <code>DataLoader</code> queues the keys a resolution pass asks for, dedupes them, and runs
     one batch over the distinct set — so a list of twenty authors costs one query, not twenty.</p>
 <pre><span class="k">let</span> loader = <span class="ty">DataLoader</span>::new(<span class="k">fn</span>(keys) { fetch_authors(keys) })
@@ -272,19 +676,8 @@ execute_subscription(schema, stream, document)</pre>
 loader.dispatch()   <span class="c">// one call for both keys</span></pre>
   </section>
 
-  <section id="federation">
-    <h2><span class="n">09</span>Subgraphs that compose</h2>
-    <p>Register entities with <code>@key</code> and their reference resolvers; the subgraph then
-    answers <code>_service { sdl }</code> and <code>_entities(representations:)</code>, and a
-    gateway can join it to its siblings.</p>
-<pre><span class="k">let</span> fed = <span class="ty">Federation</span>::new()
-fed.entity(<span class="c">"User"</span>, <span class="c">"id"</span>)   <span class="c">// @key(fields: "id")</span>
-fed.reference(<span class="c">"User"</span>, <span class="k">fn</span>(rep) { find_user(rep) })
-fed.install(schema)</pre>
-  </section>
-
   <section id="http">
-    <h2><span class="n">10</span>Serve it</h2>
+    <h2><span class="n">11</span>Serve it</h2>
     <p><code>graphql_handler</code> turns the schema into a handler on the ASGI seam: a
     <code>POST</code> reads <code>{ query, variables }</code> and answers
     <code>{ data, errors }</code>; a <code>GET</code> without <code>?query=</code> serves the IDE —
@@ -307,16 +700,17 @@ fed.install(schema)</pre>
 <aside>
   <div class="t">Steps</div>
   <a href="#install">00 · Add it</a>
-  <a href="#annotations">01 · Annotations</a>
-  <a href="#first">02 · By hand</a>
-  <a href="#sdl">03 · The schema as text</a>
-  <a href="#schema-first">04 · The schema first</a>
-  <a href="#variables">05 · Variables, fragments</a>
-  <a href="#errors">06 · Errors</a>
-  <a href="#subscriptions">07 · Subscriptions</a>
-  <a href="#dataloader">08 · Batching</a>
-  <a href="#federation">09 · Federation</a>
-  <a href="#http">10 · Serve it</a>
+  <a href="#type">01 · One type</a>
+  <a href="#field">02 · A field</a>
+  <a href="#root">03 · Roots</a>
+  <a href="#input">04 · Inputs, errors</a>
+  <a href="#subscription">05 · Subscriptions</a>
+  <a href="#federation">06 · Federation</a>
+  <a href="#sdl">07 · The schema as text</a>
+  <a href="#schema-first">08 · The schema first</a>
+  <a href="#variables">09 · Variables, fragments</a>
+  <a href="#dataloader">10 · Batching</a>
+  <a href="#http">11 · Serve it</a>
 </aside>
 </main>
 
@@ -353,6 +747,19 @@ fed.install(schema)</pre>
     paint(cur);
     try{localStorage.setItem("moongql-theme",cur)}catch(e){}
   });
+
+  var picks=[].slice.call(document.querySelectorAll(".style-switch button"));
+  function setStyle(style){
+    root.setAttribute("data-style",style);
+    picks.forEach(function(b){
+      b.setAttribute("aria-pressed", b.getAttribute("data-pick")===style?"true":"false");
+    });
+    try{localStorage.setItem("moongql-style",style)}catch(e){}
+  }
+  picks.forEach(function(b){
+    b.addEventListener("click",function(){setStyle(b.getAttribute("data-pick"))});
+  });
+  setStyle(root.getAttribute("data-style")||"annotations");
 
   // mark the step the reader is on
   var links=[].slice.call(document.querySelectorAll("aside a"));

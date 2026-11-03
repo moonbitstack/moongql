@@ -85,12 +85,20 @@ SECTIONS = [
      "reference resolvers, then apply installs _service { sdl }, the _Any scalar, "
      "the _Entity union and the _entities(representations) resolver. v2 opts in "
      "with @link and adds @shareable / @inaccessible / @override / @requires / "
-     "@provides on fields, rendered into the subgraph SDL."),
+     "@provides / @tag on fields and types, rendered into the subgraph SDL. "
+     "check reads every @key / @requires / @provides field set back against the "
+     "schema."),
     ("ide", "server/ide.mbt", "Built-in IDE",
      "The IDE the endpoint serves on a GET without a query: GraphiQL, Apollo "
      "Sandbox or Altair, chosen with one value. Each page is built here with its "
      "assets pinned to an exact version, and the subscription socket is derived "
      "from the page's own location unless you name one."),
+    ("check", "schema/check.mbt", "Type System Checks",
+     "Schema::check asks the type system's own rules (spec §3) of a schema rather "
+     "than of a document: names, field and argument sides, input-object cycles, "
+     "interface implementation consistency, union members, enum values, directive "
+     "definitions and the root operation types. One message per problem, empty "
+     "when the schema holds."),
     ("of_sdl", "schema/parse_sdl.mbt", "Reading SDL",
      "The other direction: build a Schema from SDL text. print-then-parse is a "
      "round trip, so a schema written as SDL and the same schema built in code "
@@ -442,7 +450,7 @@ def main():
 
     out = ROOT / "docs" / "api.html"
     out.parent.mkdir(exist_ok=True)
-    out.write_text("\n".join(body), encoding="utf-8")
+    out.write_text("\n".join(body), encoding="utf-8", newline="\n")
 
     # Every public name in the package interfaces has to appear on the page.
     # A section that forgets a file shows up here rather than as a reader's
