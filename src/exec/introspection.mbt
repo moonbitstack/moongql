@@ -190,7 +190,10 @@ fn Exec::composite_type_json(self : Exec, def : @schema.ObjectType) -> Json {
       if self.schema.field_has_directive(def.name, f.name, "inaccessible") {
         continue
       }
-      fs.push(self.input_value_json(f.name, f.typ))
+      match f.default_value {
+        Some(d) => fs.push(self.input_value_json(f.name, f.typ, default=d))
+        None => fs.push(self.input_value_json(f.name, f.typ))
+      }
     }
     Json(fs)
   } else {

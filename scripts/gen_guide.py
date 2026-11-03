@@ -83,6 +83,10 @@ def snippets(style):
                 if line.startswith("/// "):
                     line = "// " + line[4:]
                 lines.append(line)
+            while lines and lines[0].strip() == "":
+                lines.pop(0)
+            while lines and lines[-1].strip() == "":
+                lines.pop()
             found[m.group(2)] = "\n".join(lines)
     SNIPPETS[style] = found
     return found

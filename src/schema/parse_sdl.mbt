@@ -390,6 +390,13 @@ fn SdlCursor::composite(
     }
     self.take(@lang.Colon, "':' before a field type") |> ignore
     let ftyp = self.type_ref()
+    // An input field may carry a default value; an output field cannot.
+    let fdefault = if kind is Input && self.at(@lang.Equals) {
+      self.bump() |> ignore
+      Some(self.value())
+    } else {
+      None
+    }
     let mut deprecation_reason : String? = None
     let applied : Array[AppliedDirective] = []
     for d in self.directives() {
@@ -404,6 +411,7 @@ fn SdlCursor::composite(
       args: fargs,
       typ: ftyp,
       arg_defaults: fdefaults,
+      default_value: fdefault,
       deprecation_reason,
       description: fdesc,
     })

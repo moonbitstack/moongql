@@ -14,9 +14,9 @@ pub fn builtin_exec_directive(String) -> DirectiveDef?
 
 pub fn description_sdl(String?, indent? : Int32) -> String
 
-pub fn directive_def_sdl(DirectiveDef) -> String
+pub fn directive_def_sdl(Schema, DirectiveDef) -> String
 
-pub fn field_sdl(Field) -> String
+pub fn field_sdl(Schema, Field) -> String
 
 pub fn introspection_type_def(String) -> ObjectType?
 
@@ -62,6 +62,7 @@ pub(all) struct Field {
   args : Array[(String, GqlType)]
   typ : GqlType
   arg_defaults : Map[String, Json]
+  default_value : Json?
   deprecation_reason : String?
   description : String?
 }
@@ -83,8 +84,8 @@ pub(all) struct ObjectType {
   interfaces : Array[String]
   description : String?
 }
-pub fn ObjectType::field(Self, String, GqlType, deprecation_reason? : String, description? : String) -> Unit
-pub fn ObjectType::field_args(Self, String, Array[(String, GqlType)], GqlType, defaults? : Array[(String, Json)], deprecation_reason? : String, description? : String) -> Unit
+pub fn ObjectType::field(Self, String, GqlType, default? : Json, deprecation_reason? : String, description? : String) -> Unit
+pub fn ObjectType::field_args(Self, String, Array[(String, GqlType)], GqlType, defaults? : Array[(String, Json)], default? : Json, deprecation_reason? : String, description? : String) -> Unit
 pub fn ObjectType::field_by_name(Self, String) -> Field?
 pub fn ObjectType::implements(Self, String) -> Unit
 

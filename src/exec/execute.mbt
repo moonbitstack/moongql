@@ -261,7 +261,20 @@ fn Exec::coerce_input(self : Exec, value : Json, typ : @schema.GqlType) -> Json 
     Scalar(n) | Named(n) =>
       match self.schema.scalar_by_name(n) {
         Some(sc) => if value is Null { value } else { (sc.parse_value)(value) }
-        None => value
+        None =>
+          // An input object's own fields may name a default, which a caller who
+          // left the field out gets (§3.10 Input Object Field Default Values).
+          match (self.schema.type_by_name(n), value) {
+            (Some(t), Object(given)) if t.kind is @schema.Input => {
+              for f in t.fields {
+                if given.get(f.name) is None && f.default_value is Some(d) {
+                  given[f.name] = d
+                }
+              }
+              Json(given)
+            }
+            _ => value
+          }
       }
   }
 }

@@ -28,8 +28,51 @@ pub(all) struct Field {
   args : Array[(String, GqlType)]
   typ : GqlType
   arg_defaults : Map[String, Json]
+  // An input object's field may name the value a caller who leaves it out gets;
+  // an output field has no such thing.
+  default_value : Json?
   deprecation_reason : String?
   description : String?
+}
+
+///|
+/// A default value as SDL, read against the type it is a default for: a name that
+/// is an enum value prints bare (`GUEST`, not `"GUEST"`), a value of an input
+/// object prints its fields in the order the type declares them, and every other
+/// value prints as JSON. The type is what tells the two apart — a JSON string is
+/// an enum value in one position and a string in the next.
+fn default_sdl(schema : Schema, ty : GqlType, v : Json) -> String {
+  match ty {
+    NonNull(inner) => default_sdl(schema, inner, v)
+    ListOf(inner) =>
+      match v {
+        Array(items) =>
+          "[" +
+          items.map(item => default_sdl(schema, inner, item)).join(", ") +
+          "]"
+        _ => json_to_gql_literal(v)
+      }
+    Named(name) =>
+      match (schema.enum_by_name(name), v) {
+        (Some(_), String(s)) => s
+        _ =>
+          match (schema.type_by_name(name), v) {
+            (Some(t), Object(given)) if t.kind is Input => {
+              let parts : Array[String] = []
+              for f in t.fields {
+                if given.get(f.name) is Some(_) {
+                  parts.push(
+                    f.name + ": " + default_sdl(schema, f.typ, given[f.name]),
+                  )
+                }
+              }
+              "{" + parts.join(", ") + "}"
+            }
+            _ => json_to_gql_literal(v)
+          }
+      }
+    Scalar(_) => json_to_gql_literal(v)
+  }
 }
 
 ///|
@@ -37,7 +80,8 @@ pub(all) struct Field {
 /// each argument's default value (`= v`), and its `@deprecated(reason:)`. The
 /// description and the applied directives live on the schema, so they are the
 /// printer's job (see `description_sdl` and `Schema::to_sdl`), not this one's.
-pub fn field_sdl(f : Field) -> String {
+/// The schema is what a default value is read against.
+pub fn field_sdl(schema : Schema, f : Field) -> String {
   let mut out = "  " + f.name
   if f.args.length() > 0 {
     out = out + "("
@@ -48,13 +92,17 @@ pub fn field_sdl(f : Field) -> String {
       }
       out = out + an + ": " + type_sdl(at)
       match f.arg_defaults.get(an) {
-        Some(v) => out = out + " = " + json_to_gql_literal(v)
+        Some(v) => out = out + " = " + default_sdl(schema, at, v)
         None => ()
       }
     }
     out = out + ")"
   }
   out = out + ": " + type_sdl(f.typ)
+  match f.default_value {
+    Some(v) => out = out + " = " + default_sdl(schema, f.typ, v)
+    None => ()
+  }
   match f.deprecation_reason {
     Some(r) => out + " @deprecated(reason: \"" + @lang.escape_string(r) + "\")"
     None => out
@@ -107,6 +155,7 @@ pub fn ObjectType::field(
   self : ObjectType,
   name : String,
   typ : GqlType,
+  default? : Json,
   deprecation_reason? : String,
   description? : String,
 ) -> Unit {
@@ -115,6 +164,7 @@ pub fn ObjectType::field(
     args: [],
     typ,
     arg_defaults: Map([]),
+    default_value: default,
     deprecation_reason,
     description,
   })
@@ -131,6 +181,7 @@ pub fn ObjectType::field_args(
   args : Array[(String, GqlType)],
   typ : GqlType,
   defaults~ : Array[(String, Json)] = [],
+  default? : Json,
   deprecation_reason? : String,
   description? : String,
 ) -> Unit {
@@ -139,6 +190,7 @@ pub fn ObjectType::field_args(
     args,
     typ,
     arg_defaults: Map(defaults),
+    default_value: default,
     deprecation_reason,
     description,
   })
@@ -426,7 +478,7 @@ pub fn kind_keyword(k : TypeKind) -> String {
 /// LOCATION | LOCATION`. A definition is what a `Schema::directive` call
 /// registers; the places a directive is *used* are `AppliedDirective`s, which
 /// `applied_directive_sdl` renders.
-pub fn directive_def_sdl(d : DirectiveDef) -> String {
+pub fn directive_def_sdl(schema : Schema, d : DirectiveDef) -> String {
   let mut out = "directive @" + d.name
   if d.args.length() > 0 {
     out = out + "("
@@ -436,7 +488,7 @@ pub fn directive_def_sdl(d : DirectiveDef) -> String {
       }
       out = out + a.0 + ": " + type_sdl(a.1)
       match d.arg_defaults.get(a.0) {
-        Some(v) => out = out + " = " + json_to_gql_literal(v)
+        Some(v) => out = out + " = " + default_sdl(schema, a.1, v)
         None => ()
       }
     }
@@ -479,7 +531,10 @@ pub fn Schema::to_sdl(self : Schema) -> String {
   }
   out = out + "}\n\n"
   for d in self.directive_defs {
-    out = out + description_sdl(d.description) + directive_def_sdl(d) + "\n\n"
+    out = out +
+      description_sdl(d.description) +
+      directive_def_sdl(self, d) +
+      "\n\n"
   }
   for obj in self.types {
     out = out + description_sdl(obj.description)
@@ -498,7 +553,7 @@ pub fn Schema::to_sdl(self : Schema) -> String {
     for f in obj.fields {
       out = out + description_sdl(f.description, indent=1)
       out = out +
-        field_sdl(f) +
+        field_sdl(self, f) +
         applied_directives_sdl(self.field_applied_directives(obj.name, f.name)) +
         "\n"
     }

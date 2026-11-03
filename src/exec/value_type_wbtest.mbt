@@ -82,3 +82,68 @@ fn run_query_errors(schema : @schema.Schema, query : String) -> Array[String] {
   }
   msgs
 }
+
+///|
+/// An input object whose fields name defaults: a caller that leaves one out gets
+/// it, the same value SDL and introspection report.
+fn defaulted_input() -> (@schema.Schema, Resolvers) {
+  let s = @schema.Schema::new()
+  let filter = s.input("Filter")
+  filter.field("limit", @schema.Scalar("Int"), default=Json(10))
+  filter.field("title", @schema.Scalar("String"), default=Json("all"))
+  let q = s.object("Query")
+  q.field_args(
+    "books",
+    [("filter", NonNull(@schema.Named("Filter")))],
+    NonNull(@schema.Scalar("String")),
+  )
+  let r = Resolvers::new()
+  r.field("Query", "books", info => {
+    let filter = info.arg("filter")
+    match filter {
+      Object(m) =>
+        Json(
+          "limit=" +
+          json_scalar(m.get("limit")) +
+          " title=" +
+          json_scalar(m.get("title")),
+        )
+      _ => Json("no filter")
+    }
+  })
+  (s, r)
+}
+
+///|
+fn json_scalar(v : Json?) -> String {
+  match v {
+    Some(Number(n, ..)) => n.to_string()
+    Some(String(s)) => s
+    Some(Null) | None => "null"
+    _ => "?"
+  }
+}
+
+///|
+test "a field of an input object falls back to its declared default" {
+  let (s, r) = defaulted_input()
+  let res = execute(s, r, "{ books(filter: {}) }")
+  assert_eq(res.stringify(), "{\"data\":{\"books\":\"limit=10 title=all\"}}")
+  // What the caller sent wins over the default.
+  let res = execute(s, r, "{ books(filter: { limit: 3 }) }")
+  assert_eq(res.stringify(), "{\"data\":{\"books\":\"limit=3 title=all\"}}")
+}
+
+///|
+test "introspection reports an input field's default" {
+  let (s, r) = defaulted_input()
+  let res = execute(
+    s, r, "{ __type(name: \"Filter\") { inputFields { name defaultValue } } }",
+  )
+  let text = res.stringify()
+  assert_eq(text.contains("\"name\":\"limit\",\"defaultValue\":\"10\""), true)
+  assert_eq(
+    text.contains("\"name\":\"title\",\"defaultValue\":\"\\\"all\\\"\""),
+    true,
+  )
+}

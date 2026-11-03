@@ -371,7 +371,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
   // A directive this subgraph defines is part of what it publishes, or the
   // gateway has no definition to compose against.
   for d in schema.directive_defs {
-    out = out + @schema.directive_def_sdl(d) + "\n\n"
+    out = out + @schema.directive_def_sdl(schema, d) + "\n\n"
   }
   for obj in schema.types {
     if is_federation_internal(obj.name) {
@@ -414,7 +414,7 @@ pub fn Federation::sdl(self : Federation, schema : @schema.Schema) -> String {
       }
       out = out +
         @schema.description_sdl(f.description, indent=1) +
-        @schema.field_sdl(f)
+        @schema.field_sdl(schema, f)
       if str_in(external, f.name) {
         out = out + " @external"
       }

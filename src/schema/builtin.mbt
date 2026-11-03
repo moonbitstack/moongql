@@ -109,6 +109,7 @@ fn intro_obj(name : String, fields : Array[(String, GqlType)]) -> ObjectType {
       args: [],
       typ: f.1,
       arg_defaults: Map([]),
+      default_value: None,
       deprecation_reason: None,
       description: None,
     })

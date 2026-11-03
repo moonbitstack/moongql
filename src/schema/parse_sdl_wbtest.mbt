@@ -524,3 +524,57 @@ test "SDL reads back what it printed" {
   assert_eq(again.to_sdl(), once)
   assert_eq(again.check().length(), 0)
 }
+
+///|
+/// An input object's fields may name a default of their own, and a name-standing
+/// default is an enum value rather than a string: the two are told apart by the
+/// field's type, which is why the printer reads defaults against the schema.
+test "an input field's default survives the round trip" {
+  let text =
+    #|enum Role {
+    #|  ADMIN
+    #|  GUEST
+    #|}
+    #|
+    #|input Inner {
+    #|  n: Int
+    #|}
+    #|
+    #|input Filter {
+    #|  role: Role = GUEST
+    #|  limit: Int = 10
+    #|  tags: [String!] = ["a", "b"]
+    #|  nested: Inner = { n: 1 }
+    #|  title: String = "all"
+    #|}
+    #|
+    #|type Query {
+    #|  books(filter: Filter = { role: ADMIN, limit: 5 }): [String!]!
+    #|}
+  let s = Schema::of_sdl(text) catch { e => abort(e.to_string()) }
+  let printed = s.to_sdl()
+  assert_eq(
+    printed.contains(
+      (
+        #|input Filter {
+        #|  role: Role = GUEST
+        #|  limit: Int = 10
+        #|  tags: [String!] = ["a", "b"]
+        #|  nested: Inner = {n: 1}
+        #|  title: String = "all"
+        #|}
+      ),
+    ),
+    true,
+  )
+  assert_eq(
+    printed.contains(
+      "books(filter: Filter = {role: ADMIN, limit: 5}): [String!]!",
+    ),
+    true,
+  )
+  // Reading the print back describes the same schema, byte for byte.
+  let again = Schema::of_sdl(printed) catch { e => abort(e.to_string()) }
+  assert_eq(again.to_sdl(), printed)
+  assert_eq(again.check().length(), 0)
+}

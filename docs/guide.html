@@ -238,7 +238,7 @@ book.field(<span class="c">"authorId"</span>, <span class="ty">NonNull</span>(<s
 }
 
 <span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">FromGql</span> <span class="k">for</span> <span class="ty">Author</span> <span class="k">with</span> <span class="k">fn</span> from_gql(v) {
-  { id: @moongql.read(v, <span class="c">"id"</span>), name: @moongql.read(v, <span class="c">"name"</span>) }
+  { id: @moongql.read(v, <span class="c">"id"</span>), name: @moongql.read(v, <span class="c">"name"</span>), }
 }
 
 <span class="k">pub</span> <span class="k">extend</span> <span class="ty">Author</span> <span class="k">with</span> @moongql.<span class="ty">ToGql</span>::{to_gql}
@@ -431,7 +431,7 @@ schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
 }
 
 <span class="k">pub</span> <span class="k">impl</span> @moongql.<span class="ty">FromGql</span> <span class="k">for</span> <span class="ty">NewBook</span> <span class="k">with</span> <span class="k">fn</span> from_gql(v) {
-  { title: @moongql.read(v, <span class="c">"title"</span>), author_id: @moongql.read(v, <span class="c">"authorId"</span>) }
+  { title: @moongql.read(v, <span class="c">"title"</span>), author_id: @moongql.read(v, <span class="c">"authorId"</span>), }
 }
 
 <span class="k">pub</span> <span class="k">extend</span> <span class="ty">NewBook</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}</code></pre>
