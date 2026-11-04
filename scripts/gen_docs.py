@@ -139,7 +139,7 @@ def parse(path):
             first = core.split(" ")[0] if core else ""
             items.append((KIND.get(first, "item"), core, " ".join(doc).strip()))
             doc = []
-        elif s == "":
+        elif s == "" or s.startswith("#"):
             pass
         else:
             doc = []
