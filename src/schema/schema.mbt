@@ -1,12 +1,13 @@
 ///|
 /// A GraphQL type reference: a scalar (`String`, `Int`, `Boolean`, `Float`, `ID`),
 /// a named object type, or a non-null / list wrapper around another type.
+#derive(Eq)
 pub(all) enum GqlType {
   Scalar(String)
   Named(String)
   NonNull(GqlType)
   ListOf(GqlType)
-} derive(Eq)
+}
 
 ///|
 /// Render a type reference to GraphQL SDL notation (`String!`, `[User!]`, ...).
@@ -131,11 +132,12 @@ pub fn description_sdl(description : String?, indent~ : Int32 = 0) -> String {
 ///|
 /// Which kind of composite type an `ObjectType` describes: an output `object`
 /// (`type`), an `input` object, or an `interface`.
+#derive(Eq)
 pub(all) enum TypeKind {
   Object
   Input
   Interface
-} derive(Eq)
+}
 
 ///|
 /// A GraphQL composite type with an ordered set of fields. The same shape backs

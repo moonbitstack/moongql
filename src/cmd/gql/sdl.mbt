@@ -436,9 +436,10 @@ fn enum_of(e : @schema.EnumType, impls : Array[String]) -> Unit {
   let reads = e.values.map(v => "String(\{quoted(v)}) => \{case_of(v)}")
   impls.push(
     (
+      $|#derive(Eq, Debug)
       $|pub(all) enum \{e.name} {
       $|  \{e.values.map(case_of).join("\n")}
-      $|} derive(Eq, Debug)
+      $|}
       $|
       $|pub impl @moongql.ToGql for \{e.name} with fn to_gql(self) {
       $|  match self {

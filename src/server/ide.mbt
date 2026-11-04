@@ -28,13 +28,14 @@
 
 ///|
 /// Which IDE the endpoint serves.
+#derive(Eq)
 pub(all) enum IdeKind {
   Site
   GraphiQL
   ApolloSandbox
   Altair
   Off
-} derive(Eq)
+}
 
 ///|
 /// The IDE a `GET` without a `?query=` is answered with. `subscription_endpoint`

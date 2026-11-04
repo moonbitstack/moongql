@@ -2,6 +2,7 @@
 package "moonbitstack/moongql/examples/guide/annotations"
 
 import {
+  "moonbitlang/core/json",
   "moonbitstack/moongql/exec",
   "moonbitstack/moongql/federation",
   "moonbitstack/moongql/schema",
@@ -27,8 +28,8 @@ pub struct Author {
   id : String
   name : String
 }
-pub fn Author::from_gql(Json) -> Self raise @exec.ResolverError
-pub fn Author::to_gql(Self) -> Json
+pub fn Author::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Author::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Author
 pub impl @exec.ToGql for Author
 
@@ -37,8 +38,8 @@ pub struct Book {
   title : String
   author_id : String
 }
-pub fn Book::from_gql(Json) -> Self raise @exec.ResolverError
-pub fn Book::to_gql(Self) -> Json
+pub fn Book::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Book::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Book
 pub impl @exec.ToGql for Book
 
@@ -46,8 +47,8 @@ pub struct NewBook {
   title : String
   author_id : String
 }
-pub fn NewBook::from_gql(Json) -> Self raise @exec.ResolverError
-pub fn NewBook::to_gql(Self) -> Json
+pub fn NewBook::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn NewBook::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for NewBook
 pub impl @exec.ToGql for NewBook
 

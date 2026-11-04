@@ -1,12 +1,13 @@
 ///|
 /// What an annotated type became in the schema.
+#derive(Eq)
 priv enum Shape {
   Object
   Input
   Enum
   Union
   Interface
-} derive(Eq)
+}
 
 ///|
 /// An annotated type: its GraphQL name and shape.

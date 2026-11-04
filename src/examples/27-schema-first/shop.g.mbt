@@ -199,10 +199,11 @@ pub(all) struct Mutation {
 declare fn Mutation::add_book(input : NewBook) -> Book raise
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Status {
   DRAFT
   PUBLISHED
-} derive(Eq, Debug)
+}
 ///|
 pub impl @moongql.ToGql for Status with fn to_gql(self) {
   match self {

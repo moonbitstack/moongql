@@ -2,6 +2,7 @@
 package "moonbitstack/moongql/federation"
 
 import {
+  "moonbitlang/core/json",
   "moonbitstack/moongql/exec",
   "moonbitstack/moongql/schema",
 }
@@ -16,7 +17,7 @@ pub(all) struct EntityDef {
   key : String
   extends : Bool
   external : Array[String]
-  resolve : (Json, Json) -> Json raise @exec.ResolverError
+  resolve : (@json.Json, @json.Json) -> @json.Json raise @exec.ResolverError
 }
 
 pub struct Federation {
@@ -27,7 +28,7 @@ pub struct Federation {
 }
 pub fn Federation::apply(Self, @schema.Schema, @exec.Resolvers) -> Unit
 pub fn Federation::check(Self, @schema.Schema) -> Array[String]
-pub fn Federation::entity(Self, name~ : String, key~ : String, resolve~ : (Json, Json) -> Json raise @exec.ResolverError, extends? : Bool, external? : Array[String]) -> Unit
+pub fn Federation::entity(Self, name~ : String, key~ : String, resolve~ : (@json.Json, @json.Json) -> @json.Json raise @exec.ResolverError, extends? : Bool, external? : Array[String]) -> Unit
 pub fn Federation::inaccessible(Self, String, String) -> Unit
 pub fn Federation::new(v2? : Bool) -> Self
 pub fn Federation::override_(Self, String, String, from~ : String) -> Unit
@@ -39,6 +40,6 @@ pub fn Federation::tag(Self, String, name~ : String) -> Unit
 pub fn Federation::tag_field(Self, String, String, name~ : String) -> Unit
 
 // Type aliases
-pub type EntityResolver = (Json, Json) -> Json raise @exec.ResolverError
+pub type EntityResolver = (@json.Json, @json.Json) -> @json.Json raise @exec.ResolverError
 
 // Traits

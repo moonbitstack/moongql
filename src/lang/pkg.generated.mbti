@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moongql/lang"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
 pub fn collect_fragments(Document) -> Map[String, FragmentDefinition]
 
@@ -52,13 +56,13 @@ pub(all) struct FragmentDefinition {
 
 pub(all) struct GqlError {
   message : String
-  path : Array[Json]
+  path : Array[@json.Json]
   locations : Array[Pos]
-  extensions : Map[String, Json]
+  extensions : Map[String, @json.Json]
 }
 pub fn GqlError::at(String, Pos) -> Self
 pub fn GqlError::msg(String) -> Self
-pub fn GqlError::to_json(Self) -> Json
+pub fn GqlError::to_json(Self) -> @json.Json
 
 pub(all) struct OperationDefinition {
   operation : OperationType
@@ -69,18 +73,20 @@ pub(all) struct OperationDefinition {
   pos : Pos
 }
 
+#derive(Eq)
 pub(all) enum OperationType {
   Query
   Mutation
   Subscription
-} derive(Eq)
+}
 pub fn OperationType::equal(Self, Self) -> Bool
 pub fn OperationType::not_equal(Self, Self) -> Bool
 
+#derive(Eq)
 pub(all) struct Pos {
   line : Int32
   col : Int32
-} derive(Eq)
+}
 pub fn Pos::equal(Self, Self) -> Bool
 pub fn Pos::not_equal(Self, Self) -> Bool
 
@@ -106,6 +112,7 @@ pub(all) struct Token {
   col : Int32
 }
 
+#derive(Eq)
 pub(all) enum TokenKind {
   Name
   IntVal
@@ -127,15 +134,16 @@ pub(all) enum TokenKind {
   BraceR
   Pipe
   Eof
-} derive(Eq)
+}
 pub fn TokenKind::equal(Self, Self) -> Bool
 pub fn TokenKind::not_equal(Self, Self) -> Bool
 
+#derive(Eq)
 pub(all) enum TypeRef {
   NamedType(String)
   ListType(TypeRef)
   NonNullType(TypeRef)
-} derive(Eq)
+}
 pub fn TypeRef::equal(Self, Self) -> Bool
 pub fn TypeRef::not_equal(Self, Self) -> Bool
 pub fn TypeRef::to_query(Self) -> String

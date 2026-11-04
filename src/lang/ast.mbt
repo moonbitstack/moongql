@@ -9,10 +9,11 @@
 /// The 1-based line and column of a node's first token. Every node an error can
 /// point back at carries one, so a validation or field error can answer with the
 /// `locations` entry the spec requires (§7.1.2).
+#derive(Eq)
 pub(all) struct Pos {
   line : Int32
   col : Int32
-} derive(Eq)
+}
 
 ///|
 /// A parsed GraphQL document: an ordered list of executable definitions.
@@ -48,11 +49,12 @@ pub(all) struct TypeSystemDefinition {
 
 ///|
 /// Which kind of operation a definition describes.
+#derive(Eq)
 pub(all) enum OperationType {
   Query
   Mutation
   Subscription
-} derive(Eq)
+}
 
 ///|
 /// An operation: its type, an optional name, variable definitions, directives
@@ -82,11 +84,12 @@ pub(all) struct VariableDefinition {
 /// A type reference as it appears in the query grammar: a named type, a list
 /// wrapper `[T]`, or a non-null wrapper `T!`. Distinct from the schema builder's
 /// `GqlType` (which carries a `Scalar` sugar the parser never sees).
+#derive(Eq)
 pub(all) enum TypeRef {
   NamedType(String)
   ListType(TypeRef)
   NonNullType(TypeRef)
-} derive(Eq)
+}
 
 ///|
 /// A named fragment definition: `fragment Name on Type @dir { selection }`.

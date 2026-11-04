@@ -2,6 +2,7 @@
 package "moonbitstack/moongql"
 
 import {
+  "moonbitlang/core/json",
   "moonbitstack/moonasgi/http",
   "moonbitstack/moonasgi/spec",
   "moonbitstack/moonasgi/ws",
@@ -18,11 +19,11 @@ pub let altair : @server.Ide
 
 pub let apollo_sandbox : @server.Ide
 
-pub fn create_source_event_stream(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> @exec.SubscriptionResult
+pub fn create_source_event_stream(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> @exec.SubscriptionResult
 
-pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
+pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json]) -> @json.Json
 
-pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
+pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
 pub fn field_error(Error) -> @exec.ResolverError
 
@@ -34,7 +35,7 @@ pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : @serv
 
 pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> (@http.Request) -> @http.Response
 
-pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : Json, context? : Json) -> @ws.WebSocketHandler
+pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json) -> @ws.WebSocketHandler
 
 pub fn not_permitted() -> @exec.ResolverError
 
@@ -42,7 +43,7 @@ pub let off : @server.Ide
 
 pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
 
-pub fn[T : @exec.FromGql] read(Json, String) -> T raise @exec.ResolverError
+pub fn[T : @exec.FromGql] read(@json.Json, String) -> T raise @exec.ResolverError
 
 pub let site : @server.Ide
 
@@ -71,7 +72,7 @@ pub using @lang {type Document}
 
 pub using @federation {type EntityDef}
 
-pub type EntityResolver = (Json, Json) -> Json raise @exec.ResolverError
+pub type EntityResolver = (@json.Json, @json.Json) -> @json.Json raise @exec.ResolverError
 
 pub using @schema {type EnumType}
 
@@ -79,7 +80,7 @@ pub using @federation {type Federation}
 
 pub using @schema {type Field}
 
-pub type FieldDirectiveHook = (Json, Map[String, Json]) -> Json
+pub type FieldDirectiveHook = (@json.Json, Map[String, @json.Json]) -> @json.Json
 
 pub using @lang {type FragmentDefinition}
 

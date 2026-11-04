@@ -32,6 +32,7 @@ pub impl Show for GqlSyntaxError with fn output(self, logger) {
 ///|
 /// The lexical category of a token. Value-bearing kinds (`Name`, `IntVal`,
 /// `FloatVal`, `StringVal`, `BlockStringVal`) carry their text in `Token::value`.
+#derive(Eq)
 pub(all) enum TokenKind {
   Name
   IntVal
@@ -53,7 +54,7 @@ pub(all) enum TokenKind {
   BraceR
   Pipe
   Eof
-} derive(Eq)
+}
 
 ///|
 /// A lexical token: its kind, its text (for value-bearing kinds; unescaped for

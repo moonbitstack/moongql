@@ -2,18 +2,19 @@
 package "moonbitstack/moongql/exec"
 
 import {
+  "moonbitlang/core/json",
   "moonbitstack/moongql/lang",
   "moonbitstack/moongql/schema",
 }
 
 // Values
-pub fn build_response(Json?, Array[@lang.GqlError], extensions? : Map[String, Json]) -> Json
+pub fn build_response(@json.Json?, Array[@lang.GqlError], extensions? : Map[String, @json.Json]) -> @json.Json
 
-pub fn create_source_event_stream(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> SubscriptionResult
+pub fn create_source_event_stream(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> SubscriptionResult
 
-pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json, extensions? : Map[String, Json]) -> Json
+pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json]) -> @json.Json
 
-pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, Json], operation_name? : String, root_value? : Json, context? : Json) -> Array[Json]
+pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
 pub fn field_error(Error) -> ResolverError
 
@@ -21,51 +22,51 @@ pub fn not_permitted() -> ResolverError
 
 pub fn operation_type(@schema.Schema, @lang.Document, String?) -> Result[@lang.OperationType, @lang.GqlError]
 
-pub fn[T : FromGql] read(Json, String) -> T raise ResolverError
+pub fn[T : FromGql] read(@json.Json, String) -> T raise ResolverError
 
 // Errors
 pub(all) suberror ResolverError {
   ResolverError(String)
-  ResolverErrorExt(String, Map[String, Json])
+  ResolverErrorExt(String, Map[String, @json.Json])
 }
-pub fn ResolverError::expected(String, Json) -> Self
+pub fn ResolverError::expected(String, @json.Json) -> Self
 
 // Types and methods
 pub(all) struct ResolveInfo {
-  parent : Json
-  args : Map[String, Json]
-  ctx : Json
+  parent : @json.Json
+  args : Map[String, @json.Json]
+  ctx : @json.Json
   field_name : String
 }
-pub fn ResolveInfo::arg(Self, String) -> Json
+pub fn ResolveInfo::arg(Self, String) -> @json.Json
 pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise ResolverError
 
 pub struct Resolvers {
-  map : Map[String, (ResolveInfo) -> Json raise ResolverError]
-  type_hooks : Map[String, (Json, Json) -> String?]
-  instance_hooks : Map[String, (Json, Json) -> Bool]
+  map : Map[String, (ResolveInfo) -> @json.Json raise ResolverError]
+  type_hooks : Map[String, (@json.Json, @json.Json) -> String?]
+  instance_hooks : Map[String, (@json.Json, @json.Json) -> Bool]
 }
-pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> Json raise ResolverError) -> Unit
-pub fn Resolvers::is_type_of(Self, String, (Json, Json) -> Bool) -> Unit
+pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> @json.Json raise ResolverError) -> Unit
+pub fn Resolvers::is_type_of(Self, String, (@json.Json, @json.Json) -> Bool) -> Unit
 pub fn Resolvers::new() -> Self
-pub fn Resolvers::resolve_type(Self, String, (Json, Json) -> String?) -> Unit
+pub fn Resolvers::resolve_type(Self, String, (@json.Json, @json.Json) -> String?) -> Unit
 
 pub struct Subscribers {
-  map : Map[String, (ResolveInfo) -> Array[Json] raise ResolverError]
+  map : Map[String, (ResolveInfo) -> Array[@json.Json] raise ResolverError]
 }
-pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[Json] raise ResolverError) -> Unit
+pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[@json.Json] raise ResolverError) -> Unit
 pub fn Subscribers::new() -> Self
 
 pub(all) enum SubscriptionResult {
   RequestError(Array[@lang.GqlError])
-  EventStream(Array[Json])
+  EventStream(Array[@json.Json])
 }
 
 // Type aliases
 
 // Traits
 pub(open) trait FromGql {
-  fn from_gql(Json) -> Self raise ResolverError
+  fn from_gql(@json.Json) -> Self raise ResolverError
 }
 pub impl FromGql for Bool
 pub impl FromGql for Int32
@@ -74,10 +75,10 @@ pub impl FromGql for Double
 pub impl FromGql for String
 pub impl[T : FromGql] FromGql for T?
 pub impl[T : FromGql] FromGql for Array[T]
-pub impl FromGql for Json
+pub impl FromGql for @json.Json
 
 pub(open) trait ToGql {
-  fn to_gql(Self) -> Json
+  fn to_gql(Self) -> @json.Json
 }
 pub impl ToGql for Bool
 pub impl ToGql for Int32
@@ -86,4 +87,4 @@ pub impl ToGql for Double
 pub impl ToGql for String
 pub impl[T : ToGql] ToGql for T?
 pub impl[T : ToGql] ToGql for Array[T]
-pub impl ToGql for Json
+pub impl ToGql for @json.Json

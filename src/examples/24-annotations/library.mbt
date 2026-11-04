@@ -11,11 +11,12 @@ pub struct Author {
 
 ///|
 /// Constructors without payload are the enum's values.
+#derive(Eq)
 #gql.enum(description="Where a book stands")
 pub enum Status {
   Draft
   Published
-} derive(Eq)
+}
 
 ///|
 #gql.type
