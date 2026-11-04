@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="300.6409" height="417.3886" viewBox="0 0 300.6409 417.3886">
+  <title>Five nodes and five congruent rectangles</title>
+  <desc>Five identical 120 by 80 rectangles, five independent node circles,
+  and five independent straight node-link lines. Node 1 and Node 2 are
+  the midpoints of the top and bottom edges of rectangle 1.</desc>
+  <style>
+    .rectangle-edge { stroke: #ff1828; stroke-width: 5; fill: none; stroke-linecap: round; }
+    .node-link { stroke: #ff1828; stroke-width: 4; fill: none; stroke-linecap: round; }
+    .node { stroke: #ff1828; stroke-width: 5; fill: #080609; }
+  </style>
+  <rect id="background" x="0" y="0" width="100%" height="100%" fill="#080609"/>
+  <line id="rect-1-edge-1" x1="110.3204" y1="36" x2="190.3204" y2="36" class="rectangle-edge"/>
+  <line id="rect-1-edge-2" x1="190.3204" y1="36" x2="190.3204" y2="156" class="rectangle-edge"/>
+  <line id="rect-1-edge-3" x1="190.3204" y1="156" x2="110.3204" y2="156" class="rectangle-edge"/>
+  <line id="rect-1-edge-4" x1="110.3204" y1="156" x2="110.3204" y2="36" class="rectangle-edge"/>
+  <line id="rect-2-edge-1" x1="150.3204" y1="156" x2="36" y2="192.4807" class="rectangle-edge"/>
+  <line id="rect-2-edge-2" x1="36" y1="192.4807" x2="60.3204" y2="268.6943" class="rectangle-edge"/>
+  <line id="rect-2-edge-3" x1="60.3204" y1="268.6943" x2="174.6409" y2="232.2136" class="rectangle-edge"/>
+  <line id="rect-2-edge-4" x1="174.6409" y1="232.2136" x2="150.3204" y2="156" class="rectangle-edge"/>
+  <line id="rect-3-edge-1" x1="150.3204" y1="156" x2="264.6409" y2="192.4807" class="rectangle-edge"/>
+  <line id="rect-3-edge-2" x1="264.6409" y1="192.4807" x2="240.3204" y2="268.6943" class="rectangle-edge"/>
+  <line id="rect-3-edge-3" x1="240.3204" y1="268.6943" x2="126" y2="232.2136" class="rectangle-edge"/>
+  <line id="rect-3-edge-4" x1="126" y1="232.2136" x2="150.3204" y2="156" class="rectangle-edge"/>
+  <line id="rect-4-edge-1" x1="60.3204" y1="268.6943" x2="174.6409" y2="305.1749" class="rectangle-edge"/>
+  <line id="rect-4-edge-2" x1="174.6409" y1="305.1749" x2="150.3204" y2="381.3886" class="rectangle-edge"/>
+  <line id="rect-4-edge-3" x1="150.3204" y1="381.3886" x2="36" y2="344.9079" class="rectangle-edge"/>
+  <line id="rect-4-edge-4" x1="36" y1="344.9079" x2="60.3204" y2="268.6943" class="rectangle-edge"/>
+  <line id="rect-5-edge-1" x1="240.3204" y1="268.6943" x2="126" y2="305.1749" class="rectangle-edge"/>
+  <line id="rect-5-edge-2" x1="126" y1="305.1749" x2="150.3204" y2="381.3886" class="rectangle-edge"/>
+  <line id="rect-5-edge-3" x1="150.3204" y1="381.3886" x2="264.6409" y2="344.9079" class="rectangle-edge"/>
+  <line id="rect-5-edge-4" x1="264.6409" y1="344.9079" x2="240.3204" y2="268.6943" class="rectangle-edge"/>
+  <line id="node-link-1-2" x1="150.3204" y1="36" x2="150.3204" y2="156" class="node-link"/>
+  <line id="node-link-2-3" x1="150.3204" y1="156" x2="60.3204" y2="268.6943" class="node-link"/>
+  <line id="node-link-2-4" x1="150.3204" y1="156" x2="240.3204" y2="268.6943" class="node-link"/>
+  <line id="node-link-3-5" x1="60.3204" y1="268.6943" x2="150.3204" y2="381.3886" class="node-link"/>
+  <line id="node-link-4-5" x1="240.3204" y1="268.6943" x2="150.3204" y2="381.3886" class="node-link"/>
+  <circle id="node-1" cx="150.3204" cy="36" r="17" class="node"/>
+  <circle id="node-2" cx="150.3204" cy="156" r="17" class="node"/>
+  <circle id="node-3" cx="60.3204" cy="268.6943" r="17" class="node"/>
+  <circle id="node-4" cx="240.3204" cy="268.6943" r="17" class="node"/>
+  <circle id="node-5" cx="150.3204" cy="381.3886" r="17" class="node"/>
+</svg>
