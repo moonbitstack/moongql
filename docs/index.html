@@ -90,6 +90,10 @@
 .graph .wire{fill:none;stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:1;
   animation:wire 1s ease 1.9s backwards}
 .graph .wire.dim{opacity:.14;animation-delay:2.1s}
+.graph .rect-frames{display:none}
+.graph[data-layout="rect"] .rect-frames{display:block}
+.graph[data-layout="rect"] #w-arc{display:none}
+.graph .rect-frame{fill:none;stroke:var(--gold);stroke-width:1;stroke-dasharray:3 4;opacity:.28}
 @keyframes wire{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 .graph .node :is(circle,rect){fill:color-mix(in oklab,var(--abyss) 70%,transparent);stroke:var(--gold);
   stroke-width:1;transition:fill .25s,stroke .25s}
@@ -291,10 +295,17 @@ html[data-theme=light] .shot{box-shadow:0 22px 46px -34px rgba(72,55,24,.55)}
             <div class="chamber mid">
               <div class="plate-title"><i></i>one endpoint</div>
               <svg class="graph" viewBox="0 0 230 386" role="img" aria-label="The schema as a graph: Query points at User, User points at two Posts, and this request walks to the title of one of them">
+                <g class="rect-frames" transform="translate(0 33.342119) scale(.7650323)" aria-hidden="true">
+                  <path class="rect-frame" d="M150.3204 36 L190.3204 96 L150.3204 156 L110.3204 96 Z"/>
+                  <path class="rect-frame" d="M150.3204 156 L36 192.4807 L60.3204 268.6943 L174.6409 232.2136 Z"/>
+                  <path class="rect-frame" d="M150.3204 156 L264.6409 192.4807 L240.3204 268.6943 L126 232.2136 Z"/>
+                  <path class="rect-frame" d="M60.3204 268.6943 L174.6409 305.1749 L150.3204 381.3886 L36 344.9079 Z"/>
+                  <path class="rect-frame" d="M240.3204 268.6943 L126 305.1749 L150.3204 381.3886 L264.6409 344.9079 Z"/>
+                </g>
                 <path class="wire" id="w-qu" pathLength="1" d="M115 55 L115 139"/>
                 <path class="wire" id="w-up" pathLength="1" d="M102.433 172.25 L47.533 234.5"/>
                 <path class="wire dim" id="w-up2" pathLength="1" d="M127.567 172.25 L182.467 234.5"/>
-                <path class="wire dim" pathLength="1" d="M130 43 C 188 63, 225 137, 207 236"/>
+                <path class="wire dim" id="w-arc" pathLength="1" d="M130 43 C 188 63, 225 137, 207 236"/>
                 <path class="wire" id="w-pt" pathLength="1" d="M47.533 261.5 L103.756 325.25"/>
                 <g class="node" id="n-query" data-f="query">
                   <circle cx="115" cy="38" r="17"/><text x="115" y="39">Query</text>
@@ -604,6 +615,30 @@ s.to_sdl()
       plate.setAttribute("data-focus",t.getAttribute("data-f"));
     });
     plate.addEventListener("mouseleave",function(){ plate.removeAttribute("data-focus"); });
+  }
+
+  var graph=document.querySelector(".graph");
+  if(graph&&Math.random()<.25){
+    graph.setAttribute("data-layout","rect");
+    graph.setAttribute("aria-label","The schema as a graph with five congruent rectangular frames: Query points at User, User points at two Posts, and this request walks to the title of one of them");
+    var rectNodes={
+      "n-query":[115,60.883],
+      "n-user":[115,152.687],
+      "n-post":[46.147,238.902],
+      "n-post2":[183.853,238.902],
+      "n-title":[115,325.117]
+    };
+    Object.keys(rectNodes).forEach(function(id){
+      var pos=rectNodes[id],node=document.getElementById(id);
+      node.querySelector("circle").setAttribute("cx",pos[0]);
+      node.querySelector("circle").setAttribute("cy",pos[1]);
+      node.querySelector("text").setAttribute("x",pos[0]);
+      node.querySelector("text").setAttribute("y",pos[1]+1);
+    });
+    document.getElementById("w-qu").setAttribute("d","M115 77.883 L115 133.687");
+    document.getElementById("w-up").setAttribute("d","M103.143 167.534 L57.38 224.837");
+    document.getElementById("w-up2").setAttribute("d","M126.857 167.534 L172.62 224.837");
+    document.getElementById("w-pt").setAttribute("d","M57.38 252.967 L104.391 311.833");
   }
 
   var io=new IntersectionObserver(function(es){
