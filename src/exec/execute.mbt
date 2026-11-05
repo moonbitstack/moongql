@@ -22,6 +22,20 @@ pub(all) struct ResolveInfo {
   args : Map[String, Json]
   ctx : Json
   field_name : String
+  selection : Array[String]
+}
+
+///|
+/// Whether the document asks for the response key `name` under this field. A
+/// resolver that builds a query from the request — the ORM projection, a Relay
+/// `node` — asks this rather than fetching everything.
+pub fn ResolveInfo::reads(self : ResolveInfo, name : String) -> Bool {
+  for key in self.selection {
+    if key == name {
+      return true
+    }
+  }
+  false
 }
 
 ///|
@@ -52,6 +66,9 @@ pub(all) suberror FieldError {
 /// `resolve_type` and `is_type_of`.
 pub struct Resolvers {
   map : Map[String, (ResolveInfo) -> Json raise FieldError]
+  async_map : Map[String, async (ResolveInfo) -> Json]
+  permissions : Map[String, (ResolveInfo) -> Bool]
+  extensions : Array[&Extension]
   type_hooks : Map[String, (Json, Json) -> String?]
   instance_hooks : Map[String, (Json, Json) -> Bool]
 }
@@ -59,7 +76,14 @@ pub struct Resolvers {
 ///|
 /// Create an empty resolver registry.
 pub fn Resolvers::new() -> Resolvers {
-  { map: Map([]), type_hooks: Map([]), instance_hooks: Map([]), }
+  {
+    map: Map([]),
+    async_map: Map([]),
+    permissions: Map([]),
+    extensions: [],
+    type_hooks: Map([]),
+    instance_hooks: Map([]),
+  }
 }
 
 ///|
@@ -71,6 +95,41 @@ pub fn Resolvers::field(
   resolver : (ResolveInfo) -> Json raise FieldError,
 ) -> Unit {
   self.map[type_name + "." + field_name] = resolver
+}
+
+///|
+/// Register `resolver` for `TypeName.fieldName` as one that waits. The
+/// asynchronous engine prefers it over a synchronous registration of the same
+/// field; the synchronous engine cannot run it and uses the synchronous one.
+pub fn Resolvers::field_async(
+  self : Resolvers,
+  type_name : String,
+  field_name : String,
+  resolver : async (ResolveInfo) -> Json,
+) -> Unit {
+  self.async_map[type_name + "." + field_name] = resolver
+}
+
+///|
+/// Ask `permission` before the field is resolved. A field that answers `false`
+/// is refused with a `not permitted` field error, at the field's own path, and
+/// its resolver is never called.
+pub fn Resolvers::permission(
+  self : Resolvers,
+  type_name : String,
+  field_name : String,
+  permission : (ResolveInfo) -> Bool,
+) -> Unit {
+  self.permissions[type_name + "." + field_name] = permission
+}
+
+///|
+/// Register a hook (`Extension`): it sees every field before it is resolved, and
+/// the value after it is completed. Tracing, metrics and a field-level cache are
+/// extensions rather than branches inside the engine. `extend` itself is a
+/// keyword, so the registration is named after what it adds.
+pub fn Resolvers::hook(self : Resolvers, extension : &Extension) -> Unit {
+  self.extensions.push(extension)
 }
 
 ///|
@@ -145,6 +204,7 @@ priv struct Exec {
   variables : Map[String, Json]
   ctx : Json
   errors : Array[@lang.GqlError]
+  pending : Array[Pending]
 }
 
 ///|
@@ -170,6 +230,21 @@ fn Exec::add_error_ext(
   extensions : Map[String, Json],
 ) -> Unit {
   self.errors.push({ message, path, locations: [pos], extensions, })
+}
+
+///|
+/// Record a `FieldError` at `path`, which is how a resolver's refusal and a
+/// refused permission both reach the response.
+fn Exec::add_field_error(
+  self : Exec,
+  e : FieldError,
+  path : Array[Json],
+  pos : @lang.Pos,
+) -> Unit {
+  match e {
+    FieldError(m) => self.add_error(m, path, pos)
+    FieldErrorExt(m, ext) => self.add_error_ext(m, path, pos, ext)
+  }
 }
 
 ///|
@@ -422,6 +497,121 @@ fn Exec::collect_fields(
 }
 
 ///|
+/// The response keys named under a field's selection, in document order, with
+/// fragments expanded and type conditions not yet applied. A resolver that
+/// builds its query from the request reads it; a resolver that ignores it still
+/// runs, so the list is a hint about the document, not a promise about types.
+fn Exec::selection_keys(
+  self : Exec,
+  fields : Array[@lang.QueryField],
+) -> Array[String] {
+  let out : Array[String] = []
+  let seen : Map[String, Bool] = Map([])
+  let visited : Map[String, Bool] = Map([])
+  for f in fields {
+    self.selection_keys_of(f.selection_set, visited, seen, out)
+  }
+  out
+}
+
+///|
+/// One pass of `selection_keys` over a selection set.
+fn Exec::selection_keys_of(
+  self : Exec,
+  sels : Array[@lang.Selection],
+  visited : Map[String, Bool],
+  seen : Map[String, Bool],
+  out : Array[String],
+) -> Unit {
+  for sel in sels {
+    match sel {
+      FieldSel(f) => {
+        let key = match f.alias_ {
+          Some(a) => a
+          None => f.name
+        }
+        if seen.get(key) is None {
+          seen[key] = true
+          out.push(key)
+        }
+      }
+      FragmentSpreadSel(name, _, _) =>
+        if visited.get(name) is None {
+          visited[name] = true
+          match self.fragments.get(name) {
+            Some(frag) =>
+              self.selection_keys_of(frag.selection_set, visited, seen, out)
+            None => ()
+          }
+        }
+      InlineFragmentSel(_, _, sels, _) =>
+        self.selection_keys_of(sels, visited, seen, out)
+    }
+  }
+}
+
+///|
+/// The information a resolver receives for `field` on `parent`: the coerced
+/// arguments (defaults filled in, custom scalars parsed) and the keys the
+/// document selects beneath it.
+fn Exec::info_for(
+  self : Exec,
+  obj : @schema.ObjectType,
+  field : @lang.QueryField,
+  parent : Json,
+  fields : Array[@lang.QueryField],
+) -> ResolveInfo {
+  let name = field.name
+  let args = self.coerce_args(field)
+  match obj.field_by_name(name) {
+    Some(fdef) => {
+      apply_arg_defaults(args, fdef)
+      self.apply_input_scalars(args, fdef)
+    }
+    None => ()
+  }
+  {
+    parent,
+    args,
+    ctx: self.ctx,
+    field_name: name,
+    selection: self.selection_keys(fields),
+  }
+}
+
+///|
+/// The refusal this field's permission or an extension makes, or `None` when the
+/// field may be resolved. Permissions are asked of the field's own path, so a
+/// refused field is a field error there and the rest of the response stands.
+fn Exec::pre_field(
+  self : Exec,
+  key : String,
+  info : ResolveInfo,
+) -> FieldError? {
+  match self.resolvers.permissions.get(key) {
+    Some(allowed) => if !allowed(info) { return Some(not_permitted()) }
+    None => ()
+  }
+  for ext in self.resolvers.extensions {
+    ext.on_field(info) catch {
+      e => return Some(field_error(e))
+    }
+  }
+  None
+}
+
+///|
+/// The value an extension replaces a completed field value with, in registration
+/// order.
+fn Exec::post_field(self : Exec, info : ResolveInfo, value : Json) -> Json {
+  let mut out = value
+  for ext in self.resolvers.extensions {
+    out = ext.on_result(info, out)
+  }
+  out
+}
+
+///|
 /// The declared type of `field_name` on `obj`, resolving the introspection
 /// meta-fields (`__typename`, and `__schema`/`__type` on the query root).
 fn Exec::field_type_of(
@@ -447,6 +637,47 @@ fn Exec::field_type_of(
 }
 
 ///|
+/// The value of a field that has no registered resolver: the introspection roots
+/// on the query type, otherwise the field read off the parent object by name —
+/// `default_field_resolver`, which is what lets a plain JSON object stand in for
+/// a typed one.
+fn Exec::default_raw(
+  self : Exec,
+  obj : @schema.ObjectType,
+  field : @lang.QueryField,
+  info : ResolveInfo,
+) -> Json {
+  let name = field.name
+  if obj.name == self.schema.query {
+    if name == "__schema" {
+      return self.introspection_schema()
+    }
+    if name == "__type" {
+      let tn = match info.args.get("name") {
+        Some(String(s)) => s
+        _ => ""
+      }
+      return self.introspection_type_by_name(tn)
+    }
+  }
+  let raw = match info.parent {
+    Object(m) =>
+      match m.get(name) {
+        Some(v) => v
+        None => Json::null()
+      }
+    _ => Json::null()
+  }
+  if obj.name == "__Type" && (name == "fields" || name == "enumValues") {
+    return filter_deprecated(
+      raw,
+      info.args.get("includeDeprecated") is Some(True),
+    )
+  }
+  raw
+}
+
+///|
 /// Resolve a field's raw JSON value: dispatch to its registered resolver, the
 /// introspection roots, or the default resolver (read the field off the parent).
 /// A `FieldError` becomes a recorded field error and a null value.
@@ -454,24 +685,23 @@ fn Exec::resolve_raw(
   self : Exec,
   obj : @schema.ObjectType,
   field : @lang.QueryField,
-  parent : Json,
+  info : ResolveInfo,
   path : Array[Json],
 ) -> Json {
   let name = field.name
   if name == "__typename" {
     return Json(obj.name)
   }
-  let args = self.coerce_args(field)
-  match obj.field_by_name(name) {
-    Some(fdef) => {
-      apply_arg_defaults(args, fdef)
-      self.apply_input_scalars(args, fdef)
+  let key = obj.name + "." + name
+  match self.pre_field(key, info) {
+    Some(e) => {
+      self.add_field_error(e, path, field.pos)
+      return Json::null()
     }
     None => ()
   }
-  match self.resolvers.map.get(obj.name + "." + name) {
-    Some(resolver) => {
-      let info = { parent, args, ctx: self.ctx, field_name: name, }
+  match self.resolvers.map.get(key) {
+    Some(resolver) =>
       resolver(info) catch {
         FieldError(m) => {
           self.add_error(m, path, field.pos)
@@ -482,36 +712,7 @@ fn Exec::resolve_raw(
           Json::null()
         }
       }
-    }
-    None => {
-      if obj.name == self.schema.query {
-        if name == "__schema" {
-          return self.introspection_schema()
-        }
-        if name == "__type" {
-          let tn = match args.get("name") {
-            Some(String(s)) => s
-            _ => ""
-          }
-          return self.introspection_type_by_name(tn)
-        }
-      }
-      let raw = match parent {
-        Object(m) =>
-          match m.get(name) {
-            Some(v) => v
-            None => Json::null()
-          }
-        _ => Json::null()
-      }
-      if obj.name == "__Type" && (name == "fields" || name == "enumValues") {
-        return filter_deprecated(
-          raw,
-          args.get("includeDeprecated") is Some(True),
-        )
-      }
-      raw
-    }
+    None => self.default_raw(obj, field, info)
   }
 }
 
@@ -821,7 +1022,8 @@ fn Exec::execute_field(
     }
     Some(ftype) => {
       let recorded = self.errors.length()
-      let raw = self.resolve_raw(obj, first, parent, path)
+      let info = self.info_for(obj, first, parent, fields)
+      let raw = self.resolve_raw(obj, first, info, path)
       // A resolver that raised has its error recorded already; the null it
       // leaves behind propagates without a second one, as in graphql-js.
       if raw is Null && ftype is NonNull(_) && self.errors.length() > recorded {
@@ -835,7 +1037,7 @@ fn Exec::execute_field(
             Json::null()
           }
       }
-      self.apply_exec_directives(first.directives, value)
+      self.apply_exec_directives(first.directives, self.post_field(info, value))
     }
   }
 }
@@ -1005,6 +1207,7 @@ fn coerce_variables(
     variables: Map([]),
     ctx: Json::null(),
     errors: [],
+    pending: [],
   }
   for vd in op.variable_definitions {
     let required = vd.typ is NonNullType(_)
@@ -1080,7 +1283,7 @@ fn Exec::state(
   variables : Map[String, Json],
   ctx : Json,
 ) -> Exec {
-  { schema, resolvers, fragments, variables, ctx, errors: [], }
+  { schema, resolvers, fragments, variables, ctx, errors: [], pending: [], }
 }
 
 ///|

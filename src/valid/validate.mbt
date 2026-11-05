@@ -233,7 +233,9 @@ fn Validator::check_directive_args(
     }
   }
   for da in def.args {
-    if da.1 is NonNull(_) {
+    // An argument with a default value is not required (§5.4.2.1): the executor
+    // supplies the default when the document leaves it out.
+    if da.1 is NonNull(_) && def.arg_defaults.get(da.0) is None {
       let mut supplied = false
       for a in d.arguments {
         if a.name == da.0 {
@@ -297,7 +299,7 @@ fn Validator::check_field_args(
     self.check_value_vars(a.value, defined, a.pos)
   }
   for da in fdef.args {
-    if da.1 is NonNull(_) {
+    if da.1 is NonNull(_) && fdef.arg_defaults.get(da.0) is None {
       let mut supplied = false
       for a in field.arguments {
         if a.name == da.0 {

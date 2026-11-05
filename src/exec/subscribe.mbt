@@ -219,6 +219,7 @@ pub fn create_source_event_stream(
     args,
     ctx: context,
     field_name: root_field.name,
+    selection: exec.selection_keys(group),
   }
   let events = source(info) catch {
     FieldError(m) =>

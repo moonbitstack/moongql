@@ -14,9 +14,15 @@ pub fn create_source_event_stream(@schema.Schema, Resolvers, Subscribers, String
 
 pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json]) -> @json.Json
 
+pub async fn execute_async(@schema.Schema, Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json], limits? : Limits) -> @json.Json
+
+pub async fn execute_incremental(@schema.Schema, Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json], limits? : Limits) -> Array[@json.Json]
+
 pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
 pub fn field_error(Error) -> FieldError
+
+pub let limits : Limits
 
 pub fn not_permitted() -> FieldError
 
@@ -32,23 +38,37 @@ pub(all) suberror FieldError {
 pub fn FieldError::expected(String, @json.Json) -> Self
 
 // Types and methods
+pub(all) struct Limits {
+  max_concurrency : Int32
+  max_defer : Int32
+  max_stream : Int32
+}
+
 pub(all) struct ResolveInfo {
   parent : @json.Json
   args : Map[String, @json.Json]
   ctx : @json.Json
   field_name : String
+  selection : Array[String]
 }
 pub fn ResolveInfo::arg(Self, String) -> @json.Json
 pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise FieldError
+pub fn ResolveInfo::reads(Self, String) -> Bool
 
 pub struct Resolvers {
   map : Map[String, (ResolveInfo) -> @json.Json raise FieldError]
+  async_map : Map[String, async (ResolveInfo) -> @json.Json]
+  permissions : Map[String, (ResolveInfo) -> Bool]
+  extensions : Array[&Extension]
   type_hooks : Map[String, (@json.Json, @json.Json) -> String?]
   instance_hooks : Map[String, (@json.Json, @json.Json) -> Bool]
 }
 pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> @json.Json raise FieldError) -> Unit
+pub fn Resolvers::field_async(Self, String, String, async (ResolveInfo) -> @json.Json) -> Unit
+pub fn Resolvers::hook(Self, &Extension) -> Unit
 pub fn Resolvers::is_type_of(Self, String, (@json.Json, @json.Json) -> Bool) -> Unit
 pub fn Resolvers::new() -> Self
+pub fn Resolvers::permission(Self, String, String, (ResolveInfo) -> Bool) -> Unit
 pub fn Resolvers::resolve_type(Self, String, (@json.Json, @json.Json) -> String?) -> Unit
 
 pub struct Subscribers {
@@ -65,6 +85,11 @@ pub(all) enum SubscriptionResult {
 // Type aliases
 
 // Traits
+pub(open) trait Extension {
+  fn on_field(Self, ResolveInfo) -> Unit raise FieldError
+  fn on_result(Self, ResolveInfo, @json.Json) -> @json.Json
+}
+
 pub(open) trait FromGql {
   fn from_gql(@json.Json) -> Self raise FieldError
 }

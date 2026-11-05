@@ -52,17 +52,22 @@ pub using @valid {validate}
 
 ///|
 pub using @exec {
+  trait Extension,
   trait FromGql,
   trait ToGql,
-  type ResolveInfo,
   type FieldError,
+  type Limits,
+  type ResolveInfo,
   type Resolvers,
   type Subscribers,
   type SubscriptionResult,
   create_source_event_stream,
   execute,
+  execute_async,
+  execute_incremental,
   execute_subscription,
   field_error,
+  limits,
   not_permitted,
   read,
 }

@@ -59,6 +59,7 @@ test "ResolveInfo::read names the argument it refused" {
     args: { "id": Json::string("7"), "first": Json::number(1.5) },
     ctx: Json::null(),
     field_name: "user",
+    selection: [],
   }
   let id : Int64 = info.read("id")
   let missing : Int32? = info.read("absent")

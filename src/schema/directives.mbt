@@ -281,6 +281,34 @@ pub fn builtin_exec_directive(name : String) -> DirectiveDef? {
         is_repeatable: false,
         on_field: None,
       })
+    "defer" =>
+      Some({
+        name,
+        description: Some(
+          "Directs the executor to deliver this fragment's result in a later payload.",
+        ),
+        locations: ["FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+        args: [("if", NonNull(Scalar("Boolean"))), ("label", Scalar("String"))],
+        arg_defaults: Map([("if", Json(true))]),
+        is_repeatable: false,
+        on_field: None,
+      })
+    "stream" =>
+      Some({
+        name,
+        description: Some(
+          "Directs the executor to deliver this list's items in later payloads.",
+        ),
+        locations: ["FIELD"],
+        args: [
+          ("if", NonNull(Scalar("Boolean"))),
+          ("label", Scalar("String")),
+          ("initialCount", Scalar("Int")),
+        ],
+        arg_defaults: Map([("if", Json(true)), ("initialCount", Json(0))]),
+        is_repeatable: false,
+        on_field: None,
+      })
     _ => None
   }
 }

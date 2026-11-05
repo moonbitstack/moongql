@@ -23,6 +23,10 @@ pub fn create_source_event_stream(@schema.Schema, @exec.Resolvers, @exec.Subscri
 
 pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json]) -> @json.Json
 
+pub async fn execute_async(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json], limits? : @exec.Limits) -> @json.Json
+
+pub async fn execute_incremental(@schema.Schema, @exec.Resolvers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, extensions? : Map[String, @json.Json], limits? : @exec.Limits) -> Array[@json.Json]
+
 pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
 pub fn field_error(Error) -> @exec.FieldError
@@ -36,6 +40,8 @@ pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : @serv
 pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> (@http.Request) -> @http.Response
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json) -> @ws.WebSocketHandler
+
+pub let limits : @exec.Limits
 
 pub fn not_permitted() -> @exec.FieldError
 
@@ -100,6 +106,8 @@ pub using @server {type Ide}
 
 pub using @server {type IdeKind}
 
+pub using @exec {type Limits}
+
 pub using @schema {type ObjectType}
 
 pub using @lang {type OperationDefinition}
@@ -139,6 +147,8 @@ pub using @schema {type UnionType}
 pub using @lang {type Value}
 
 pub using @lang {type VariableDefinition}
+
+pub using @exec {trait Extension}
 
 pub using @exec {trait FromGql}
 
