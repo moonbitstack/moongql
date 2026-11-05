@@ -75,7 +75,10 @@ async test "app: a POST runs the async engine and answers one JSON body" {
   let app = graphql_app(s, r)
   let out = call_app(
     app,
-    http_scope("POST", "/graphql", [("accept", "application/json")]),
+    http_scope("POST", "/graphql", [
+      ("accept", "application/json"),
+      ("content-type", "application/json"),
+    ]),
     Some(@utf8.encode("{\"query\":\"{ hello }\"}")),
   )
   assert_eq(status_of(out), 200)
@@ -104,6 +107,7 @@ async test "app: a client that asks for multipart gets the payloads as parts" {
     app,
     http_scope("POST", "/graphql", [
       ("accept", "multipart/mixed; boundary=\"gql\"; deferSpec=20220824"),
+      ("content-type", "application/json"),
     ]),
     Some(@utf8.encode("{\"query\":\"{ user { id ... @defer { name } } }\"}")),
   )
@@ -129,7 +133,10 @@ async test "app: a request to another path is a 404" {
   let app = graphql_app(s, r)
   let out = call_app(
     app,
-    http_scope("POST", "/elsewhere", [("accept", "application/json")]),
+    http_scope("POST", "/elsewhere", [
+      ("accept", "application/json"),
+      ("content-type", "application/json"),
+    ]),
     Some(@utf8.encode("{\"query\":\"{ hello }\"}")),
   )
   assert_eq(status_of(out), 404)

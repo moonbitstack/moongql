@@ -6,3 +6,6 @@ target/
 
 examples/*/pkg.generated.mbti
 docs/engine/
+
+node_modules/
+scripts/audit/package-lock.json

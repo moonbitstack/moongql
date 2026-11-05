@@ -73,3 +73,42 @@ jobs:
       - name: interfaces are up to date
         run: |
           moon info --target all && git diff --exit-code
+
+  conformance:
+    permissions:
+      contents: read
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: install moonbit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: post install
+        run: |
+          moon version --all
+          moon update
+
+      - name: build the driver
+        run: moon build --target native
+
+      - name: install the conformance scripts
+        working-directory: scripts/audit
+        run: npm install --no-audit --no-fund
+
+      - name: graphql-http specification audit
+        working-directory: scripts/audit
+        run: node run-audit.mjs
+
+      - name: differential against graphql-js
+        working-directory: scripts/audit
+        run: node run-differential.mjs

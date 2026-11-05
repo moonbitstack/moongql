@@ -16,4 +16,5 @@ import {
 
 import {
   "moonbitlang/async",
+  "moonbitlang/async/aqueue",
 } for "wbtest"

@@ -1,0 +1,14 @@
+{
+  "name": "moongql-conformance",
+  "private": true,
+  "type": "module",
+  "description": "The scripts that hold moongql's server to the GraphQL-over-HTTP specification and to graphql-js.",
+  "scripts": {
+    "audit": "node run-audit.mjs",
+    "differential": "node run-differential.mjs"
+  },
+  "dependencies": {
+    "graphql": "16.11.0",
+    "graphql-http": "1.23.1"
+  }
+}

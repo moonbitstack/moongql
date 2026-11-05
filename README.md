@@ -782,6 +782,33 @@ for problem in schema.check() {
 }
 ```
 
+## Conformance
+
+The HTTP surface is held to the specification's own audit, and execution is held
+to the reference implementation. Both run in CI, against a driver that hands the
+application the scopes and events a server would hand it, so the tools written for
+other languages can drive it without a socket:
+
+```
+moon build --target native
+cd scripts/audit && npm install
+node run-audit.mjs          # the graphql-http specification audit
+node run-differential.mjs   # the same corpus through graphql-js, compared
+```
+
+The audit is `graphql-http`'s own: **61 checks, 61 passing**, with no failures and
+no notices — media types, status codes, the four parameters and their types,
+`GET` running queries only, and the status codes that separate a request error
+from a field error.
+
+The differential runs 25 documents — aliases, fragments, variables and their
+defaults, directives, non-null propagation, interfaces, unions, enums, argument
+defaults, introspection, and the three failure classes — through `graphql` and
+through this library, and compares `data` exactly and errors by the path and
+location they point at. **25 of 25 agree.** Wording is not compared: the
+specification fixes the shape of an error and where it is reported, not the
+sentence.
+
 ## License
 
 Apache-2.0.

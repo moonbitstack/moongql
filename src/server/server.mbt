@@ -215,25 +215,38 @@ fn query_params(qs : Bytes) -> Map[String, String] {
 /// Pull `query`, `variables` and `operationName` out of a parsed request body.
 /// A missing or non-string `query` yields `None`; `variables` defaults to empty
 /// and `operationName` to `None`, matching the GraphQL-over-HTTP request shape.
-fn parse_request(body : Json) -> (String?, Map[String, Json], String?) {
-  match body {
-    Object(m) => {
-      let query = match m.get("query") {
-        Some(String(q)) => Some(q)
-        _ => None
-      }
-      let variables = match m.get("variables") {
-        Some(Object(v)) => v
-        _ => Map([])
-      }
-      let operation_name = match m.get("operationName") {
-        Some(String(n)) => Some(n)
-        _ => None
-      }
-      (query, variables, operation_name)
-    }
-    _ => (None, Map([]), None)
+
+///|
+/// Read the three request parameters, refusing a value of the wrong type rather
+/// than ignoring it: a `variables` that is a string is a client bug, and saying so
+/// is more useful than running the operation without its variables.
+fn read_request(
+  body : Json,
+) -> Result[(String?, Map[String, Json], String?), String] {
+  let m = match body {
+    Object(m) => m
+    _ => return Err("Request body must be a JSON object")
   }
+  let query = match m.get("query") {
+    None | Some(Null) => None
+    Some(String(q)) => Some(q)
+    Some(_) => return Err("The 'query' parameter must be a string")
+  }
+  let variables = match m.get("variables") {
+    None | Some(Null) => Map([])
+    Some(Object(v)) => v
+    Some(_) => return Err("The 'variables' parameter must be an object")
+  }
+  let operation_name = match m.get("operationName") {
+    None | Some(Null) => None
+    Some(String(n)) => Some(n)
+    Some(_) => return Err("The 'operationName' parameter must be a string")
+  }
+  match m.get("extensions") {
+    None | Some(Null) | Some(Object(_)) => ()
+    Some(_) => return Err("The 'extensions' parameter must be an object")
+  }
+  Ok((query, variables, operation_name))
 }
 
 ///|
@@ -244,7 +257,10 @@ fn run_body(
   resolvers : @exec.Resolvers,
   body : Json,
 ) -> Result[Json, String] {
-  let (query, variables, operation_name) = parse_request(body)
+  let (query, variables, operation_name) = match read_request(body) {
+    Ok(r) => r
+    Err(m) => return Err(m)
+  }
   match query {
     None => Err("No GraphQL query found in request body")
     Some(q) =>

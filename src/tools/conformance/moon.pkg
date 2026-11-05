@@ -1,0 +1,31 @@
+// The other end of a pipe the conformance scripts speak down: one JSON line in,
+// one out. It exists so that tools written for other languages — the
+// specification's own HTTP audit, a reference executor, a protocol client — can
+// drive this library's server half without a socket, by feeding it the scopes and
+// events an ASGI server would feed it.
+import {
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/server",
+  "moonbitstack/moonasgi",
+  "moonbitstack/moonasgi/spec",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async",
+  "moonbitlang/async/aqueue",
+  "moonbitlang/async/stdio",
+}
+
+pkgtype(kind: "executable")
+
+// The driver reads stdin and writes stdout, which only the native backend has;
+// the conformance scripts it serves are native-only for the same reason.
+// The driver's own file is native-only, so on the other backends nothing in this
+// package uses these imports.
+warnings = "-29"
+
+options(
+  targets: {
+    "driver.mbt": [ "native" ],
+  },
+)

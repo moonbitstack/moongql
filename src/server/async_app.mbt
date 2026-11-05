@@ -149,7 +149,20 @@ pub fn graphql_app(
         }
       }
       "POST" =>
-        read_body(receive, send, schema, resolvers, wire, accept, limits)
+        match header_of(http.headers, "content-type") {
+          None =>
+            reply(send, 415, "POST requires a Content-Type of application/json")
+          Some(ct) =>
+            if !ci_eq(media_type(ct), "application/json") {
+              reply(
+                send,
+                415,
+                "Unsupported Content-Type '" + media_type(ct) + "'",
+              )
+            } else {
+              read_body(receive, send, schema, resolvers, wire, accept, limits)
+            }
+        }
       _ => reply(send, 405, "Method Not Allowed")
     }
   }
@@ -192,15 +205,46 @@ async fn read_body(
       } else {
         let results : Array[Json] = []
         for item in items {
-          results.push(run_one(schema, resolvers, item, limits))
+          match read_request(item) {
+            Ok((query, vars, op_name)) =>
+              results.push(
+                run_one(schema, resolvers, query, vars, op_name, limits),
+              )
+            Err(m) => return reply(send, 400, m)
+          }
         }
         send_json(send, wire, Json(results))
       }
     _ =>
-      if wants_incremental(accept) {
-        incremental(send, body, schema, resolvers, accept, limits)
-      } else {
-        send_json(send, wire, run_one(schema, resolvers, body, limits))
+      // A parameter of the wrong type is a request error, not an execution result:
+      // answering 400 is what tells a client to fix its request rather than read
+      // `errors` as a field failure.
+      match read_request(body) {
+        Err(m) => reply(send, 400, m)
+        Ok((None, _, _)) =>
+          // No document is a request error: no operation ran, so there is no
+          // result to report, and 400 is what tells the client its request is
+          // malformed rather than its query wrong.
+          reply(send, 400, no_query_message())
+        Ok((Some(q), vars, op_name)) =>
+          if wants_incremental(accept) {
+            incremental(
+              send,
+              Some(q),
+              vars,
+              op_name,
+              schema,
+              resolvers,
+              accept,
+              limits,
+            )
+          } else {
+            send_json(
+              send,
+              wire,
+              run_one(schema, resolvers, Some(q), vars, op_name, limits),
+            )
+          }
       }
   }
 }
@@ -210,10 +254,11 @@ async fn read_body(
 async fn run_one(
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
-  body : Json,
+  query : String?,
+  variables : Map[String, Json],
+  operation_name : String?,
   limits : @exec.Limits,
 ) -> Json {
-  let (query, variables, operation_name) = parse_request(body)
   match query {
     None =>
       @exec.build_response(None, [@lang.GqlError::msg(no_query_message())])
@@ -284,13 +329,14 @@ async fn run_get(
 /// so a client sees the initial result before the deferred ones are ready.
 async fn incremental(
   send : @moonasgi.Send,
-  body : Json,
+  query : String?,
+  variables : Map[String, Json],
+  operation_name : String?,
   schema : @schema.Schema,
   resolvers : @exec.Resolvers,
   accept : String?,
   limits : @exec.Limits,
 ) -> Unit {
-  let (query, variables, operation_name) = parse_request(body)
   let boundary = boundary_of(accept)
   send(
     @spec.Event::HttpResponseStart(
