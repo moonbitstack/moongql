@@ -55,6 +55,16 @@ SECTIONS = [
      "with a resolver map ((ResolveInfo) -> Json keyed by \"Type.field\"), "
      "supporting variables, aliases, fragments, @skip/@include, non-null error "
      "propagation and list/object results — returning { data, errors } as JSON."),
+    ("execute_async", "exec/execute_async.mbt", "Asynchronous Execution",
+     "The same document resolved by resolvers that wait: sibling fields run "
+     "concurrently, mutation roots serially, and @defer / @stream postpone work "
+     "into later payloads."),
+    ("extension", "exec/extension.mbt", "Extensions and Limits",
+     "A hook into every field — before it resolves and on its value — plus the "
+     "limits that bound how much work one request may start."),
+    ("stream", "exec/stream.mbt", "Event Streams",
+     "A live source of subscription events: a pull that waits, a way to stop it, "
+     "and a channel-backed pairing for producers."),
     ("convert", "exec/convert.mbt", "Conversions",
      "ToGql and FromGql carry a MoonBit value into a result and back out of an "
      "argument or a parent value; ResolveInfo::read reads an argument as any "
@@ -70,6 +80,15 @@ SECTIONS = [
      "stream (a pull source returning Array[Json]) and returns the ordered "
      "{ data, errors } payloads a client receives — the sync core the async "
      "WebSocket variant wraps."),
+    ("ws_live", "server/ws_live.mbt", "Live WebSocket Endpoint",
+     "graphql-transport-ws over a real socket: a task per running subscription, "
+     "each event written as it arrives."),
+    ("async_app", "server/async_app.mbt", "Asynchronous Endpoint",
+     "The ASGI application that runs the async engine, and answers in multipart "
+     "when the client asks for incremental delivery."),
+    ("client", "client/client.mbt", "Client",
+     "A GraphQL client over HTTP: the request body, the answer read back into "
+     "errors, and a document checked before it is sent."),
     ("dataloader", "loader/dataloader.mbt", "DataLoader",
      "Batch-and-cache loader for the N+1 problem: keys requested in a resolution "
      "pass are queued and deduped, then one dispatch runs the batch function over "

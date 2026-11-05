@@ -447,7 +447,7 @@ schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
 <span class="c">#gql.mutation</span>
 <span class="k">fn</span> add_book(input : <span class="ty">NewBook</span>) -&gt; <span class="ty">Book</span> <span class="k">raise</span> {
   <span class="k">if</span> input.title == <span class="c">""</span> {
-    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+    <span class="k">raise</span> @exec.<span class="ty">FieldError</span>(<span class="c">"a book needs a title"</span>)
   }
   <span class="k">let</span> book : <span class="ty">Book</span> = {
     id: <span class="c">"b\{(shelf.length() + 1)}"</span>,
@@ -467,7 +467,7 @@ schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
     _ =&gt; <span class="c">""</span>
   }
   <span class="k">if</span> title == <span class="c">""</span> {
-    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+    <span class="k">raise</span> @exec.<span class="ty">FieldError</span>(<span class="c">"a book needs a title"</span>)
   }
   <span class="k">let</span> book : <span class="ty">Json</span> = {
     <span class="c">"id"</span>: <span class="ty">Json</span>(<span class="c">"b\{shelf.length() + 1}"</span>),
@@ -484,7 +484,7 @@ schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
 
 <span class="k">fn</span> <span class="ty">Mutation</span>::add_book(input : <span class="ty">NewBook</span>) -&gt; <span class="ty">Book</span> <span class="k">raise</span> {
   <span class="k">if</span> input.title == <span class="c">""</span> {
-    <span class="k">raise</span> @exec.<span class="ty">ResolverError</span>(<span class="c">"a book needs a title"</span>)
+    <span class="k">raise</span> @exec.<span class="ty">FieldError</span>(<span class="c">"a book needs a title"</span>)
   }
   <span class="k">let</span> book : <span class="ty">Book</span> = {
     id: <span class="c">"b\{(shelf.length() + 1)}"</span>,

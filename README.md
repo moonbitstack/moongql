@@ -334,10 +334,11 @@ uses and no others. The root re-exports all of them, so `@moongql.Schema` and
 | `moongql/lang` | the document syntax tree, `tokenize`, `parse`, `GqlError` | nothing |
 | `moongql/schema` | types, directives, the built-in scalars and meta-fields, SDL, and `Schema::check` | `lang` |
 | `moongql/valid` | `validate` | `lang`, `schema` |
-| `moongql/exec` | `execute`, subscriptions, introspection | `lang`, `schema`, `valid` |
+| `moongql/exec` | `execute`, `execute_async`, subscriptions, introspection | `lang`, `schema`, `valid` |
 | `moongql/federation` | Apollo Federation v1 and v2 | `schema`, `exec` |
 | `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
 | `moongql/loader` | `DataLoader` | nothing |
+| `moongql/client` | a GraphQL client over HTTP | `lang`, moonfetch |
 | `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
 | `moongql/cmd/sdl` | `moongql-sdl` on the command line: a document's schema, normalised | `schema` |
 
@@ -349,7 +350,7 @@ but not their constructors, so `@moongql.NonNull(...)` does not resolve.
 Wherever the expected type is known — a field's type, a match on a value — the
 bare name does, and reads better: `NonNull(Scalar("ID"))`. The one place it is
 not known is an error, because `raise` and `catch` work on any error; there the
-subpackage is named, `@lang.GqlSyntaxError(...)` or `@exec.ResolverError(...)`.
+subpackage is named, `@lang.Refused(...)` or `@exec.FieldError(...)`.
 
 ## Parser and execution
 
@@ -559,6 +560,107 @@ ws.tick(now_ms)                       // the server's clock, as often as it like
 ```
 
 `graphql_ws_handler` builds a handler whose connection state nothing can reach, for a server with no clock to spare.
+
+## Asynchronous resolvers
+
+A resolver that waits — a database round trip, an upstream call — is registered
+with `field_async`, and the request runs with `execute_async`. Fields at the same
+level are independent (§6.2.2), so they are resolved concurrently; the root fields
+of a mutation run one after another (§6.2.3). The response is the one `execute`
+would have built: same keys, same error paths, same `extensions`.
+
+```moonbit
+let r = @moongql.Resolvers::new()
+r.field("Query", "greeting", fn(_info) { Json("hello") })
+r.field_async("Query", "user", async fn(info) {
+  let id : String = info.read("id")
+  @moongql.ToGql::to_gql(load_user(id))
+})
+
+let response = @moongql.execute_async(schema, r, "{ greeting user(id: \"1\") { name } }")
+```
+
+A field registered the synchronous way still runs, so a schema moves one field at
+a time. How much runs at once is a `Limits` record: `max_concurrency` bounds the
+tasks of one selection set.
+
+Two things every resolver can be held to. `Resolvers::permission` answers whether
+a field may be resolved at all; a refused field is a `not permitted` field error at
+its own path, and its resolver never runs. `Resolvers::hook` adds an `Extension`,
+which sees each field before it resolves and its value after it completes —
+tracing, metrics and a per-field cache are written as extensions rather than as
+branches in the engine:
+
+```moonbit
+r.permission("Query", "billing", fn(info) { info.ctx is Object(m) && m.get("admin") is Some(True) })
+```
+
+`ResolveInfo.selection` names the response keys the document selects under the
+field, which is what a resolver that builds a query from the request — a column
+projection, a Relay `node` — reads instead of fetching everything:
+
+```moonbit
+r.field("Query", "user", fn(info) {
+  Json(if info.reads("email") { load_with_email(info) } else { load_without_email(info) })
+})
+```
+
+## Incremental delivery
+
+`@defer` on a fragment and `@stream` on a list field postpone work until after the
+first payload has been sent. `execute_incremental` answers the payloads in order:
+the initial `{ data, hasNext }`, then one per finished piece —
+`{ incremental: [{ data, path, label }], hasNext }` for a deferred fragment and
+`{ incremental: [{ items, path }], hasNext }` for a streamed item.
+
+```moonbit
+let payloads = @moongql.execute_incremental(schema, resolvers,
+  "{ user { id ... @defer(label: \"late\") { bio } } }")
+// payloads[0] == {"data":{"user":{"id":"1"}},"hasNext":true}
+// payloads[1] == {"incremental":[{"data":{"bio":"..."},"path":["user"],"label":"late"}],"hasNext":false}
+```
+
+Over HTTP the client asks for it with `Accept: multipart/mixed`, and `graphql_app`
+answers one part per payload. A client that does not ask gets one JSON body, and
+`@defer` / `@stream` collapse to their in-line meanings.
+
+## Live subscriptions
+
+A subscription whose events are not there yet is backed by a `Stream`: something
+to pull from, and something to stop. `Stream::channel` pairs one with a `Sender`
+that a producer writes events into; closing the sender ends the stream.
+
+```moonbit
+let (stream, sender) = @moongql.Stream::channel()
+subs.stream("Subscription", "messageAdded", fn(_info) { stream })
+
+// anywhere else, whenever something happens
+sender.send(Json(message)) catch { _ => () }
+```
+
+`subscribe_live` establishes the subscription and hands back a `Live` whose `next`
+answers one payload per event, so the transport decides how they travel:
+`graphql_ws_app` is an ASGI application that keeps a task per running
+subscription, writes each event as it arrives, and closes with `complete` when the
+source ends or the client cancels.
+
+## Client
+
+`moonbitstack/moongql/client` sends operations over HTTP and reads answers with the
+same parser the server uses:
+
+```moonbit
+let client = @client.Client::new(url="https://example.com/graphql",
+  headers=[("authorization", "Bearer ...")])
+let data = client.query("{ user(id: \"1\") { name } }")
+let whole = client.request("{ user(id: \"1\") { name } }")   // errors and all
+let answers = client.batch(["{ a }", "{ b }"])
+```
+
+`query` answers `data` and refuses with the server's errors when there is none;
+`request` returns the response as it came, because a partial result is a result.
+The document is parsed before it is sent, so a typo is reported without a round
+trip.
 
 ## Apollo Federation
 
