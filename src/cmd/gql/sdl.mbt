@@ -412,7 +412,7 @@ fn abstract_of(
       $|pub impl @moongql.FromGql for \{name} with fn from_gql(v) {
       $|  match v {
       $|    \{reads.join("\n")}
-      $|    other => raise @moongql.ResolverError::expected(\{quoted(name)}, other)
+      $|    other => raise @moongql.FieldError::expected(\{quoted(name)}, other)
       $|  }
       $|}
       $|
@@ -450,7 +450,7 @@ fn enum_of(e : @schema.EnumType, impls : Array[String]) -> Unit {
       $|pub impl @moongql.FromGql for \{e.name} with fn from_gql(v) {
       $|  match v {
       $|    \{reads.join("\n")}
-      $|    other => raise @moongql.ResolverError::expected(\{quoted(e.name)}, other)
+      $|    other => raise @moongql.FieldError::expected(\{quoted(e.name)}, other)
       $|  }
       $|}
       $|

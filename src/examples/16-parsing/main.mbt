@@ -3,7 +3,7 @@
 /// into a `Token` stream; `parse` builds a `Document`; `Document::to_query` prints
 /// an AST back to normalized text. Walking the parsed tree reaches a `TypeRef` and
 /// the argument `Value`s, each of which renders itself with `to_query`. A malformed
-/// document raises `GqlSyntaxError` carrying its 1-based line and column.
+/// document raises `Refused` carrying its 1-based line and column.
 ///
 ///     moon run src/examples/16-parsing
 #coverage.skip
@@ -34,8 +34,12 @@ fn main {
     _ => ()
   }
   let _ = @moongql.parse("{ oops") catch {
-    @lang.GqlSyntaxError(msg, line, col) => {
-      println("syntax error @ \{line}:\{col}: " + msg)
+    e => {
+      let r = @lang.refusal(e)
+      println(
+        "syntax error @ \{r.locations[0].line}:\{r.locations[0].col}: " +
+        r.message,
+      )
       return
     }
   }

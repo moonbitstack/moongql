@@ -36,7 +36,7 @@ fn Query::search(text : String) -> Array[Hit] raise {
 ///|
 fn Mutation::add_book(input : NewBook) -> Book raise {
   guard authors.iter().any(a => a.id == input.author_id) else {
-    raise @exec.ResolverError("no author \{input.author_id}")
+    raise @exec.FieldError("no author \{input.author_id}")
   }
   let book = {
     id: "b\{books.length() + 1}",
@@ -60,7 +60,7 @@ fn Author::books(self : Author, first? : Int32) -> Array[Book] raise {
 ///|
 fn Book::author(self : Book) -> Author raise {
   guard authors.iter().find_first(a => a.id == self.author_id) is Some(a) else {
-    raise @exec.ResolverError("no author \{self.author_id}")
+    raise @exec.FieldError("no author \{self.author_id}")
   }
   a
 }

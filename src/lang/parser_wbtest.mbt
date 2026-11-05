@@ -445,7 +445,7 @@ test "a type system definition is read, and the reader walks past it" {
       #|query Q { hello }
     ),
   ) catch {
-    GqlSyntaxError(m, _, _) => abort(m)
+    e => abort(refusal(e).message)
   }
   assert_eq(doc.definitions.length(), 2)
   match doc.definitions[0] {
@@ -476,7 +476,7 @@ test "definitions with no body do not swallow the next one" {
       #|{ hello }
     ),
   ) catch {
-    GqlSyntaxError(m, _, _) => abort(m)
+    e => abort(refusal(e).message)
   }
   assert_eq(doc.definitions.length(), 5)
   match doc.definitions[3] {

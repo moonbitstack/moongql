@@ -406,10 +406,7 @@ fn operation_type_of(
   query : String,
   operation_name : String?,
 ) -> Result[@lang.OperationType, Array[@lang.GqlError]] {
-  let doc = @lang.parse(query) catch {
-    GqlSyntaxError(m, line, col) =>
-      return Err([@lang.GqlError::at(m, { line, col, })])
-  }
+  let doc = @lang.parse(query) catch { e => return Err([@lang.refusal(e)]) }
   let verrors = @valid.validate(schema, doc)
   if verrors.length() > 0 {
     return Err(verrors)

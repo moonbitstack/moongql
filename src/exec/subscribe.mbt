@@ -20,7 +20,7 @@
 /// payloads; each payload is the resolved value of the root field for one event,
 /// and its sub-selection is resolved against it like any object value.
 pub struct Subscribers {
-  map : Map[String, (ResolveInfo) -> Array[Json] raise ResolverError]
+  map : Map[String, (ResolveInfo) -> Array[Json] raise FieldError]
 }
 
 ///|
@@ -37,7 +37,7 @@ pub fn Subscribers::field(
   self : Subscribers,
   type_name : String,
   field_name : String,
-  source : (ResolveInfo) -> Array[Json] raise ResolverError,
+  source : (ResolveInfo) -> Array[Json] raise FieldError,
 ) -> Unit {
   self.map[type_name + "." + field_name] = source
 }
@@ -108,7 +108,7 @@ pub(all) enum SubscriptionResult {
 /// invokes the registered source, and maps every event through
 /// `execute_subscription_event`. Any failure before the first event —
 /// parse/validation error, a non-subscription operation, more than one root
-/// field, an introspection root, a missing source, or a source `ResolverError` —
+/// field, an introspection root, a missing source, or a source `FieldError` —
 /// is a `RequestError`; success is an `EventStream` of ordered response payloads.
 pub fn create_source_event_stream(
   schema : @schema.Schema,
@@ -121,8 +121,7 @@ pub fn create_source_event_stream(
   context~ : Json = Json::null(),
 ) -> SubscriptionResult {
   let doc = @lang.parse(query) catch {
-    GqlSyntaxError(m, line, col) =>
-      return RequestError([@lang.GqlError::at(m, { line, col, })])
+    e => return RequestError([@lang.refusal(e)])
   }
   let verrors = @valid.validate(schema, doc)
   if verrors.length() > 0 {
@@ -222,9 +221,9 @@ pub fn create_source_event_stream(
     field_name: root_field.name,
   }
   let events = source(info) catch {
-    ResolverError(m) =>
+    FieldError(m) =>
       return RequestError([@lang.GqlError::at(m, root_field.pos)])
-    ResolverErrorExt(m, ext) =>
+    FieldErrorExt(m, ext) =>
       return RequestError([
         { message: m, path: [], locations: [root_field.pos], extensions: ext, },
       ])

@@ -19,7 +19,7 @@ fn rules_schema() -> @schema.Schema {
 /// The validation errors for `query` against `s`, joined one per line (so a test
 /// can assert a message is present, or that the string is empty for a valid query).
 fn verr_text(s : @schema.Schema, query : String) -> String {
-  let doc = @lang.parse(query) catch { GqlSyntaxError(m, _, _) => return m }
+  let doc = @lang.parse(query) catch { e => return @lang.refusal(e).message }
   let sb = StringBuilder()
   for e in validate(s, doc) {
     sb.write_string(e.message)
@@ -414,7 +414,7 @@ test "a type system definition in a document is not executable" {
   // The definition is read, not mistaken for a syntax error: the position points
   // at the keyword.
   let doc = @lang.parse("type Report { id: ID }") catch {
-    GqlSyntaxError(m, _, _) => abort(m)
+    e => abort(@lang.refusal(e).message)
   }
   assert_eq(doc.definitions.length(), 1)
   match doc.definitions[0] {

@@ -16,20 +16,20 @@ pub fn execute(@schema.Schema, Resolvers, String, variables? : Map[String, @json
 
 pub fn execute_subscription(@schema.Schema, Resolvers, Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
-pub fn field_error(Error) -> ResolverError
+pub fn field_error(Error) -> FieldError
 
-pub fn not_permitted() -> ResolverError
+pub fn not_permitted() -> FieldError
 
 pub fn operation_type(@schema.Schema, @lang.Document, String?) -> Result[@lang.OperationType, @lang.GqlError]
 
-pub fn[T : FromGql] read(@json.Json, String) -> T raise ResolverError
+pub fn[T : FromGql] read(@json.Json, String) -> T raise FieldError
 
 // Errors
-pub(all) suberror ResolverError {
-  ResolverError(String)
-  ResolverErrorExt(String, Map[String, @json.Json])
+pub(all) suberror FieldError {
+  FieldError(String)
+  FieldErrorExt(String, Map[String, @json.Json])
 }
-pub fn ResolverError::expected(String, @json.Json) -> Self
+pub fn FieldError::expected(String, @json.Json) -> Self
 
 // Types and methods
 pub(all) struct ResolveInfo {
@@ -39,22 +39,22 @@ pub(all) struct ResolveInfo {
   field_name : String
 }
 pub fn ResolveInfo::arg(Self, String) -> @json.Json
-pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise ResolverError
+pub fn[T : FromGql] ResolveInfo::read(Self, String) -> T raise FieldError
 
 pub struct Resolvers {
-  map : Map[String, (ResolveInfo) -> @json.Json raise ResolverError]
+  map : Map[String, (ResolveInfo) -> @json.Json raise FieldError]
   type_hooks : Map[String, (@json.Json, @json.Json) -> String?]
   instance_hooks : Map[String, (@json.Json, @json.Json) -> Bool]
 }
-pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> @json.Json raise ResolverError) -> Unit
+pub fn Resolvers::field(Self, String, String, (ResolveInfo) -> @json.Json raise FieldError) -> Unit
 pub fn Resolvers::is_type_of(Self, String, (@json.Json, @json.Json) -> Bool) -> Unit
 pub fn Resolvers::new() -> Self
 pub fn Resolvers::resolve_type(Self, String, (@json.Json, @json.Json) -> String?) -> Unit
 
 pub struct Subscribers {
-  map : Map[String, (ResolveInfo) -> Array[@json.Json] raise ResolverError]
+  map : Map[String, (ResolveInfo) -> Array[@json.Json] raise FieldError]
 }
-pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[@json.Json] raise ResolverError) -> Unit
+pub fn Subscribers::field(Self, String, String, (ResolveInfo) -> Array[@json.Json] raise FieldError) -> Unit
 pub fn Subscribers::new() -> Self
 
 pub(all) enum SubscriptionResult {
@@ -66,7 +66,7 @@ pub(all) enum SubscriptionResult {
 
 // Traits
 pub(open) trait FromGql {
-  fn from_gql(@json.Json) -> Self raise ResolverError
+  fn from_gql(@json.Json) -> Self raise FieldError
 }
 pub impl FromGql for Bool
 pub impl FromGql for Int32

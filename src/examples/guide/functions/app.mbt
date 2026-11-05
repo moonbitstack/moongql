@@ -95,7 +95,7 @@ pub fn server() -> (@moongql.Schema, @moongql.Resolvers, @moongql.Subscribers) {
       _ => ""
     }
     if title == "" {
-      raise @exec.ResolverError("a book needs a title")
+      raise @exec.FieldError("a book needs a title")
     }
     let book : Json = {
       "id": Json("b\{shelf.length() + 1}"),

@@ -15,7 +15,7 @@ pub using @lang {
   type Document,
   type FragmentDefinition,
   type GqlError,
-  type GqlSyntaxError,
+  type Refused,
   type OperationDefinition,
   type OperationType,
   type Pos,
@@ -27,6 +27,8 @@ pub using @lang {
   type Value,
   type VariableDefinition,
   parse,
+  refusal,
+  refused,
   tokenize,
 }
 
@@ -53,7 +55,7 @@ pub using @exec {
   trait FromGql,
   trait ToGql,
   type ResolveInfo,
-  type ResolverError,
+  type FieldError,
   type Resolvers,
   type Subscribers,
   type SubscriptionResult,

@@ -86,12 +86,12 @@ test "response extensions survive every request-level failure" {
 }
 
 ///|
-test "resolver ResolverErrorExt carries extensions into the errors JSON" {
+test "resolver FieldErrorExt carries extensions into the errors JSON" {
   let schema = @schema.Schema::new(query="Query")
   schema.object("Query").field("boom", Scalar("String"))
   let resolvers = Resolvers::new()
   resolvers.field("Query", "boom", _info => {
-    raise ResolverErrorExt(
+    raise FieldErrorExt(
       "kaboom",
       Map([("code", Json("qwq")), ("status", Json(233))]),
     )
@@ -107,9 +107,9 @@ test "resolver ResolverErrorExt carries extensions into the errors JSON" {
   }
   assert_eq(ext.get("code"), Some(Json("qwq")))
   assert_eq(ext.get("status"), Some(Json(233)))
-  // A plain ResolverError still omits `extensions` entirely.
+  // A plain FieldError still omits `extensions` entirely.
   let r2 = Resolvers::new()
-  r2.field("Query", "boom", _info => raise ResolverError("plain"))
+  r2.field("Query", "boom", _info => raise FieldError("plain"))
   let res2 = execute(schema, r2, "{ boom }")
   guard res2 is Object(m2) else { fail("object") }
   guard m2.get("errors") is Some(Array(e2)) else { fail("errors2") }

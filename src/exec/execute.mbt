@@ -15,7 +15,7 @@
 /// The information a field resolver receives: the resolved parent object (as
 /// JSON), the coerced arguments, the shared context value, and the field's name.
 /// A resolver returns the field's value as JSON (an object for composite types,
-/// whose sub-fields are then resolved against it) and may `raise ResolverError`
+/// whose sub-fields are then resolved against it) and may `raise FieldError`
 /// to surface a field error.
 pub(all) struct ResolveInfo {
   parent : Json
@@ -36,9 +36,9 @@ pub fn ResolveInfo::arg(self : ResolveInfo, name : String) -> Json {
 ///|
 /// An error raised by a field resolver; its message is reported in the response
 /// `errors` list with the field's response path.
-pub(all) suberror ResolverError {
-  ResolverError(String)
-  ResolverErrorExt(String, Map[String, Json])
+pub(all) suberror FieldError {
+  FieldError(String)
+  FieldErrorExt(String, Map[String, Json])
 }
 
 ///|
@@ -51,7 +51,7 @@ pub(all) suberror ResolverError {
 /// an interface or union position, the equivalents of graphql-core's
 /// `resolve_type` and `is_type_of`.
 pub struct Resolvers {
-  map : Map[String, (ResolveInfo) -> Json raise ResolverError]
+  map : Map[String, (ResolveInfo) -> Json raise FieldError]
   type_hooks : Map[String, (Json, Json) -> String?]
   instance_hooks : Map[String, (Json, Json) -> Bool]
 }
@@ -68,7 +68,7 @@ pub fn Resolvers::field(
   self : Resolvers,
   type_name : String,
   field_name : String,
-  resolver : (ResolveInfo) -> Json raise ResolverError,
+  resolver : (ResolveInfo) -> Json raise FieldError,
 ) -> Unit {
   self.map[type_name + "." + field_name] = resolver
 }
@@ -449,7 +449,7 @@ fn Exec::field_type_of(
 ///|
 /// Resolve a field's raw JSON value: dispatch to its registered resolver, the
 /// introspection roots, or the default resolver (read the field off the parent).
-/// A `ResolverError` becomes a recorded field error and a null value.
+/// A `FieldError` becomes a recorded field error and a null value.
 fn Exec::resolve_raw(
   self : Exec,
   obj : @schema.ObjectType,
@@ -473,11 +473,11 @@ fn Exec::resolve_raw(
     Some(resolver) => {
       let info = { parent, args, ctx: self.ctx, field_name: name, }
       resolver(info) catch {
-        ResolverError(m) => {
+        FieldError(m) => {
           self.add_error(m, path, field.pos)
           Json::null()
         }
-        ResolverErrorExt(m, ext) => {
+        FieldErrorExt(m, ext) => {
           self.add_error_ext(m, path, field.pos, ext)
           Json::null()
         }
@@ -1119,12 +1119,7 @@ pub fn execute(
   extensions~ : Map[String, Json] = Map([]),
 ) -> Json {
   let doc = @lang.parse(query) catch {
-    GqlSyntaxError(m, line, col) =>
-      return build_response(
-        None,
-        [@lang.GqlError::at(m, { line, col, })],
-        extensions~,
-      )
+    e => return build_response(None, [@lang.refusal(e)], extensions~)
   }
   let verrors = @valid.validate(schema, doc)
   if verrors.length() > 0 {

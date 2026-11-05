@@ -16,7 +16,7 @@ priv struct Parser {
 
 ///|
 /// Create a parser over `source`, priming the first token.
-fn Parser::new(source : String) -> Parser raise GqlSyntaxError {
+fn Parser::new(source : String) -> Parser raise Refused {
   let lexer = Lexer::new(source)
   let current = lexer.next_token()
   { lexer, current, }
@@ -24,7 +24,7 @@ fn Parser::new(source : String) -> Parser raise GqlSyntaxError {
 
 ///|
 /// Consume and return the current token, advancing to the next.
-fn Parser::advance(self : Parser) -> Token raise GqlSyntaxError {
+fn Parser::advance(self : Parser) -> Token raise Refused {
   let tok = self.current
   self.current = self.lexer.next_token()
   tok
@@ -90,19 +90,32 @@ fn Parser::pos(self : Parser) -> Pos {
 ///|
 /// Raise a syntax error at the current token's position (expression position:
 /// the polymorphic return lets it stand in for any value).
-fn[T] Parser::fail(self : Parser, msg : String) -> T raise GqlSyntaxError {
-  raise GqlSyntaxError(msg, self.current.line, self.current.col)
+fn[T] Parser::fail(self : Parser, msg : String) -> T raise Refused {
+  raise self.refuse(msg)
+}
+
+///|
+/// The fault `msg` at the current token: running out of input is a different
+/// kind of fault from a token that is present but cannot be used, and the two
+/// are worth telling apart when a caller reports them.
+fn Parser::refuse(self : Parser, msg : String) -> Refused {
+  let at = { line: self.current.line, col: self.current.col, }
+  if self.current.kind is Eof {
+    Truncated(at, msg)
+  } else {
+    Unexpected(at, msg)
+  }
 }
 
 ///|
 /// Raise a syntax error at the current token's position (statement position).
-fn Parser::err(self : Parser, msg : String) -> Unit raise GqlSyntaxError {
-  raise GqlSyntaxError(msg, self.current.line, self.current.col)
+fn Parser::err(self : Parser, msg : String) -> Unit raise Refused {
+  raise self.refuse(msg)
 }
 
 ///|
 /// Consume a token of kind `k`, or raise "expected ..., found ...".
-fn Parser::expect(self : Parser, k : TokenKind) -> Token raise GqlSyntaxError {
+fn Parser::expect(self : Parser, k : TokenKind) -> Token raise Refused {
   if self.at(k) {
     self.advance()
   } else {
@@ -112,16 +125,13 @@ fn Parser::expect(self : Parser, k : TokenKind) -> Token raise GqlSyntaxError {
 
 ///|
 /// Consume the current `Name` token and return its text, or raise.
-fn Parser::expect_name(self : Parser) -> String raise GqlSyntaxError {
+fn Parser::expect_name(self : Parser) -> String raise Refused {
   self.expect(Name).value
 }
 
 ///|
 /// Consume a `Name` token equal to the keyword `kw`, or raise.
-fn Parser::expect_keyword(
-  self : Parser,
-  kw : String,
-) -> Unit raise GqlSyntaxError {
+fn Parser::expect_keyword(self : Parser, kw : String) -> Unit raise Refused {
   if self.at_keyword(kw) {
     self.advance() |> ignore
   } else {
@@ -131,7 +141,7 @@ fn Parser::expect_keyword(
 
 ///|
 /// Parse a complete document: a sequence of executable definitions up to `Eof`.
-fn Parser::parse_document(self : Parser) -> Document raise GqlSyntaxError {
+fn Parser::parse_document(self : Parser) -> Document raise Refused {
   let definitions = []
   while !self.at(Eof) {
     definitions.push(self.parse_definition())
@@ -146,7 +156,7 @@ fn Parser::parse_document(self : Parser) -> Document raise GqlSyntaxError {
 /// Parse one top-level definition: an operation (long form or `{ ... }`
 /// shorthand), a fragment definition, or a type-system definition the document
 /// reader keeps only so that validation can reject it.
-fn Parser::parse_definition(self : Parser) -> Definition raise GqlSyntaxError {
+fn Parser::parse_definition(self : Parser) -> Definition raise Refused {
   if self.at(BraceL) {
     return OperationDef(self.parse_operation())
   }
@@ -210,7 +220,7 @@ fn is_type_system_keyword(word : String) -> Bool {
 /// the top level.
 fn Parser::parse_type_system_definition(
   self : Parser,
-) -> TypeSystemDefinition raise GqlSyntaxError {
+) -> TypeSystemDefinition raise Refused {
   let pos = self.pos()
   let keyword = self.advance().value
   let mut kind = ""
@@ -248,7 +258,7 @@ fn Parser::parse_type_system_definition(
 /// Consume tokens up to the end of the current type-system definition: at the
 /// top level, another definition's keyword ends it, and a `{` ends it once the
 /// definition has had its own block.
-fn Parser::skip_type_system_body(self : Parser) -> Unit raise GqlSyntaxError {
+fn Parser::skip_type_system_body(self : Parser) -> Unit raise Refused {
   let mut depth = 0
   let mut seen_block = false
   while !self.at(Eof) {
@@ -287,9 +297,7 @@ fn starts_definition(word : String) -> Bool {
 
 ///|
 /// Parse an operation definition, including the anonymous query shorthand.
-fn Parser::parse_operation(
-  self : Parser,
-) -> OperationDefinition raise GqlSyntaxError {
+fn Parser::parse_operation(self : Parser) -> OperationDefinition raise Refused {
   let pos = self.pos()
   if self.at(BraceL) {
     let selection_set = self.parse_selection_set()
@@ -319,7 +327,7 @@ fn Parser::parse_operation(
 /// Parse `($v: T = default @dir, ...)`, or an empty list when absent.
 fn Parser::parse_variable_definitions(
   self : Parser,
-) -> Array[VariableDefinition] raise GqlSyntaxError {
+) -> Array[VariableDefinition] raise Refused {
   let defs = []
   if !self.at(ParenL) {
     return defs
@@ -346,7 +354,7 @@ fn Parser::parse_variable_definitions(
 
 ///|
 /// Parse a type reference: `Name`, `[Type]`, or either followed by `!`.
-fn Parser::parse_type(self : Parser) -> TypeRef raise GqlSyntaxError {
+fn Parser::parse_type(self : Parser) -> TypeRef raise Refused {
   let mut t = if self.at(BracketL) {
     self.advance() |> ignore
     let inner = self.parse_type()
@@ -364,9 +372,7 @@ fn Parser::parse_type(self : Parser) -> TypeRef raise GqlSyntaxError {
 
 ///|
 /// Parse zero or more `@name(args)` directives.
-fn Parser::parse_directives(
-  self : Parser,
-) -> Array[Directive] raise GqlSyntaxError {
+fn Parser::parse_directives(self : Parser) -> Array[Directive] raise Refused {
   let ds = []
   while self.at(At) {
     let pos = self.pos()
@@ -385,7 +391,7 @@ fn Parser::parse_directives(
 fn Parser::parse_arguments(
   self : Parser,
   const_ : Bool,
-) -> Array[Argument] raise GqlSyntaxError {
+) -> Array[Argument] raise Refused {
   let args = []
   if !self.at(ParenL) {
     return args
@@ -404,9 +410,7 @@ fn Parser::parse_arguments(
 
 ///|
 /// Parse a non-empty selection set `{ selection+ }`.
-fn Parser::parse_selection_set(
-  self : Parser,
-) -> Array[Selection] raise GqlSyntaxError {
+fn Parser::parse_selection_set(self : Parser) -> Array[Selection] raise Refused {
   self.expect(BraceL) |> ignore
   let sels = []
   while !self.at(BraceR) && !self.at(Eof) {
@@ -422,7 +426,7 @@ fn Parser::parse_selection_set(
 ///|
 /// Parse one selection: a field, a `...Name` fragment spread, or a
 /// `... on Type { ... }` / `... { ... }` inline fragment.
-fn Parser::parse_selection(self : Parser) -> Selection raise GqlSyntaxError {
+fn Parser::parse_selection(self : Parser) -> Selection raise Refused {
   if self.at(Spread) {
     let pos = self.pos()
     self.advance() |> ignore
@@ -448,7 +452,7 @@ fn Parser::parse_selection(self : Parser) -> Selection raise GqlSyntaxError {
 ///|
 /// Parse a field: `alias: name(args) @dir { ... }` (alias and the trailing
 /// selection set are optional).
-fn Parser::parse_field(self : Parser) -> QueryField raise GqlSyntaxError {
+fn Parser::parse_field(self : Parser) -> QueryField raise Refused {
   let pos = self.pos()
   let first = self.expect_name()
   let mut field_alias : String? = None
@@ -471,9 +475,7 @@ fn Parser::parse_field(self : Parser) -> QueryField raise GqlSyntaxError {
 ///|
 /// Parse a fragment definition: `fragment Name on Type @dir { ... }`. The
 /// fragment name must not be the reserved word `on`.
-fn Parser::parse_fragment(
-  self : Parser,
-) -> FragmentDefinition raise GqlSyntaxError {
+fn Parser::parse_fragment(self : Parser) -> FragmentDefinition raise Refused {
   let pos = self.pos()
   self.expect_keyword("fragment")
   if self.at_keyword("on") {
@@ -489,10 +491,7 @@ fn Parser::parse_fragment(
 
 ///|
 /// Parse an input value. `const` (used for default values) forbids `$variable`.
-fn Parser::parse_value(
-  self : Parser,
-  const_ : Bool,
-) -> Value raise GqlSyntaxError {
+fn Parser::parse_value(self : Parser, const_ : Bool) -> Value raise Refused {
   match self.current.kind {
     Dollar => {
       if const_ {
@@ -550,7 +549,7 @@ fn Parser::parse_value(
 /// Parse a GraphQL executable document from source text. This is the front half
 /// of the executor: `parse(query).definitions` yields the operations and
 /// fragments to validate and execute.
-pub fn parse(source : String) -> Document raise GqlSyntaxError {
+pub fn parse(source : String) -> Document raise Refused {
   let p = Parser::new(source)
   p.parse_document()
 }

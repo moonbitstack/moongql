@@ -86,7 +86,7 @@ pub struct NewBook {
 #gql.mutation
 fn add_book(input : NewBook) -> Book raise {
   if input.title == "" {
-    raise @exec.ResolverError("a book needs a title")
+    raise @exec.FieldError("a book needs a title")
   }
   let book : Book = {
     id: "b\{(shelf.length() + 1)}",

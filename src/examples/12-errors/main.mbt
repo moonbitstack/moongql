@@ -1,7 +1,7 @@
 ///|
 /// Field errors and the `{ data, errors }` shape. A non-null field resolving to null
 /// records an error and bubbles null up to the nearest nullable parent; a resolver
-/// raising `ResolverError` becomes one error entry; and `ResolverErrorExt` attaches
+/// raising `FieldError` becomes one error entry; and `FieldErrorExt` attaches
 /// an `extensions` object (an error code, a status) to that entry.
 ///
 ///     moon run src/examples/12-errors
@@ -14,9 +14,9 @@ fn main {
   q.field("kaboom", Scalar("String"))
   let r = @moongql.Resolvers::new()
   r.field("Query", "mustFail", fn(_info) { Json::null() })
-  r.field("Query", "boom", _info => raise @exec.ResolverError("plain failure"))
+  r.field("Query", "boom", _info => raise @exec.FieldError("plain failure"))
   r.field("Query", "kaboom", _info => {
-    raise @exec.ResolverErrorExt("with extensions", {
+    raise @exec.FieldErrorExt("with extensions", {
       "code": "qwq",
       "status": 233,
     })

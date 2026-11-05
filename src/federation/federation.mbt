@@ -18,7 +18,7 @@
 /// object carrying `__typename` and the entity's key fields) and the request
 /// context, return the fully resolved entity as JSON. This is the subgraph's
 /// answer to "you have a key, give me the object" — Apollo's `__resolveReference`.
-pub type EntityResolver = (Json, Json) -> Json raise @exec.ResolverError
+pub type EntityResolver = (Json, Json) -> Json raise @exec.FieldError
 
 ///|
 /// One federated entity: its type `name`, the `key` field set (`@key(fields:)`),

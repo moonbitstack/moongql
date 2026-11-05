@@ -332,7 +332,7 @@ fn enumeration(
       $|\{vis}impl @moongql.FromGql for \{name} with fn from_gql(v) {
       $|  match v {
       $|    \{reads.join("\n")}
-      $|    other => raise @moongql.ResolverError::expected(\{quoted(known.name)}, other)
+      $|    other => raise @moongql.FieldError::expected(\{quoted(known.name)}, other)
       $|  }
       $|}
     ),
@@ -455,7 +455,7 @@ fn abstract_type(
       $|\{vis}impl @moongql.FromGql for \{name} with fn from_gql(v) {
       $|  match v {
       $|    \{reads.join("\n")}
-      $|    other => raise @moongql.ResolverError::expected(\{quoted(known.name)}, other)
+      $|    other => raise @moongql.FieldError::expected(\{quoted(known.name)}, other)
       $|  }
       $|}
     ),

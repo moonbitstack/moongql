@@ -112,7 +112,7 @@ pub struct Schema {
   schema_directives : Array[AppliedDirective]
   directive_defs : Array[DirectiveDef]
 }
-pub fn Schema::add_sdl(Self, String) -> Unit raise @lang.GqlSyntaxError
+pub fn Schema::add_sdl(Self, String) -> Unit raise @lang.Refused
 pub fn Schema::apply_field_directive(Self, String, String, AppliedDirective) -> Unit
 pub fn Schema::apply_schema_directive(Self, AppliedDirective) -> Unit
 pub fn Schema::apply_type_directive(Self, String, AppliedDirective) -> Unit
@@ -127,7 +127,7 @@ pub fn Schema::input(Self, String, description? : String) -> ObjectType
 pub fn Schema::interface(Self, String, description? : String) -> ObjectType
 pub fn Schema::new(query? : String) -> Self
 pub fn Schema::object(Self, String, description? : String) -> ObjectType
-pub fn Schema::of_sdl(String) -> Self raise @lang.GqlSyntaxError
+pub fn Schema::of_sdl(String) -> Self raise @lang.Refused
 pub fn Schema::scalar(Self, String, serialize? : (@json.Json) -> @json.Json, parse_value? : (@json.Json) -> @json.Json, spec_url? : String, description? : String) -> Unit
 pub fn Schema::scalar_by_name(Self, String) -> ScalarType?
 pub fn Schema::set_mutation(Self, String) -> Unit

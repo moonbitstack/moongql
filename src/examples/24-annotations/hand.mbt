@@ -118,7 +118,7 @@ fn hand_register(s : @moongql.Schema, r : @moongql.Resolvers) -> Unit {
       _ => ""
     }
     if title == "" {
-      raise @exec.ResolverError("a book needs a title")
+      raise @exec.FieldError("a book needs a title")
     }
     let author_id = match key_of(input, "authorId") {
       String(t) => @string.parse_int64(t) catch { _ => 0L }

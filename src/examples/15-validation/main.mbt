@@ -17,8 +17,8 @@ fn main {
   u.field("name", NonNull(Scalar("String")))
   let report = fn(label : String, query : String) -> Unit {
     let doc = @moongql.parse(query) catch {
-      @lang.GqlSyntaxError(msg, _, _) => {
-        println(label + ": syntax error: " + msg)
+      e => {
+        println(label + ": syntax error: " + @lang.refusal(e).message)
         return
       }
     }

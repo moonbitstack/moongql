@@ -7,25 +7,62 @@
 /// runs on every backend.
 
 ///|
-/// A syntax error raised by the lexer or parser, carrying a message and the
-/// 1-based line/column where the offending token starts. It is `pub(all)` so
+/// A syntax error raised by the lexer or parser, carrying the fault it found and
+/// the 1-based line/column where the offending token starts. It is `pub(all)` so
 /// that any stage reading GraphQL text — the SDL reader included — raises the
 /// same error, with the same shape, as the parser.
-pub(all) suberror GqlSyntaxError {
-  GqlSyntaxError(String, Int32, Int32)
+///
+/// The variant is the kind of fault, not the wording: a caller that wants to say
+/// something about it in its own words matches the kind, while `message` keeps
+/// the sentence the parser wrote, which is what a response carries.
+pub(all) suberror Refused {
+  Unexpected(Pos, String)
+  Truncated(Pos, String)
+  BadNumber(Pos, String)
+  BadString(Pos, String)
+  BadName(Pos, String)
+}
+
+///|
+/// Where the fault is: the position of the token that could not be used.
+pub fn Refused::at(self : Refused) -> Pos {
+  match self {
+    Unexpected(p, _)
+    | Truncated(p, _)
+    | BadNumber(p, _)
+    | BadString(p, _)
+    | BadName(p, _) => p
+  }
+}
+
+///|
+/// What went wrong, in the parser's words.
+pub fn Refused::message(self : Refused) -> String {
+  match self {
+    Unexpected(_, m)
+    | Truncated(_, m)
+    | BadNumber(_, m)
+    | BadString(_, m)
+    | BadName(_, m) => m
+  }
 }
 
 ///|
 /// Render a syntax error as `Syntax error at L:C: message`.
-pub fn GqlSyntaxError::to_string(self : GqlSyntaxError) -> String {
-  let GqlSyntaxError(msg, line, col) = self
-  "Syntax error at " + line.to_string() + ":" + col.to_string() + ": " + msg
+pub fn Refused::to_string(self : Refused) -> String {
+  let at = self.at()
+  "Syntax error at " +
+  at.line.to_string() +
+  ":" +
+  at.col.to_string() +
+  ": " +
+  self.message()
 }
 
 ///|
 /// Prints the line and column the parse gave up at, which is the whole point of
 /// hand-writing the parser.
-pub impl Show for GqlSyntaxError with fn output(self, logger) {
+pub impl Show for Refused with fn output(self, logger) {
   logger.write_string(self.to_string())
 }
 
@@ -210,7 +247,7 @@ fn Lexer::read_number(
   self : Lexer,
   line : Int32,
   col : Int32,
-) -> Token raise GqlSyntaxError {
+) -> Token raise Refused {
   let sb = StringBuilder()
   let mut is_float = false
   if self.peek() is Some('-') {
@@ -221,8 +258,9 @@ fn Lexer::read_number(
     Some('0') => {
       sb.write_char(self.advance())
       if self.peek() is Some(d) && is_digit(d) {
-        raise GqlSyntaxError(
-          "invalid number: unexpected digit after leading 0", line, col,
+        raise BadNumber(
+          { line, col, },
+          "invalid number: unexpected digit after leading 0",
         )
       }
     }
@@ -233,15 +271,16 @@ fn Lexer::read_number(
           _ => break
         }
       }
-    _ => raise GqlSyntaxError("invalid number: expected a digit", line, col)
+    _ => raise BadNumber({ line, col, }, "invalid number: expected a digit")
   }
   // Fractional part.
   if self.peek() is Some('.') {
     is_float = true
     sb.write_char(self.advance())
     if not_digit_ahead(self) {
-      raise GqlSyntaxError(
-        "invalid number: expected a digit after '.'", line, col,
+      raise BadNumber(
+        { line, col, },
+        "invalid number: expected a digit after '.'",
       )
     }
     for ;; {
@@ -259,8 +298,9 @@ fn Lexer::read_number(
       sb.write_char(self.advance())
     }
     if not_digit_ahead(self) {
-      raise GqlSyntaxError(
-        "invalid number: expected a digit in exponent", line, col,
+      raise BadNumber(
+        { line, col, },
+        "invalid number: expected a digit in exponent",
       )
     }
     for ;; {
@@ -273,8 +313,9 @@ fn Lexer::read_number(
   // A number must not be immediately followed by '.', a name-start or a digit.
   match self.peek() {
     Some(c) if c == '.' || is_name_start(c) || is_digit(c) =>
-      raise GqlSyntaxError(
-        "invalid number: unexpected trailing character", line, col,
+      raise BadNumber(
+        { line, col, },
+        "invalid number: unexpected trailing character",
       )
     _ => ()
   }
@@ -306,13 +347,13 @@ fn Lexer::read_string(
   self : Lexer,
   line : Int32,
   col : Int32,
-) -> Token raise GqlSyntaxError {
+) -> Token raise Refused {
   self.advance() |> ignore // opening quote
   let sb = StringBuilder()
   for ;; {
     match self.peek() {
       None | Some('\n') | Some('\r') =>
-        raise GqlSyntaxError("unterminated string", line, col)
+        raise BadString({ line, col, }, "unterminated string")
       Some('"') => {
         self.advance() |> ignore
         break
@@ -334,7 +375,7 @@ fn Lexer::read_escape(
   sb : StringBuilder,
   line : Int32,
   col : Int32,
-) -> Unit raise GqlSyntaxError {
+) -> Unit raise Refused {
   match self.peek() {
     Some('"') => {
       self.advance() |> ignore
@@ -372,7 +413,7 @@ fn Lexer::read_escape(
       self.advance() |> ignore
       self.read_unicode_escape(sb, line, col)
     }
-    _ => raise GqlSyntaxError("invalid escape sequence", line, col)
+    _ => raise BadString({ line, col, }, "invalid escape sequence")
   }
 }
 
@@ -383,7 +424,7 @@ fn Lexer::read_unicode_escape(
   sb : StringBuilder,
   line : Int32,
   col : Int32,
-) -> Unit raise GqlSyntaxError {
+) -> Unit raise Refused {
   if self.peek() is Some('{') {
     self.advance() |> ignore
     let mut code = 0
@@ -401,13 +442,13 @@ fn Lexer::read_unicode_escape(
               count = count + 1
               self.advance() |> ignore
             }
-            None => raise GqlSyntaxError("invalid unicode escape", line, col)
+            None => raise BadString({ line, col, }, "invalid unicode escape")
           }
-        None => raise GqlSyntaxError("invalid unicode escape", line, col)
+        None => raise BadString({ line, col, }, "invalid unicode escape")
       }
     }
     if count == 0 {
-      raise GqlSyntaxError("invalid unicode escape", line, col)
+      raise BadString({ line, col, }, "invalid unicode escape")
     }
     self.emit_code_point(sb, code, line, col)
   } else {
@@ -420,9 +461,9 @@ fn Lexer::read_unicode_escape(
               code = code * 16 + v
               self.advance() |> ignore
             }
-            None => raise GqlSyntaxError("invalid unicode escape", line, col)
+            None => raise BadString({ line, col, }, "invalid unicode escape")
           }
-        None => raise GqlSyntaxError("invalid unicode escape", line, col)
+        None => raise BadString({ line, col, }, "invalid unicode escape")
       }
     }
     self.emit_code_point(sb, code, line, col)
@@ -437,11 +478,11 @@ fn Lexer::emit_code_point(
   code : Int32,
   line : Int32,
   col : Int32,
-) -> Unit raise GqlSyntaxError {
+) -> Unit raise Refused {
   ignore(self)
   match Int32::to_char(code) {
     Some(c) => sb.write_char(c)
-    None => raise GqlSyntaxError("invalid unicode code point", line, col)
+    None => raise BadString({ line, col, }, "invalid unicode code point")
   }
 }
 
@@ -453,14 +494,14 @@ fn Lexer::read_block_string(
   self : Lexer,
   line : Int32,
   col : Int32,
-) -> Token raise GqlSyntaxError {
+) -> Token raise Refused {
   self.advance() |> ignore
   self.advance() |> ignore
   self.advance() |> ignore
   let raw = StringBuilder()
   for ;; {
     match self.peek() {
-      None => raise GqlSyntaxError("unterminated block string", line, col)
+      None => raise BadString({ line, col, }, "unterminated block string")
       Some('"') =>
         if self.peek_at(1) is Some('"') && self.peek_at(2) is Some('"') {
           self.advance() |> ignore
@@ -608,7 +649,7 @@ fn dedent_block_string(raw : String) -> String {
 ///|
 /// Produce the next token, skipping ignored tokens first. Returns an `Eof` token
 /// at end of input.
-fn Lexer::next_token(self : Lexer) -> Token raise GqlSyntaxError {
+fn Lexer::next_token(self : Lexer) -> Token raise Refused {
   self.skip_ignored()
   let line = self.line
   let col = self.col
@@ -637,7 +678,7 @@ fn Lexer::read_punctuator(
   self : Lexer,
   line : Int32,
   col : Int32,
-) -> Token raise GqlSyntaxError {
+) -> Token raise Refused {
   let c = self.advance()
   let kind = match c {
     '!' => Bang
@@ -659,13 +700,12 @@ fn Lexer::read_punctuator(
         self.advance() |> ignore
         return { kind: Spread, value: "...", line, col, }
       }
-      raise GqlSyntaxError("unexpected character '.'", line, col)
+      raise Unexpected({ line, col, }, "unexpected character '.'")
     }
     _ =>
-      raise GqlSyntaxError(
+      raise Unexpected(
+        { line, col, },
         "unexpected character '" + c.to_string() + "'",
-        line,
-        col,
       )
   }
   { kind, value: "", line, col, }
@@ -674,7 +714,7 @@ fn Lexer::read_punctuator(
 ///|
 /// Tokenize an entire source string into a token array ending with `Eof`.
 /// Primarily for tests and tooling; the parser pulls tokens on demand.
-pub fn tokenize(src : String) -> Array[Token] raise GqlSyntaxError {
+pub fn tokenize(src : String) -> Array[Token] raise Refused {
   let lex = Lexer::new(src)
   let out = []
   for ;; {
@@ -688,7 +728,7 @@ pub fn tokenize(src : String) -> Array[Token] raise GqlSyntaxError {
 }
 
 ///|
-pub extend GqlSyntaxError with Show::{output}
+pub extend Refused with Show::{output}
 
 ///|
 pub extend TokenKind with Eq::{not_equal, equal}

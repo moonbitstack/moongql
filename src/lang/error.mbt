@@ -45,3 +45,26 @@ pub fn GqlError::to_json(self : GqlError) -> Json {
   }
   jobj(entries)
 }
+
+///|
+/// Any fault a stage raised, as the `GqlError` a response carries. A refusal keeps
+/// the wording the parser wrote and the position it gave up at; anything else is
+/// reported by its text, with no position to point at.
+pub fn refusal(e : Error) -> GqlError {
+  match e {
+    Unexpected(at, m)
+    | Truncated(at, m)
+    | BadNumber(at, m)
+    | BadString(at, m)
+    | BadName(at, m) =>
+      { message: m, path: [], locations: [at], extensions: Map([]), }
+    other => GqlError::msg(other.to_string())
+  }
+}
+
+///|
+/// The fault `msg` at the position `at`, for a stage that reads text with a
+/// scanner of its own and has no token kind to name it by.
+pub fn refused(msg : String, at : Pos) -> Refused {
+  Unexpected(at, msg)
+}

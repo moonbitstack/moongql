@@ -53,7 +53,7 @@ test "a resolver error with extensions names its field" {
   schema.object("Query").field("boom", Scalar("String"))
   let resolvers = Resolvers::new()
   resolvers.field("Query", "boom", _info => {
-    raise ResolverErrorExt("kaboom", Map([("code", Json("qwq"))]))
+    raise FieldErrorExt("kaboom", Map([("code", Json("qwq"))]))
   })
   let res = execute(
     schema,
@@ -73,7 +73,7 @@ test "a resolver error with extensions names its field" {
 test "a subscription source error with extensions names the root field" {
   let subs = Subscribers::new()
   subs.field("Subscription", "ticks", _info => {
-    raise ResolverErrorExt("no stream", Map([("code", Json("hhh"))]))
+    raise FieldErrorExt("no stream", Map([("code", Json("hhh"))]))
   })
   let payloads = execute_subscription(
     sub_schema(),

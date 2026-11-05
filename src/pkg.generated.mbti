@@ -25,7 +25,7 @@ pub fn execute(@schema.Schema, @exec.Resolvers, String, variables? : Map[String,
 
 pub fn execute_subscription(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json) -> Array[@json.Json]
 
-pub fn field_error(Error) -> @exec.ResolverError
+pub fn field_error(Error) -> @exec.FieldError
 
 pub let graphiql : @server.Ide
 
@@ -37,17 +37,21 @@ pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json) -> @ws.WebSocketHandler
 
-pub fn not_permitted() -> @exec.ResolverError
+pub fn not_permitted() -> @exec.FieldError
 
 pub let off : @server.Ide
 
-pub fn parse(String) -> @lang.Document raise @lang.GqlSyntaxError
+pub fn parse(String) -> @lang.Document raise @lang.Refused
 
-pub fn[T : @exec.FromGql] read(@json.Json, String) -> T raise @exec.ResolverError
+pub fn[T : @exec.FromGql] read(@json.Json, String) -> T raise @exec.FieldError
+
+pub fn refusal(Error) -> @lang.GqlError
+
+pub fn refused(String, @lang.Pos) -> @lang.Refused
 
 pub let site : @server.Ide
 
-pub fn tokenize(String) -> Array[@lang.Token] raise @lang.GqlSyntaxError
+pub fn tokenize(String) -> Array[@lang.Token] raise @lang.Refused
 
 pub fn validate(@schema.Schema, @lang.Document) -> Array[@lang.GqlError]
 
@@ -72,7 +76,7 @@ pub using @lang {type Document}
 
 pub using @federation {type EntityDef}
 
-pub type EntityResolver = (@json.Json, @json.Json) -> @json.Json raise @exec.ResolverError
+pub type EntityResolver = (@json.Json, @json.Json) -> @json.Json raise @exec.FieldError
 
 pub using @schema {type EnumType}
 
@@ -82,11 +86,11 @@ pub using @schema {type Field}
 
 pub type FieldDirectiveHook = (@json.Json, Map[String, @json.Json]) -> @json.Json
 
+pub using @exec {type FieldError}
+
 pub using @lang {type FragmentDefinition}
 
 pub using @lang {type GqlError}
-
-pub using @lang {type GqlSyntaxError}
 
 pub using @schema {type GqlType}
 
@@ -106,9 +110,9 @@ pub using @lang {type Pos}
 
 pub using @lang {type QueryField}
 
-pub using @exec {type ResolveInfo}
+pub using @lang {type Refused}
 
-pub using @exec {type ResolverError}
+pub using @exec {type ResolveInfo}
 
 pub using @exec {type Resolvers}
 

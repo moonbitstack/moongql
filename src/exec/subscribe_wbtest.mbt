@@ -156,11 +156,11 @@ test "subscription with no registered source errors" {
 }
 
 ///|
-/// A source that raises `ResolverError` surfaces a single error payload.
+/// A source that raises `FieldError` surfaces a single error payload.
 test "subscription source error yields one error payload" {
   let subs = Subscribers::new()
   subs.field("Subscription", "messageAdded", _info => {
-    raise ResolverError("stream unavailable")
+    raise FieldError("stream unavailable")
   })
   let payloads = execute_subscription(
     sub_schema(),

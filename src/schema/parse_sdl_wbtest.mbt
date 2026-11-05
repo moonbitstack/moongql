@@ -135,11 +135,14 @@ fn ddef(s : Schema, name : String) -> DirectiveDef {
 }
 
 ///|
-/// The `GqlSyntaxError` `text` raises, as `line:column message`; the empty
+/// The `Refused` `text` raises, as `line:column message`; the empty
 /// string when it reads without error.
 fn sdl_error(text : String) -> String {
   let schema = Schema::of_sdl(text) catch {
-    @lang.GqlSyntaxError(m, line, col) => return "\{line}:\{col} " + m
+    e => {
+      let r = @lang.refusal(e)
+      return "\{r.locations[0].line}:\{r.locations[0].col} " + r.message
+    }
   }
   let _ = schema
   ""
@@ -343,7 +346,7 @@ test "of_sdl merges an extend block into the declared type" {
 }
 
 ///|
-/// A document that is not a type-system definition is a `GqlSyntaxError` naming
+/// A document that is not a type-system definition is a `Refused` naming
 /// the token that stopped it, not a half-built schema.
 test "of_sdl raises on a definition it does not know" {
   assert_eq(

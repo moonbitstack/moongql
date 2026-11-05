@@ -19,7 +19,7 @@ pub(all) struct Author {
   id : String
   name : String
 }
-pub fn Author::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Author::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Author::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Author
 pub impl @exec.ToGql for Author
@@ -29,7 +29,7 @@ pub(all) struct Book {
   title : String
   author_id : String
 }
-pub fn Book::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Book::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Book::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Book
 pub impl @exec.ToGql for Book
@@ -41,7 +41,7 @@ pub(all) struct NewBook {
   title : String
   author_id : String
 }
-pub fn NewBook::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn NewBook::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub impl @exec.FromGql for NewBook
 
 pub(all) struct Query {

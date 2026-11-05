@@ -168,7 +168,7 @@ pub impl @moongql.FromGql for Status with fn from_gql(v) {
   match v {
     String("Draft") => Draft
     String("Published") => Published
-    other => raise  @moongql.ResolverError::expected("Status", other)
+    other => raise  @moongql.FieldError::expected("Status", other)
   }
 }
 
@@ -271,7 +271,7 @@ pub impl @moongql.FromGql for Work with fn from_gql(v) {
       Printed(@moongql.FromGql::from_gql(v))
     { "__typename": String("Magazine"), .. } => 
       Periodical(@moongql.FromGql::from_gql(v))
-    other => raise  @moongql.ResolverError::expected("Work", other)
+    other => raise  @moongql.FieldError::expected("Work", other)
   }
 }
 
@@ -295,7 +295,7 @@ pub impl @moongql.FromGql for Hit with fn from_gql(v) {
     { "__typename": String("Author"), .. } => 
       Writer(@moongql.FromGql::from_gql(v))
     { "__typename": String("Book"), .. } => Title(@moongql.FromGql::from_gql(v))
-    other => raise  @moongql.ResolverError::expected("Hit", other)
+    other => raise  @moongql.FieldError::expected("Hit", other)
   }
 }
 

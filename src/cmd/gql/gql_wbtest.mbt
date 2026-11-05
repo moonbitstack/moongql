@@ -105,9 +105,7 @@ test "enums and inputs" {
   assert_true(code.contains(flat("Low => \"Low\"")))
   assert_true(code.contains(flat("String(\"High\") => High")))
   assert_true(
-    code.contains(
-      flat("raise @moongql.ResolverError::expected(\"Level\", other)"),
-    ),
+    code.contains(flat("raise @moongql.FieldError::expected(\"Level\", other)")),
   )
   assert_true(code.contains(flat("let gql_filter = schema.input(\"Filter\")")))
   assert_true(
@@ -263,9 +261,7 @@ test "an enum over object types is a union or an interface" {
     code.contains(flat("pub impl @moongql.ToGql for Animal with fn to_gql")),
   )
   assert_true(
-    code.contains(
-      flat("raise @moongql.ResolverError::expected(\"Pet\", other)"),
-    ),
+    code.contains(flat("raise @moongql.FieldError::expected(\"Pet\", other)")),
   )
 }
 

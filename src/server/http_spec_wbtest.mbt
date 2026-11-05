@@ -149,7 +149,7 @@ test "a request error is 400 under graphql-response+json and 200 under json" {
 /// 200 even under the GraphQL media type.
 test "a field error keeps its 200 under graphql-response+json" {
   let (s, r) = http_schema()
-  r.field("Query", "user", _info => raise @exec.ResolverError("no such user"))
+  r.field("Query", "user", _info => raise @exec.FieldError("no such user"))
   let client = @moonasgi.TestClient::new(graphql_handler(s, r))
   let resp = client.post(
     "/graphql",

@@ -18,7 +18,7 @@ pub struct Author {
   name : String
   email : String
 }
-pub fn Author::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Author::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Author::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Author
 pub impl @exec.ToGql for Author
@@ -30,7 +30,7 @@ pub struct Book {
   author_id : Int64
   code : String?
 }
-pub fn Book::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Book::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Book::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Book
 pub impl @exec.ToGql for Book
@@ -39,7 +39,7 @@ pub enum Hit {
   Writer(Author)
   Title(Book)
 }
-pub fn Hit::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Hit::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Hit::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Hit
 pub impl @exec.ToGql for Hit
@@ -49,7 +49,7 @@ pub struct Magazine {
   title : String
   issue : Int32
 }
-pub fn Magazine::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Magazine::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Magazine::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Magazine
 pub impl @exec.ToGql for Magazine
@@ -59,7 +59,7 @@ pub struct NewBook {
   author_id : Int64
   status : Status?
 }
-pub fn NewBook::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn NewBook::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn NewBook::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for NewBook
 pub impl @exec.ToGql for NewBook
@@ -69,7 +69,7 @@ pub enum Status {
   Draft
   Published
 }
-pub fn Status::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Status::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Status::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Status
 pub impl @exec.ToGql for Status
@@ -78,7 +78,7 @@ pub enum Work {
   Printed(Book)
   Periodical(Magazine)
 }
-pub fn Work::from_gql(@json.Json) -> Self raise @exec.ResolverError
+pub fn Work::from_gql(@json.Json) -> Self raise @exec.FieldError
 pub fn Work::to_gql(Self) -> @json.Json
 pub impl @exec.FromGql for Work
 pub impl @exec.ToGql for Work

@@ -119,11 +119,11 @@ fn search(text : String) -> Array[Hit] {
 
 ///|
 /// A resolver that raises: any error becomes a field error, and a
-/// `ResolverError` keeps its message as written.
+/// `FieldError` keeps its message as written.
 #gql.mutation
 fn add_book(input : NewBook) -> Book raise {
   if input.title == "" {
-    raise @exec.ResolverError("a book needs a title")
+    raise @exec.FieldError("a book needs a title")
   }
   let book : Book = {
     id: (shelf.length() + 1).to_int64(),

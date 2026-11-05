@@ -10,17 +10,27 @@ pub fn collect_fragments(Document) -> Map[String, FragmentDefinition]
 
 pub fn escape_string(String) -> String
 
-pub fn parse(String) -> Document raise GqlSyntaxError
+pub fn parse(String) -> Document raise Refused
 
-pub fn tokenize(String) -> Array[Token] raise GqlSyntaxError
+pub fn refusal(Error) -> GqlError
+
+pub fn refused(String, Pos) -> Refused
+
+pub fn tokenize(String) -> Array[Token] raise Refused
 
 // Errors
-pub(all) suberror GqlSyntaxError {
-  GqlSyntaxError(String, Int32, Int32)
+pub(all) suberror Refused {
+  Unexpected(Pos, String)
+  Truncated(Pos, String)
+  BadNumber(Pos, String)
+  BadString(Pos, String)
+  BadName(Pos, String)
 }
-pub fn GqlSyntaxError::output(Self, &Logger) -> Unit
-pub fn GqlSyntaxError::to_string(Self) -> String
-pub impl Show for GqlSyntaxError
+pub fn Refused::at(Self) -> Pos
+pub fn Refused::message(Self) -> String
+pub fn Refused::output(Self, &Logger) -> Unit
+pub fn Refused::to_string(Self) -> String
+pub impl Show for Refused
 
 // Types and methods
 pub(all) struct Argument {

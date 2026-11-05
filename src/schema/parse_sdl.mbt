@@ -3,7 +3,7 @@
 /// `Schema`, so that `Schema::of_sdl(s.to_sdl())` describes the schema it was
 /// printed from. The reader shares the lexer with executable documents — the
 /// type system is a superset of the same grammar — and reports a bad document
-/// as the same `GqlSyntaxError` (with its line and column) that `parse` does.
+/// as the same `Refused` (with its line and column) that `parse` does.
 ///
 /// It reads everything `to_sdl` writes: the `schema { ... }` block and its
 /// directives, directive definitions, `type` / `input` / `interface` /
@@ -22,7 +22,7 @@ priv struct SdlCursor {
 
 ///|
 /// Tokenise `text` and stand at its first token.
-fn SdlCursor::of(text : String) -> SdlCursor raise @lang.GqlSyntaxError {
+fn SdlCursor::of(text : String) -> SdlCursor raise @lang.Refused {
   { tokens: @lang.tokenize(text), pos: 0, }
 }
 
@@ -63,10 +63,10 @@ fn SdlCursor::take(
   self : SdlCursor,
   kind : @lang.TokenKind,
   what : String,
-) -> @lang.Token raise @lang.GqlSyntaxError {
+) -> @lang.Token raise @lang.Refused {
   let t = self.peek()
   if !(t.kind == kind) {
-    raise @lang.GqlSyntaxError("expected " + what, t.line, t.col)
+    raise @lang.refused("expected " + what, { line: t.line, col: t.col, })
   }
   self.bump()
 }
@@ -76,7 +76,7 @@ fn SdlCursor::take(
 fn SdlCursor::name(
   self : SdlCursor,
   what : String,
-) -> String raise @lang.GqlSyntaxError {
+) -> String raise @lang.Refused {
   let t = self.take(@lang.Name, what)
   t.value
 }
@@ -116,7 +116,7 @@ fn SdlCursor::description(self : SdlCursor) -> String? {
 /// as the JSON an `AppliedDirective` argument or an argument default carries.
 /// An enum value is kept as its name, which is what `json_to_gql_literal`
 /// prints back.
-fn SdlCursor::value(self : SdlCursor) -> Json raise @lang.GqlSyntaxError {
+fn SdlCursor::value(self : SdlCursor) -> Json raise @lang.Refused {
   let t = self.bump()
   match t.kind {
     @lang.IntVal | @lang.FloatVal =>
@@ -149,7 +149,7 @@ fn SdlCursor::value(self : SdlCursor) -> Json raise @lang.GqlSyntaxError {
       self.take(@lang.BraceR, "'}' to close an object value") |> ignore
       Json(out)
     }
-    _ => raise @lang.GqlSyntaxError("expected a value", t.line, t.col)
+    _ => raise @lang.refused("expected a value", { line: t.line, col: t.col, })
   }
 }
 
@@ -158,7 +158,7 @@ fn SdlCursor::value(self : SdlCursor) -> Json raise @lang.GqlSyntaxError {
 /// `GqlType` the schema builder speaks. A name that is one of the five built-in
 /// scalars becomes a `Scalar`; every other name is a reference to a declared
 /// type.
-fn SdlCursor::type_ref(self : SdlCursor) -> GqlType raise @lang.GqlSyntaxError {
+fn SdlCursor::type_ref(self : SdlCursor) -> GqlType raise @lang.Refused {
   let mut t = if self.at(@lang.BracketL) {
     self.bump() |> ignore
     let inner = self.type_ref()
@@ -184,7 +184,7 @@ fn SdlCursor::type_ref(self : SdlCursor) -> GqlType raise @lang.GqlSyntaxError {
 /// each defaulted argument's value keyed by name.
 fn SdlCursor::arguments(
   self : SdlCursor,
-) -> (Array[(String, GqlType)], Map[String, Json]) raise @lang.GqlSyntaxError {
+) -> (Array[(String, GqlType)], Map[String, Json]) raise @lang.Refused {
   let args : Array[(String, GqlType)] = []
   let defaults : Map[String, Json] = Map([])
   self.take(@lang.ParenL, "'(' to open an argument list") |> ignore
@@ -208,7 +208,7 @@ fn SdlCursor::arguments(
 /// Consume a directive list `@a @b(x: 1)`, each with its constant arguments.
 fn SdlCursor::directives(
   self : SdlCursor,
-) -> Array[AppliedDirective] raise @lang.GqlSyntaxError {
+) -> Array[AppliedDirective] raise @lang.Refused {
   let out : Array[AppliedDirective] = []
   while self.at(@lang.At) {
     self.bump() |> ignore
@@ -268,16 +268,15 @@ fn specified_url_of(d : AppliedDirective) -> String {
 fn SdlCursor::definition(
   self : SdlCursor,
   schema : Schema,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let description = self.description()
   let extends = self.word("extend")
   let t = self.peek()
   if !(t.kind == @lang.Name) {
-    raise @lang.GqlSyntaxError(
-      "expected a type system definition",
-      t.line,
-      t.col,
-    )
+    raise @lang.refused("expected a type system definition", {
+      line: t.line,
+      col: t.col,
+    })
   }
   match t.value {
     "schema" => {
@@ -313,10 +312,9 @@ fn SdlCursor::definition(
       self.directive_def(schema, description)
     }
     _ =>
-      raise @lang.GqlSyntaxError(
+      raise @lang.refused(
         "expected a type system definition, got '\{t.value}'",
-        t.line,
-        t.col,
+        { line: t.line, col: t.col, },
       )
   }
 }
@@ -326,7 +324,7 @@ fn SdlCursor::definition(
 fn SdlCursor::schema_def(
   self : SdlCursor,
   schema : Schema,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   for d in self.directives() {
     schema.apply_schema_directive(d)
   }
@@ -340,10 +338,9 @@ fn SdlCursor::schema_def(
       "mutation" => schema.set_mutation(name)
       "subscription" => schema.set_subscription(name)
       _ =>
-        raise @lang.GqlSyntaxError(
+        raise @lang.refused(
           "expected query, mutation or subscription, got '\{root}'",
-          self.peek().line,
-          self.peek().col,
+          { line: self.peek().line, col: self.peek().col, },
         )
     }
   }
@@ -360,7 +357,7 @@ fn SdlCursor::composite(
   kind : TypeKind,
   description : String?,
   _extends : Bool,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let name = self.name("a type name")
   let interfaces : Array[String] = []
   if self.word("implements") {
@@ -449,7 +446,7 @@ fn SdlCursor::enum_def(
   self : SdlCursor,
   schema : Schema,
   description : String?,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let name = self.name("an enum type name")
   for d in self.directives() {
     schema.apply_type_directive(name, d)
@@ -500,7 +497,7 @@ fn SdlCursor::union_def(
   self : SdlCursor,
   schema : Schema,
   description : String?,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let name = self.name("a union type name")
   for d in self.directives() {
     schema.apply_type_directive(name, d)
@@ -530,7 +527,7 @@ fn SdlCursor::scalar_def(
   self : SdlCursor,
   schema : Schema,
   description : String?,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let name = self.name("a scalar type name")
   let mut spec_url : String? = None
   for d in self.directives() {
@@ -557,7 +554,7 @@ fn SdlCursor::directive_def(
   self : SdlCursor,
   schema : Schema,
   description : String?,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   self.take(@lang.At, "'@' before a directive name") |> ignore
   let name = self.name("a directive name")
   let mut args : Array[(String, GqlType)] = []
@@ -570,11 +567,10 @@ fn SdlCursor::directive_def(
   let is_repeatable = self.word("repeatable")
   if !self.word("on") {
     let t = self.peek()
-    raise @lang.GqlSyntaxError(
-      "expected 'on' before the locations",
-      t.line,
-      t.col,
-    )
+    raise @lang.refused("expected 'on' before the locations", {
+      line: t.line,
+      col: t.col,
+    })
   }
   let locations : Array[String] = []
   locations.push(self.name("a directive location"))
@@ -596,7 +592,7 @@ fn SdlCursor::directive_def(
 ///|
 /// Build a schema from a type-system document (SDL), the inverse of `to_sdl`.
 /// A document that is not a well-formed type-system definition raises
-/// `GqlSyntaxError` carrying the line and column of the token that stopped it.
+/// `Refused` carrying the line and column of the token that stopped it.
 ///
 /// The hooks SDL cannot carry come back as the identity: a custom scalar's
 /// `serialize` / `parse_value`, and a directive definition's `on_field`.
@@ -615,7 +611,7 @@ fn SdlCursor::directive_def(
 /// )
 /// // s.type_by_name("Query") carries the description and the default value.
 /// ```
-pub fn Schema::of_sdl(text : String) -> Schema raise @lang.GqlSyntaxError {
+pub fn Schema::of_sdl(text : String) -> Schema raise @lang.Refused {
   let schema = Schema::new()
   schema.add_sdl(text)
   schema
@@ -627,7 +623,7 @@ pub fn Schema::of_sdl(text : String) -> Schema raise @lang.GqlSyntaxError {
 pub fn Schema::add_sdl(
   self : Schema,
   text : String,
-) -> Unit raise @lang.GqlSyntaxError {
+) -> Unit raise @lang.Refused {
   let cur = SdlCursor::of(text)
   while cur.until(@lang.Eof) {
     cur.definition(self)

@@ -1,7 +1,7 @@
 ///|
 fn[T : FromGql] decode(v : Json) -> Result[T, String] {
   try T::from_gql(v) catch {
-    ResolverError(m) | ResolverErrorExt(m, _) => Err(m)
+    FieldError(m) | FieldErrorExt(m, _) => Err(m)
   } noraise {
     x => Ok(x)
   }
@@ -67,7 +67,7 @@ test "ResolveInfo::read names the argument it refused" {
     let n : Int32 = info.read("first")
     "\{n}"
   } catch {
-    ResolverError(m) | ResolverErrorExt(m, _) => m
+    FieldError(m) | FieldErrorExt(m, _) => m
   }
   assert_eq(refused, "argument `first`: expected Int, got 1.5")
 }
@@ -78,9 +78,9 @@ test "read takes a member of an object and names it when refused" {
   let name : String = read(v, "name")
   let missing : Int32? = read(v, "absent")
   assert_eq((name, missing), ("a", None))
-  let refused = (f : () -> Unit raise ResolverError) => {
+  let refused = (f : () -> Unit raise FieldError) => {
     try f() catch {
-      ResolverError(m) | ResolverErrorExt(m, _) => m
+      FieldError(m) | FieldErrorExt(m, _) => m
     } noraise {
       _ => ""
     }
@@ -93,25 +93,25 @@ test "read takes a member of an object and names it when refused" {
     refused(() => ignore((read(Json::number(1.0), "age") : Int32))),
     "expected an object, got 1",
   )
-  match ResolverError::expected("Role", Json::string("x")) {
-    ResolverError(m) => assert_eq(m, "expected Role, got \"x\"")
+  match FieldError::expected("Role", Json::string("x")) {
+    FieldError(m) => assert_eq(m, "expected Role, got \"x\"")
     _ => fail("wrong kind")
   }
 }
 
 ///|
-test "field_error passes a ResolverError through and wraps the rest" {
+test "field_error passes a FieldError through and wraps the rest" {
   let ext : Map[String, Json] = { "code": "X" }
-  match field_error(ResolverErrorExt("m", ext)) {
-    ResolverErrorExt(m, e) => assert_eq((m, e), ("m", ext))
+  match field_error(FieldErrorExt("m", ext)) {
+    FieldErrorExt(m, e) => assert_eq((m, e), ("m", ext))
     _ => fail("lost the extensions")
   }
-  match field_error(ResolverError("plain")) {
-    ResolverError(m) => assert_eq(m, "plain")
+  match field_error(FieldError("plain")) {
+    FieldError(m) => assert_eq(m, "plain")
     _ => fail("changed kind")
   }
   match field_error(Failure("bad")) {
-    ResolverError(m) => assert_eq(m, "Failure(bad)")
+    FieldError(m) => assert_eq(m, "Failure(bad)")
     _ => fail("not wrapped")
   }
 }

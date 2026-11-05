@@ -76,9 +76,7 @@ let introspection_query : String =
 /// The validation errors for `query` against `s`, joined one per line (so a test
 /// can assert a message is present, or that the string is empty for a valid query).
 fn verr_text(s : @schema.Schema, query : String) -> String {
-  let doc = @lang.parse(query) catch {
-    @lang.GqlSyntaxError(m, _, _) => return m
-  }
+  let doc = @lang.parse(query) catch { e => return @lang.refusal(e).message }
   let sb = StringBuilder()
   for e in @valid.validate(s, doc) {
     sb.write_string(e.message)

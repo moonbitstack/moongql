@@ -299,7 +299,7 @@ test "a raising non-null field reports its error once" {
   q.field("boom", NonNull(Scalar("String")))
   q.field("fine", Scalar("String"))
   let r = Resolvers::new()
-  r.field("Query", "boom", _ => raise ResolverError("broke"))
+  r.field("Query", "boom", _ => raise FieldError("broke"))
   r.field("Query", "fine", _ => Json::null())
   assert_eq(
     execute(s, r, "{ boom }").stringify(),

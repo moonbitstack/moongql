@@ -12,21 +12,21 @@ pub(open) trait ToGql {
 
 ///|
 /// A MoonBit value read from an argument or a parent value: async-graphql's
-/// `InputType`. A refusal is a `ResolverError` saying what was expected.
+/// `InputType`. A refusal is a `FieldError` saying what was expected.
 pub(open) trait FromGql {
-  fn from_gql(Json) -> Self raise ResolverError
+  fn from_gql(Json) -> Self raise FieldError
 }
 
 ///|
 /// The refusal of a value that is not a `want`, as every [`FromGql`] here writes
 /// it: `expected Int, got "x"`.
-pub fn ResolverError::expected(want : String, got : Json) -> ResolverError {
-  ResolverError("expected \{want}, got \{got.stringify()}")
+pub fn FieldError::expected(want : String, got : Json) -> FieldError {
+  FieldError("expected \{want}, got \{got.stringify()}")
 }
 
 ///|
-fn refuse(got : Json, want : String) -> ResolverError {
-  ResolverError::expected(want, got)
+fn refuse(got : Json, want : String) -> FieldError {
+  FieldError::expected(want, got)
 }
 
 ///|
@@ -144,9 +144,9 @@ pub impl[T : FromGql] FromGql for Array[T] with fn from_gql(v) {
 pub fn[T : FromGql] ResolveInfo::read(
   self : ResolveInfo,
   name : String,
-) -> T raise ResolverError {
+) -> T raise FieldError {
   T::from_gql(self.arg(name)) catch {
-    ResolverError(m) => raise ResolverError("argument `\{name}`: \{m}")
+    FieldError(m) => raise FieldError("argument `\{name}`: \{m}")
     e => raise e
   }
 }
@@ -155,28 +155,28 @@ pub fn[T : FromGql] ResolveInfo::read(
 /// The member `key` of an object value as any [`FromGql`] type, the way a
 /// generated input type reads its fields; a missing member reads as `null`. A
 /// refusal names the member.
-pub fn[T : FromGql] read(value : Json, key : String) -> T raise ResolverError {
+pub fn[T : FromGql] read(value : Json, key : String) -> T raise FieldError {
   guard value is Object(m) else { raise refuse(value, "an object") }
   T::from_gql(m.get(key).unwrap_or(Json::null())) catch {
-    ResolverError(msg) => raise ResolverError("field `\{key}`: \{msg}")
+    FieldError(msg) => raise FieldError("field `\{key}`: \{msg}")
     e => raise e
   }
 }
 
 ///|
 /// Any error a resolver raised, as the field error it becomes; a
-/// `ResolverError` passes through unchanged.
-pub fn not_permitted() -> ResolverError {
-  ResolverError("not permitted")
+/// `FieldError` passes through unchanged.
+pub fn not_permitted() -> FieldError {
+  FieldError("not permitted")
 }
 
 ///|
-/// A resolver's error as a field error: a `ResolverError` as it is, anything else
+/// A resolver's error as a field error: a `FieldError` as it is, anything else
 /// by its text.
-pub fn field_error(e : Error) -> ResolverError {
+pub fn field_error(e : Error) -> FieldError {
   match e {
-    ResolverError(m) => ResolverError(m)
-    ResolverErrorExt(m, ext) => ResolverErrorExt(m, ext)
-    e => ResolverError(e.to_string())
+    FieldError(m) => FieldError(m)
+    FieldErrorExt(m, ext) => FieldErrorExt(m, ext)
+    e => FieldError(e.to_string())
   }
 }
