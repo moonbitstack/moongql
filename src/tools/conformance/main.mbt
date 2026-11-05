@@ -8,5 +8,7 @@
 /// that makes the reason plain instead of failing to link.
 #cfg(not(target="native"))
 fn main {
-  println("the conformance driver runs on the native backend: moon build --target native")
+  println(
+    "the conformance driver runs on the native backend: moon build --target native",
+  )
 }

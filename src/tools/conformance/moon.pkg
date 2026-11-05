@@ -19,13 +19,11 @@ import {
 pkgtype(kind: "executable")
 
 // The driver reads stdin and writes stdout, which only the native backend has;
-// the conformance scripts it serves are native-only for the same reason.
-// The driver's own file is native-only, so on the other backends nothing in this
-// package uses these imports.
+// the conformance scripts it serves are native-only for the same reason, and so
+// is the driver's own file: on the other backends nothing here uses these imports.
+
 warnings = "-29"
 
 options(
-  targets: {
-    "driver.mbt": [ "native" ],
-  },
+  targets: { "driver.mbt": [ "native" ] },
 )
