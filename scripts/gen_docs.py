@@ -89,6 +89,21 @@ SECTIONS = [
     ("client", "client/client.mbt", "Client",
      "A GraphQL client over HTTP: the request body, the answer read back into "
      "errors, and a document checked before it is sent."),
+    ("orm-database", "orm/database.mbt", "Database",
+     "A pool of connections behind a resolver: one checked out per statement and "
+     "given back on every path, a statement counter, and a session for a unit of "
+     "work that spans several statements."),
+    ("orm-select", "orm/select.mbt", "Select and Projection",
+     "SQL built from the document's selection: only the columns asked for are "
+     "fetched, plus the keys a child field needs; rows become JSON objects the "
+     "default resolver can read."),
+    ("orm-attach", "orm/attach.mbt", "Attaching a List's Children",
+     "One statement for a whole list's children: the field that produced the list "
+     "fetches what its children need, so the child field costs nothing and the "
+     "list does not cost N statements."),
+    ("orm-sqlite", "orm/sqlite/sqlite.mbt", "SQLite",
+     "The ORM layer on a real SQLite file: a pooled driver, a script runner for "
+     "the schema, and the native-only half of the integration."),
     ("dataloader", "loader/dataloader.mbt", "DataLoader",
      "Batch-and-cache loader for the N+1 problem: keys requested in a resolution "
      "pass are queued and deduped, then one dispatch runs the batch function over "

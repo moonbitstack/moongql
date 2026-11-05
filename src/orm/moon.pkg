@@ -1,0 +1,15 @@
+// The bridge between a GraphQL request and a database: a session checked out of a
+// pool per query, the SQL built from the document's own selection, and a batch
+// that collapses a list's lookups into one statement instead of N.
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moonorm",
+  "moonbitstack/moonorm/query",
+  "moonbitstack/moondb",
+  "moonbitstack/moondb/pool",
+}
+
+import {
+  "moonbitlang/async",
+  "moonbitstack/moongql/schema",
+} for "wbtest"

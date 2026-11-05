@@ -82,6 +82,38 @@ async test "async: sibling fields are resolved concurrently" {
 }
 
 ///|
+async test "async: the elements of a list are resolved concurrently" {
+  let probe = { active: 0, peak: 0, }
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("items", NonNull(ListOf(NonNull(Named("Item")))))
+  let item = s.object("Item")
+  item.field("n", NonNull(Scalar("Int")))
+  let r = Resolvers::new()
+  r.field("Query", "items", fn(_info) {
+    let items : Array[Json] = [Json(1), Json(2), Json(3)]
+    Json(items)
+  })
+  r.field_async("Item", "n", async fn(info) {
+    probe.active = probe.active + 1
+    if probe.active > probe.peak {
+      probe.peak = probe.active
+    }
+    @async.sleep(5)
+    probe.active = probe.active - 1
+    info.parent
+  })
+  let out = execute_async(s, r, "{ items { n } }")
+  // Each element is completed on its own (§6.4.3), so the elements overlap — the
+  // order of the answer is the order of the list either way.
+  inspect(
+    out.stringify(),
+    content="{\"data\":{\"items\":[{\"n\":1},{\"n\":2},{\"n\":3}]}}",
+  )
+  assert_eq(probe.peak > 1, true)
+}
+
+///|
 async test "async: mutation root fields run one after another" {
   let probe = { active: 0, peak: 0, }
   let s = @schema.Schema::new(query="Query")

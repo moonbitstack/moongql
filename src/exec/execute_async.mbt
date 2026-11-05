@@ -251,6 +251,38 @@ async fn Exec::resolve_raw_async(
 }
 
 ///|
+/// One element of a list, completed in an executor of its own so that the errors
+/// and deferrals it produces can be merged in index order however the elements
+/// were scheduled — the same arrangement a field group uses.
+async fn Exec::complete_item(
+  self : Exec,
+  inner : @schema.GqlType,
+  item : Json,
+  fields : Array[@lang.QueryField],
+  path : Array[Json],
+  limits : Limits,
+) -> Outcome {
+  let sub = Exec::state(
+    self.schema,
+    self.resolvers,
+    self.fragments,
+    self.variables,
+    self.ctx,
+  )
+  match sub.complete_async(inner, item, fields, path, limits) {
+    Value(value) =>
+      { value, errors: sub.errors, pending: sub.pending, bubble: false, }
+    Bubbled =>
+      {
+        value: Json::null(),
+        errors: sub.errors,
+        pending: sub.pending,
+        bubble: true,
+      }
+  }
+}
+
+///|
 /// CompleteValue (GraphQL spec §6.4.3), asynchronously: a non-null position that
 /// comes back null bubbles, lists complete element-wise and may be streamed,
 /// leaves serialise, and composite values recurse into their sub-selection.
@@ -297,18 +329,48 @@ async fn Exec::complete_async(
               }
             None => items.length()
           }
+          // The elements of a list are as independent as the fields of a
+          // selection set (§6.4.3 completes each one on its own), so they are
+          // completed concurrently and merged back in index order. That is also
+          // what lets a field resolver batch across the elements of a list it
+          // cannot see: each element is a task that can queue its key while its
+          // siblings do the same.
+          let done : Array[Outcome] = if cut > 1 && limits.max_concurrency > 1 {
+            let tasks : Array[async () -> Outcome] = []
+            for i in 0..<cut {
+              let ipath = path.copy()
+              ipath.push(Json(i))
+              let item = items[i]
+              tasks.push(async fn() {
+                self.complete_item(inner, item, fields, ipath, limits)
+              })
+            }
+            @async.all(tasks, max_concurrent=limits.max_concurrency)
+          } else {
+            let out : Array[Outcome] = []
+            for i in 0..<cut {
+              let ipath = path.copy()
+              ipath.push(Json(i))
+              out.push(
+                self.complete_item(inner, items[i], fields, ipath, limits),
+              )
+            }
+            out
+          }
           let out : Array[Json] = []
           let mut bubbled = false
-          for i in 0..<cut {
-            let ipath = path.copy()
-            ipath.push(Json(i))
-            match self.complete_async(inner, items[i], fields, ipath, limits) {
-              Value(v) => out.push(v)
-              Bubbled => {
-                bubbled = true
-                break
-              }
+          for d in done {
+            for e in d.errors {
+              self.errors.push(e)
             }
+            for p in d.pending {
+              self.pending.push(p)
+            }
+            if d.bubble {
+              bubbled = true
+              break
+            }
+            out.push(d.value)
           }
           if bubbled {
             Bubbled

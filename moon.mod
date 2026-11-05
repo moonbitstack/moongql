@@ -43,6 +43,9 @@ import {
   "moonbitlang/parser@0.4.6",
   "moonbitlang/x@0.5.1",
   "moonbitlang/async@0.22.5",
+  "moonbitstack/moondb@0.2.4",
+  "moonbitstack/moonorm@0.11.6",
+  "moonbitstack/moonsqlite@0.3.4",
 }
 
 source = "src"

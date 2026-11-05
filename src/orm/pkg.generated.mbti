@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/orm"
+
+import {
+  "moonbitlang/core/json",
+  "moonbitstack/moondb",
+  "moonbitstack/moondb/pool",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moonorm/query",
+  "moonbitstack/moonorm/session",
+}
+
+// Values
+pub fn row_json(@moondb.Row) -> @json.Json
+
+// Errors
+
+// Types and methods
+pub struct Database[D] {
+  pool : @pool.Pool[D]
+  dialect : @query.Dialect
+  mut issued : Int32
+}
+pub fn[D : @moondb.Driver] Database::attach(Self[D], Array[@json.Json], String, String, Array[String], parent_key~ : String, child_key? : String) -> Array[@json.Json] raise @exec.FieldError
+pub fn[D] Database::connections(Self[D]) -> (Int32, Int32)
+pub fn[D : @moondb.Driver] Database::execute(Self[D], String, params? : Array[@moondb.Value]) -> @moondb.ExecResult raise @exec.FieldError
+pub fn[D] Database::new(() -> D raise @moondb.DbError, max_size? : Int32, pre_ping? : Bool, dialect? : @query.Dialect) -> Self[D] raise @moondb.DbError
+pub fn[D] Database::reset_statements(Self[D]) -> Unit
+pub fn[D : @moondb.Driver] Database::rows(Self[D], String, params? : Array[@moondb.Value]) -> Array[@moondb.Row] raise @exec.FieldError
+pub fn[D : @moondb.Driver] Database::rows_by_key(Self[D], String, Array[String], String, Array[String]) -> Map[String, @json.Json] raise @exec.FieldError
+pub fn[D : @moondb.Driver] Database::select(Self[D], @exec.ResolveInfo, String, Array[String], predicate? : String, params? : Array[@moondb.Value], order_by? : String, limit? : Int32?, keep? : Array[String]) -> Array[@json.Json] raise @exec.FieldError
+pub fn[D : @moondb.Driver] Database::select_one(Self[D], @exec.ResolveInfo, String, Array[String], predicate~ : String, params? : Array[@moondb.Value], keep? : Array[String]) -> @json.Json? raise @exec.FieldError
+pub fn[D : @moondb.Driver, R] Database::session(Self[D], (@session.Session) -> R raise) -> R raise @exec.FieldError
+pub fn[D] Database::statements(Self[D]) -> Int32
+pub fn[D : @moondb.Driver, R] Database::with_connection(Self[D], (D) -> R raise) -> R raise @exec.FieldError
+
+// Type aliases
+
+// Traits

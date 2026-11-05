@@ -1,0 +1,15 @@
+// A `Database` on real SQLite: the pooled driver the conformance of the ORM layer
+// is measured against. Native only, because SQLite is: this package is the one
+// place the ORM meets C, and it is the moonsqlite driver's own gating restated.
+supported_targets = "native"
+
+import {
+  "moonbitstack/moongql/orm",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moonsqlite",
+}
+
+import {
+  "moonbitlang/async",
+  "moonbitstack/moongql/schema",
+} for "wbtest"

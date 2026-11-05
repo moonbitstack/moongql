@@ -339,6 +339,8 @@ uses and no others. The root re-exports all of them, so `@moongql.Schema` and
 | `moongql/server` | the HTTP endpoint and graphql-transport-ws | `exec` and below, moonasgi |
 | `moongql/loader` | `DataLoader` | nothing |
 | `moongql/client` | a GraphQL client over HTTP | `lang`, moonfetch |
+| `moongql/orm` | a pooled database for resolvers: projection, attaching a list's children, a statement budget | `exec`, moonorm, moondb |
+| `moongql/orm/sqlite` | the same on SQLite | `orm`, moonsqlite (native) |
 | `moongql/cmd/gql` | the generator behind the `#gql` annotations | moonast |
 | `moongql/cmd/sdl` | `moongql-sdl` on the command line: a document's schema, normalised | `schema` |
 
@@ -510,6 +512,50 @@ loader.get(1)                                   // Some("author#1")
 ```
 
 `prime`, `clear`, `clear_all`, `load_many` and `load_now` round out the API. Where Facebook's DataLoader coalesces within an event-loop tick, this drains the queue explicitly so it stays testable without a runtime.
+
+## Database
+
+`@moongql/orm` puts a pool of connections behind a resolver, so a field asks for
+rows instead of opening a connection:
+
+```moonbit
+let db = @orm.Database::new(() => @moonsqlite.SqliteDriver::open("blog.db"), max_size=8)
+let res = @moongql.Resolvers::new()
+res.field("Query", "posts", fn(info) {
+  Json(db.select(info, "posts", ["id", "title", "views", "author_id"], keep=["author_id"]))
+})
+```
+
+`select` takes the field's `info`, so the statement asks for the columns the
+document asked for — `{ posts { title } }` becomes `SELECT title FROM posts` — and
+`keep` names the columns a child field will need even though the document does not
+select them. A parameter is bound, never interpolated; a table, a predicate and an
+ordering are part of the query's shape and are written by the developer.
+
+The N+1 problem is a shape, not a mistake: `{ posts { author { name } } }` runs
+`author` once per post, and a resolver that sees one post cannot batch with the
+others. The field that produced the list is the one that knows it, so it attaches
+the children in a single statement:
+
+```moonbit
+res.field("Query", "posts", fn(info) {
+  let rows = db.select(info, "posts", ["id", "title", "author_id"], keep=["author_id"])
+  Json(db.attach(rows, "author", "authors", ["id", "name"], parent_key="author_id"))
+})
+```
+
+`Post.author` then needs no resolver of its own — the default resolver reads the
+attached object off the parent. Three posts by two authors cost two statements, and
+ten posts by the same two authors still cost two; `db.statements()` is the counter a
+test asserts that on.
+
+Two boundary notes. Every statement takes a connection from the pool and gives it
+back — on the error path too — and `db.connections()` reports what is open and what
+is checked out, which is how a leaked connection is found. And a `Session` is
+synchronous, so on SQLite a query occupies the one event loop while it runs: the
+pool bounds how many connections exist, not how many queries overlap. Overlapping
+needs a driver and a session that wait; the structure here does not change when
+they arrive.
 
 ## HTTP endpoint
 
