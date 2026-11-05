@@ -19,7 +19,8 @@ pub struct Database[D] {
   pool : @pool.Pool[D]
   dialect : @query.Dialect
   // Statements this database issued. A test asserts on it — "this document costs
-  // two statements" — and a service exports it as a metric.
+  // two statements" — and a service exports it as a metric. An `Int32` rather
+  // than an `Int` so the interface is the same width on every backend.
   mut issued : Int32
 }
 
