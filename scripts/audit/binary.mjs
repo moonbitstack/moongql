@@ -1,7 +1,8 @@
 // Where the conformance driver is: the build output of `moon build --target
-// native`, which the workflow runs first. The repository root is found from this
-// file, so the scripts run from any directory.
-import { existsSync } from 'node:fs';
+// native`, which the workflow runs first. The layout under `_build` differs
+// between the platforms, so the binary is found by name rather than by path, and
+// the repository root is found from this file so the scripts run from anywhere.
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,16 +16,39 @@ function repositoryRoot() {
   }
 }
 
-export function resolveBinary() {
-  const root = repositoryRoot();
-  const name = process.platform === 'win32' ? 'conformance.exe' : 'conformance';
-  const candidates = ['debug', 'release'].map((mode) =>
-    join(root, '_build', 'native', mode, 'build', 'tools', 'conformance', name),
-  );
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
+function findFile(directory, names, depth) {
+  if (depth < 0) return null;
+  let entries;
+  try {
+    entries = readdirSync(directory);
+  } catch {
+    return null;
   }
+  for (const entry of entries) {
+    if (names.includes(entry)) {
+      const candidate = join(directory, entry);
+      if (statSync(candidate).isFile()) return candidate;
+    }
+  }
+  for (const entry of entries) {
+    const child = join(directory, entry);
+    try {
+      if (!statSync(child).isDirectory()) continue;
+    } catch {
+      continue;
+    }
+    const found = findFile(child, names, depth - 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function resolveBinary() {
+  const name = process.platform === 'win32' ? 'conformance.exe' : 'conformance';
+  const build = join(repositoryRoot(), '_build', 'native');
+  const found = findFile(build, [name], 6);
+  if (found) return found;
   throw new Error(
-    'the conformance driver is not built; run `moon build --target native` first',
+    `the conformance driver is not built; run \`moon build --target native\` first (looked under ${build})`,
   );
 }
