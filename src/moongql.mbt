@@ -58,7 +58,10 @@ pub using @exec {
   type FieldError,
   type Limits,
   type ResolveInfo,
+  type Live,
   type Resolvers,
+  type Sender,
+  type Stream,
   type Subscribers,
   type SubscriptionResult,
   create_source_event_stream,
@@ -70,6 +73,7 @@ pub using @exec {
   limits,
   not_permitted,
   read,
+  subscribe_live,
 }
 
 ///|
@@ -87,6 +91,7 @@ pub using @server {
   graphiql_html,
   graphql_app,
   graphql_handler,
+  graphql_ws_app,
   graphql_ws_handler,
   off,
 }

@@ -19,11 +19,19 @@ pub let graphiql : Ide
 
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : Ide) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : Ide, limits? : @exec.Limits) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
 pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : Ide) -> (@http.Request) -> @http.Response
 
+pub fn graphql_ws_app(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json, path? : String, limits? : @exec.Limits) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json) -> @ws.WebSocketHandler
+
+pub fn incremental_content_type(String) -> String
+
+pub fn multipart_close(String) -> String
+
+pub fn multipart_part(String, @json.Json) -> String
 
 pub let off : Ide
 

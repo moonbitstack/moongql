@@ -8,6 +8,12 @@ import {
   "moonbitstack/moongql/exec",
   "moonbitstack/moonasgi",
   "moonbitstack/moonasgi/ws",
+  "moonbitstack/moonasgi/spec",
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async",
 }
+
+import {
+  "moonbitlang/async",
+} for "wbtest"

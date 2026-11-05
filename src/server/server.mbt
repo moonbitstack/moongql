@@ -128,6 +128,12 @@ fn wire_of(accept : String?) -> Wire? {
     if ci_eq(m, "application/json") || m == "*/*" || m == "application/*" {
       json = true
     }
+    // A client that accepts the incremental format accepts a result, so the
+    // negotiation succeeds; whether it gets parts is decided once the document
+    // is known to defer something.
+    if ci_eq(m, "multipart/mixed") {
+      json = true
+    }
   }
   if json {
     Some(AppJson)
@@ -390,18 +396,4 @@ pub fn graphql_handler(
       _ => error_response(405, "Method Not Allowed")
     }
   }
-}
-
-///|
-/// Lift the GraphQL handler onto the load-bearing `AsgiApp` a server binds to.
-/// This is what `mooncat` (or any moonasgi server) mounts to serve the schema
-/// over real HTTP; the request→response logic is shared with `graphql_handler`,
-/// which `TestClient` exercises without a socket.
-pub fn graphql_app(
-  schema : @schema.Schema,
-  resolvers : @exec.Resolvers,
-  path~ : String = "/graphql",
-  ide~ : Ide = site,
-) -> @moonasgi.AsgiApp {
-  @moonasgi.to_asgi(graphql_handler(schema, resolvers, path~, ide~))
 }

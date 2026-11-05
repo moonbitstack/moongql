@@ -18,6 +18,14 @@ pub(open) trait FromGql {
 }
 
 ///|
+/// The sentence a field error carries, whichever variant it is.
+pub fn FieldError::message(self : FieldError) -> String {
+  match self {
+    FieldError(m) | FieldErrorExt(m, _) => m
+  }
+}
+
+///|
 /// The refusal of a value that is not a `want`, as every [`FromGql`] here writes
 /// it: `expected Int, got "x"`.
 pub fn FieldError::expected(want : String, got : Json) -> FieldError {

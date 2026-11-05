@@ -35,9 +35,11 @@ pub let graphiql : @server.Ide
 
 pub fn graphiql_html(endpoint? : String) -> String
 
-pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
+pub fn graphql_app(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide, limits? : @exec.Limits) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
 pub fn graphql_handler(@schema.Schema, @exec.Resolvers, path? : String, ide? : @server.Ide) -> (@http.Request) -> @http.Response
+
+pub fn graphql_ws_app(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json, path? : String, limits? : @exec.Limits) -> async (@spec.Scope, async () -> @spec.Event, async (@spec.Event) -> Unit) -> Unit
 
 pub fn graphql_ws_handler(@schema.Schema, @exec.Resolvers, @exec.Subscribers, root_value? : @json.Json, context? : @json.Json) -> @ws.WebSocketHandler
 
@@ -56,6 +58,8 @@ pub fn refusal(Error) -> @lang.GqlError
 pub fn refused(String, @lang.Pos) -> @lang.Refused
 
 pub let site : @server.Ide
+
+pub fn subscribe_live(@schema.Schema, @exec.Resolvers, @exec.Subscribers, String, variables? : Map[String, @json.Json], operation_name? : String, root_value? : @json.Json, context? : @json.Json, limits? : @exec.Limits) -> Result[@exec.Live, Array[@lang.GqlError]]
 
 pub fn tokenize(String) -> Array[@lang.Token] raise @lang.Refused
 
@@ -108,6 +112,8 @@ pub using @server {type IdeKind}
 
 pub using @exec {type Limits}
 
+pub using @exec {type Live}
+
 pub using @schema {type ObjectType}
 
 pub using @lang {type OperationDefinition}
@@ -129,6 +135,10 @@ pub using @schema {type ScalarType}
 pub using @schema {type Schema}
 
 pub using @lang {type Selection}
+
+pub using @exec {type Sender}
+
+pub using @exec {type Stream}
 
 pub using @exec {type Subscribers}
 
