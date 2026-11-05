@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/client"
+
+import {
+  "moonbitlang/core/json",
+  "moonbitstack/moongql/lang",
+}
+
+// Values
+pub fn check(String) -> Unit raise Refused
+
+pub fn errors_of(@json.Json) -> Array[@lang.GqlError]?
+
+pub fn request_body(String, variables? : Map[String, @json.Json], operation_name? : String) -> @json.Json
+
+// Errors
+pub(all) suberror Refused {
+  Invalid(String)
+  Transport(String)
+  Malformed(String)
+  Rejected(Array[@lang.GqlError])
+}
+pub fn Refused::to_string(Self) -> String
+
+// Types and methods
+pub struct Client {
+  url : String
+  headers : Array[(String, String)]
+  timeout : Int32?
+}
+pub async fn Client::batch(Self, Array[String], variables? : Array[Map[String, @json.Json]]) -> Array[@json.Json] raise Refused
+pub fn Client::new(url~ : String, headers? : Array[(String, String)], timeout? : Int32) -> Self
+pub async fn Client::query(Self, String, variables? : Map[String, @json.Json], operation_name? : String) -> @json.Json raise Refused
+pub async fn Client::request(Self, String, variables? : Map[String, @json.Json], operation_name? : String) -> @json.Json raise Refused
+
+// Type aliases
+
+// Traits

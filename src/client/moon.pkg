@@ -1,0 +1,17 @@
+// A GraphQL client over HTTP, built on moonfetch: the same request shape the
+// server reads and the same document parser the server uses.
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moonfetch",
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}
+
+// moonfetch is only built for the targets that have sockets, so on the others this
+// package imports it without using it.
+
+warnings = "-29"
+
+options(
+  targets: { "http.mbt": [ "native", "wasm" ], "http_wbtest.mbt": [ "native" ] },
+)
