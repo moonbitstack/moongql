@@ -44,9 +44,10 @@ function findFile(directory, names, depth) {
 }
 
 export function resolveBinary() {
-  const name = process.platform === 'win32' ? 'conformance.exe' : 'conformance';
+  // The native backend names its executables `.exe` on every platform, so both
+  // spellings are looked for rather than chosen by the one running this.
   const build = join(repositoryRoot(), '_build', 'native');
-  const found = findFile(build, [name], 6);
+  const found = findFile(build, ['conformance.exe', 'conformance'], 6);
   if (found) return found;
   throw new Error(
     `the conformance driver is not built; run \`moon build --target native\` first (looked under ${build})`,
