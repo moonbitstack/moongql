@@ -288,11 +288,11 @@ async test "incremental: a deferred fragment arrives in a second payload" {
   assert_eq(out.length(), 2)
   inspect(
     out[0].stringify(),
-    content="{\"data\":{\"user\":{\"id\":\"1\"}},\"hasNext\":true}",
+    content="{\"data\":{\"user\":{\"id\":\"1\"}},\"pending\":[{\"id\":\"0\",\"path\":[\"user\"],\"label\":\"late\"}],\"hasNext\":true}",
   )
   inspect(
     out[1].stringify(),
-    content="{\"incremental\":[{\"data\":{\"name\":\"Alice\"},\"path\":[\"user\"],\"label\":\"late\"}],\"hasNext\":false}",
+    content="{\"incremental\":[{\"id\":\"0\",\"data\":{\"name\":\"Alice\"}}],\"completed\":[{\"id\":\"0\"}],\"hasNext\":false}",
   )
 }
 
@@ -304,18 +304,14 @@ async test "incremental: a streamed list sends its first items at once and the r
   let r = Resolvers::new()
   r.field("Query", "nums", fn(_info) { Json([1, 2, 3]) })
   let out = execute_incremental(s, r, "{ nums @stream(initialCount: 1) }")
-  assert_eq(out.length(), 3)
+  assert_eq(out.length(), 2)
   inspect(
     out[0].stringify(),
-    content="{\"data\":{\"nums\":[1]},\"hasNext\":true}",
+    content="{\"data\":{\"nums\":[1]},\"pending\":[{\"id\":\"0\",\"path\":[\"nums\"]}],\"hasNext\":true}",
   )
   inspect(
     out[1].stringify(),
-    content="{\"incremental\":[{\"items\":[2],\"path\":[\"nums\",1]}],\"hasNext\":true}",
-  )
-  inspect(
-    out[2].stringify(),
-    content="{\"incremental\":[{\"items\":[3],\"path\":[\"nums\",2]}],\"hasNext\":false}",
+    content="{\"incremental\":[{\"id\":\"0\",\"items\":[2,3]}],\"completed\":[{\"id\":\"0\"}],\"hasNext\":false}",
   )
 }
 
@@ -327,10 +323,7 @@ async test "incremental: a document that defers nothing is one payload" {
     "{ user(id: \"1\") { id } }",
   )
   assert_eq(out.length(), 1)
-  inspect(
-    out[0].stringify(),
-    content="{\"data\":{\"user\":{\"id\":\"1\"}},\"hasNext\":false}",
-  )
+  inspect(out[0].stringify(), content="{\"data\":{\"user\":{\"id\":\"1\"}}}")
 }
 
 ///|
@@ -356,7 +349,7 @@ async test "incremental: switching deferral off in the limits runs the fragment 
   assert_eq(out.length(), 1)
   inspect(
     out[0].stringify(),
-    content="{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Alice\"}},\"hasNext\":false}",
+    content="{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Alice\"}}}",
   )
 }
 
@@ -379,6 +372,123 @@ async test "async: a deferred fragment is executed by the asynchronous engine to
   assert_eq(out.length(), 2)
   inspect(
     out[1].stringify(),
-    content="{\"incremental\":[{\"data\":{\"name\":\"Alice\"},\"path\":[\"user\"]}],\"hasNext\":false}",
+    content="{\"incremental\":[{\"id\":\"0\",\"data\":{\"name\":\"Alice\"}}],\"completed\":[{\"id\":\"0\"}],\"hasNext\":false}",
   )
+}
+
+///|
+async test "incremental: two deferrals on one object share a payload" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("user", Named("User"))
+  let u = s.object("User")
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("name", NonNull(Scalar("String")))
+  let r = Resolvers::new()
+  r.field("Query", "user", fn(_info) {
+    let m : Map[String, Json] = Map([])
+    m["id"] = Json("1")
+    m["name"] = Json("Alice")
+    Json(m)
+  })
+  let out = execute_incremental(
+    s, r, "{ user { ... @defer { id } ... @defer(label: \"L\") { name } } }",
+  )
+  assert_eq(out.length(), 2)
+  inspect(
+    out[0].stringify(),
+    content="{\"data\":{\"user\":{}},\"pending\":[{\"id\":\"0\",\"path\":[\"user\"]},{\"id\":\"1\",\"path\":[\"user\"],\"label\":\"L\"}],\"hasNext\":true}",
+  )
+  inspect(
+    out[1].stringify(),
+    content="{\"incremental\":[{\"id\":\"0\",\"data\":{\"id\":\"1\"}},{\"id\":\"1\",\"data\":{\"name\":\"Alice\"}}],\"completed\":[{\"id\":\"0\"},{\"id\":\"1\"}],\"hasNext\":false}",
+  )
+}
+
+///|
+async test "incremental: a deferral inside a deferral arrives with its parent" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("user", Named("User"))
+  let u = s.object("User")
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("name", NonNull(Scalar("String")))
+  let r = Resolvers::new()
+  r.field("Query", "user", fn(_info) {
+    let m : Map[String, Json] = Map([])
+    m["id"] = Json("1")
+    m["name"] = Json("Alice")
+    Json(m)
+  })
+  let out = execute_incremental(
+    s, r, "{ user { ... @defer { name ... @defer { id } } } }",
+  )
+  assert_eq(out.length(), 2)
+  inspect(
+    out[1].stringify(),
+    content="{\"incremental\":[{\"id\":\"0\",\"data\":{\"name\":\"Alice\"}},{\"id\":\"1\",\"data\":{\"id\":\"1\"}}],\"pending\":[{\"id\":\"1\",\"path\":[\"user\"]}],\"completed\":[{\"id\":\"0\"},{\"id\":\"1\"}],\"hasNext\":false}",
+  )
+}
+
+///|
+async test "incremental: an error inside a deferral rides with its entry" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("user", Named("User"))
+  let u = s.object("User")
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("name", Scalar("String"))
+  let r = Resolvers::new()
+  r.field("Query", "user", fn(_info) {
+    let m : Map[String, Json] = Map([])
+    m["id"] = Json("1")
+    Json(m)
+  })
+  r.field("User", "name", fn(_info) raise FieldError {
+    raise FieldError("no name")
+  })
+  let out = execute_incremental(s, r, "{ user { id ... @defer { name } } }")
+  assert_eq(out.length(), 2)
+  let patch = out[1].stringify()
+  assert_eq(
+    patch.contains("{\"id\":\"0\",\"data\":{\"name\":null},\"errors\":["),
+    true,
+  )
+  assert_eq(patch.contains("\"path\":[\"user\",\"name\"]"), true)
+  assert_eq(
+    patch.contains("\"completed\":[{\"id\":\"0\"}],\"hasNext\":false"),
+    true,
+  )
+}
+
+///|
+async test "incremental: a stream of an empty list opens and closes a pending" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("nums", NonNull(@schema.ListOf(@schema.NonNull(Scalar("Int")))))
+  let r = Resolvers::new()
+  let empty : Array[Json] = []
+  r.field("Query", "nums", fn(_info) { Json(empty) })
+  let out = execute_incremental(s, r, "{ nums @stream }")
+  assert_eq(out.length(), 2)
+  inspect(
+    out[0].stringify(),
+    content="{\"data\":{\"nums\":[]},\"pending\":[{\"id\":\"0\",\"path\":[\"nums\"]}],\"hasNext\":true}",
+  )
+  inspect(
+    out[1].stringify(),
+    content="{\"completed\":[{\"id\":\"0\"}],\"hasNext\":false}",
+  )
+}
+
+///|
+async test "incremental: an initial count past the end collapses the stream" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("nums", NonNull(@schema.ListOf(@schema.NonNull(Scalar("Int")))))
+  let r = Resolvers::new()
+  r.field("Query", "nums", fn(_info) { Json([1, 2, 3]) })
+  let out = execute_incremental(s, r, "{ nums @stream(initialCount: 9) }")
+  assert_eq(out.length(), 1)
+  inspect(out[0].stringify(), content="{\"data\":{\"nums\":[1,2,3]}}")
 }

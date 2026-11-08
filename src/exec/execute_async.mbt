@@ -41,17 +41,36 @@ priv struct Outcome {
 }
 
 ///|
+/// Which of the two kinds of postponed work a `Pending` stands for. It decides
+/// when the work runs: a deferred fragment is executed as soon as the payload
+/// that announced it is assembled, while a streamed remainder waits for the next
+/// payload, because its items are what that payload carries.
+priv enum PendingKind {
+  Fragment
+  Items
+}
+
+///|
 /// Work the incremental delivery postpones: a `@defer`red fragment or a `@stream`ed
-/// remainder of a list. It runs after the initial payload is sent.
+/// remainder of a list. `id` is what a client uses to join a `pending` entry to
+/// the `incremental` entry that fulfils it; `path` and `label` are repeated from
+/// the document so a client can place the result without keeping the request.
 priv struct Pending {
+  // A cell rather than a value: a pending is numbered when its payload announces
+  // it, which is after the work that created it has run.
+  id : Array[String]
+  path : Array[Json]
+  label : String?
+  kind : PendingKind
   run : async () -> PendingDone
 }
 
 ///|
-/// What a postponed piece of work produced: one `incremental` entry, the errors
-/// it ran into, and any deferrals it found in turn.
+/// What a postponed piece of work produced: the parts of the entry that goes into
+/// `incremental` (absent when a streamed remainder turned out to be empty), the
+/// errors it ran into, and any deferrals it found in turn.
 priv struct PendingDone {
-  entry : Json
+  entry : Array[(String, Json)]?
   errors : Array[@lang.GqlError]
   pending : Array[Pending]
 }
@@ -268,6 +287,7 @@ async fn Exec::complete_item(
     self.fragments,
     self.variables,
     self.ctx,
+    ids=self.ids,
   )
   match sub.complete_async(inner, item, fields, path, limits) {
     Value(value) =>
@@ -376,21 +396,17 @@ async fn Exec::complete_async(
             Bubbled
           } else {
             match streamed {
-              Some((label, _)) =>
-                if cut < items.length() {
-                  let limit = limits.max_stream
-                  let stop = if items.length() - cut > limit {
-                    cut + limit
-                  } else {
-                    items.length()
-                  }
-                  for i in cut..<stop {
-                    self.pending.push(
-                      self.stream_pending(
-                        inner, items, fields, path, i, label, limits,
-                      ),
-                    )
-                  }
+              Some((label, initial)) =>
+                // A `@stream` whose initial count is larger than the list has
+                // nothing left to postpone, so it collapses into a plain list.
+                // Asking for the whole list by its exact length still opens a
+                // stream: the pending then delivers no items and closes.
+                if initial <= items.length() {
+                  self.pending.push(
+                    self.stream_pending(
+                      inner, items, fields, path, cut, label, limits,
+                    ),
+                  )
                 }
               None => ()
             }
@@ -454,52 +470,74 @@ async fn Exec::complete_async(
 }
 
 ///|
-/// The postponed work of one streamed list item: the item at `index` completed
-/// against the field's sub-selection, delivered as its own `incremental` entry so
-/// a client sees items as they become available.
+/// The postponed work of a `@stream`ed list: the items after the initial count,
+/// completed as one entry. A client that asked for the first N items receives the
+/// rest in one `items` array, which is what keeps a streamed list from turning
+/// into one payload per row; a list longer than `Limits.max_stream` is cut into
+/// successive pendings rather than truncated.
 fn Exec::stream_pending(
   self : Exec,
   inner : @schema.GqlType,
   items : Array[Json],
   fields : Array[@lang.QueryField],
   path : Array[Json],
-  index : Int32,
+  from : Int32,
   label : String?,
   limits : Limits,
 ) -> Pending {
-  {
-    run: async fn() {
-      let sub = Exec::state(
-        self.schema,
-        self.resolvers,
-        self.fragments,
-        self.variables,
-        self.ctx,
-      )
+  let stop = if items.length() - from > limits.max_stream {
+    from + limits.max_stream
+  } else {
+    items.length()
+  }
+  let rest = if stop < items.length() {
+    Some(self.stream_pending(inner, items, fields, path, stop, label, limits))
+  } else {
+    None
+  }
+  let run = async fn() {
+    let sub = Exec::state(
+      self.schema,
+      self.resolvers,
+      self.fragments,
+      self.variables,
+      self.ctx,
+      ids=self.ids,
+    )
+    let out : Array[Json] = []
+    for i in from..<stop {
       let ipath = path.copy()
-      ipath.push(Json(index))
+      ipath.push(Json(i))
       let value = match
-        sub.complete_async(inner, items[index], fields, ipath, limits) {
+        sub.complete_async(inner, items[i], fields, ipath, limits) {
         Value(v) => v
         Bubbled => Json::null()
       }
-      let entries : Array[(String, Json)] = [
-        ("items", Json([value])),
-        ("path", Json(ipath)),
-      ]
-      match label {
-        Some(l) => entries.push(("label", Json(l)))
-        None => ()
-      }
-      { entry: jobj(entries), errors: sub.errors, pending: sub.pending, }
-    },
+      out.push(value)
+    }
+    let later : Array[Pending] = []
+    match rest {
+      Some(p) => later.push(p)
+      None => ()
+    }
+    for p in sub.pending {
+      later.push(p)
+    }
+    // A remainder with nothing left in it closes the pending without an entry,
+    // so the payload that announces it is answered by a `completed` entry alone.
+    let entry : Array[(String, Json)]? = if out.is_empty() {
+      None
+    } else {
+      Some([("items", Json(out))])
+    }
+    { entry, errors: sub.errors, pending: later, }
   }
+  { id: [""], path: path.copy(), label, kind: Items, run, }
 }
 
 ///|
-/// The postponed work of a `@defer`red fragment: at payload time its selection
-/// runs against the same object, and its result is the entry's `data` at the
-/// enclosing path.
+/// The postponed work of a `@defer`red fragment: its selection runs against the
+/// same object, and its result is the entry's `data` at the enclosing path.
 fn Exec::defer_pending(
   self : Exec,
   obj : @schema.ObjectType,
@@ -509,31 +547,41 @@ fn Exec::defer_pending(
   label : String?,
   limits : Limits,
 ) -> Pending {
-  let at = path.copy()
-  {
-    run: async fn() {
-      let sub = Exec::state(
-        self.schema,
-        self.resolvers,
-        self.fragments,
-        self.variables,
-        self.ctx,
-      )
-      let data = match
-        sub.execute_selection_set_async(
-          obj, selections, parent, at, true, limits,
-        ) {
-        Value(v) => v
-        Bubbled => Json::null()
-      }
-      let entries : Array[(String, Json)] = [("data", data), ("path", Json(at))]
-      match label {
-        Some(l) => entries.push(("label", Json(l)))
-        None => ()
-      }
-      { entry: jobj(entries), errors: sub.errors, pending: sub.pending, }
-    },
+  let run = async fn() {
+    let sub = Exec::state(
+      self.schema,
+      self.resolvers,
+      self.fragments,
+      self.variables,
+      self.ctx,
+      ids=self.ids,
+    )
+    let data = match
+      sub.execute_selection_set_async(
+        obj, selections, parent, path, true, limits,
+      ) {
+      Value(v) => v
+      Bubbled => Json::null()
+    }
+    let entry : Array[(String, Json)] = [("data", data)]
+    { entry: Some(entry), errors: sub.errors, pending: sub.pending, }
   }
+  { id: [""], path: path.copy(), label, kind: Fragment, run, }
+}
+
+///|
+/// A `pending` entry: the id a client joins the result by, where the result
+/// belongs, and the label the document asked for.
+fn pending_json(p : Pending) -> Json {
+  let entries : Array[(String, Json)] = [
+    ("id", Json(p.id[0])),
+    ("path", Json(p.path)),
+  ]
+  match p.label {
+    Some(l) => entries.push(("label", Json(l)))
+    None => ()
+  }
+  jobj(entries)
 }
 
 ///|
@@ -641,6 +689,7 @@ async fn Exec::execute_selection_set_async(
         self.fragments,
         self.variables,
         self.ctx,
+        ids=self.ids,
       )
       sub.execute_field_async(obj, group, parent, fpath, limits)
     })
@@ -717,6 +766,7 @@ fn payload(
   errors : Array[@lang.GqlError],
   extensions : Map[String, Json],
   has_next : Bool?,
+  pending~ : Array[Json] = [],
 ) -> Json {
   let entries : Array[(String, Json)] = []
   match data {
@@ -732,6 +782,9 @@ fn payload(
   }
   if !extensions.is_empty() {
     entries.push(("extensions", Json(extensions)))
+  }
+  if !pending.is_empty() {
+    entries.push(("pending", Json(pending)))
   }
   match has_next {
     Some(h) => entries.push(("hasNext", Json(h)))
@@ -778,13 +831,44 @@ fn run_prepare(
 }
 
 ///|
+/// Number the pendings one payload announces, and put them in the order the
+/// announcement reads: the deferrals of a selection first, then the streamed
+/// lists. The ids are opaque to a client — it only joins them — but a fixed
+/// order keeps two runs of the same document byte-identical, which is what the
+/// differential against the reference implementation compares.
+fn assign_ids(exec : Exec, pendings : Array[Pending]) -> Array[Pending] {
+  let ordered : Array[Pending] = []
+  for p in pendings {
+    if p.kind is Fragment {
+      ordered.push(p)
+    }
+  }
+  for p in pendings {
+    if p.kind is Items {
+      ordered.push(p)
+    }
+  }
+  for p in ordered {
+    p.id[0] = exec.take_id()
+  }
+  ordered
+}
+
+///|
 /// Execute a GraphQL request with resolvers that wait, delivering the response in
 /// pieces when the document defers or streams work.
 ///
-/// The payloads are, in order: the initial `{ data, hasNext }`, then one per round
-/// of postponed work — each carrying `incremental` entries with the `path` and
-/// `label` the document asked for — and the last answers `hasNext: false`. A
-/// document that defers nothing produces exactly one payload.
+/// The payloads are, in order: the initial `{ data, pending, hasNext }` listing
+/// what was postponed, then one per round of settled work. A round's payload
+/// carries the `incremental` entries that came back (with the `id` of the
+/// `pending` entry they fulfil), the `pending` entries the round opened, and a
+/// `completed` entry per id that is now finished; the last payload answers
+/// `hasNext: false`. A document that defers nothing produces exactly one payload,
+/// with no `hasNext`.
+///
+/// A deferred fragment runs in the round that announced it, and so does a
+/// deferral a deferral finds; a streamed remainder runs in the round after, since
+/// the payload that announces it has nothing of it to send.
 pub async fn execute_incremental(
   schema : @schema.Schema,
   resolvers : Resolvers,
@@ -825,41 +909,133 @@ pub async fn execute_incremental(
     root_value,
     limits,
   )
-  let out : Array[Json] = []
-  let mut pending = exec.pending
-  out.push(
-    payload(Some(data), exec.errors, extensions, Some(!pending.is_empty())),
-  )
-  while !pending.is_empty() {
-    let jobs : Array[async () -> PendingDone] = []
-    for p in pending {
-      jobs.push(p.run)
-    }
-    let done = @async.all(jobs, max_concurrent=limits.max_concurrency)
-    let next : Array[Pending] = []
-    let errors : Array[@lang.GqlError] = []
-    for d in done {
-      for p in d.pending {
-        next.push(p)
+  let mut round = assign_ids(exec, exec.pending)
+  let announced : Array[Json] = []
+  for p in round {
+    announced.push(pending_json(p))
+  }
+  let out : Array[Json] = [
+    payload(
+      Some(data),
+      exec.errors,
+      extensions,
+      if round.is_empty() {
+        None
+      } else {
+        Some(true)
+      },
+      pending=announced,
+    ),
+  ]
+  while !round.is_empty() {
+    // A payload carries one kind of settled work: the deferrals that are ready,
+    // together, or one streamed list's items. That is the shape a client reads —
+    // deferrals of one object arrive together, a streamed list arrives as a
+    // list — and it is what the reference implementation produces.
+    let defers : Array[Pending] = []
+    let streams : Array[Pending] = []
+    for p in round {
+      if p.kind is Fragment {
+        defers.push(p)
+      } else {
+        streams.push(p)
       }
     }
-    pending = next
-    // One payload per finished piece of work, the way a client observes a stream:
-    // a deferral or a streamed item is its own `next` message, not a batch.
-    for i, d in done {
-      for e in d.errors {
-        errors.push(e)
-      }
-      let parts : Array[(String, Json)] = [("incremental", Json([d.entry]))]
-      if !extensions.is_empty() {
-        parts.push(("extensions", Json(extensions)))
-      }
-      let more = i + 1 < done.length() || !pending.is_empty()
-      parts.push(("hasNext", Json(more)))
-      out.push(jobj(parts))
+    let batch : Array[Pending] = if !defers.is_empty() {
+      defers
+    } else {
+      [streams[0]]
     }
-    // Errors that belong to the round as a whole (none today) would need their
-    // own payload; each entry carries its own above.
+    let waiting : Array[Pending] = if !defers.is_empty() {
+      streams
+    } else if streams.length() > 1 {
+      streams[1:].to_owned()
+    } else {
+      []
+    }
+    // The entries are assembled once the ids are handed out: a deferral a
+    // deferral opens is numbered after it has already run.
+    let bodies : Array[(Pending, Array[(String, Json)], Array[Json])] = []
+    let finished : Array[(Pending, Array[Json])] = []
+    let opened : Array[Pending] = []
+    let mut work = batch
+    // A deferral a deferral opens is settled in this payload too; a stream it
+    // opens waits for the payload after, whose items are what it carries.
+    while !work.is_empty() {
+      let jobs : Array[async () -> PendingDone] = []
+      for p in work {
+        jobs.push(p.run)
+      }
+      let settled = @async.all(jobs, max_concurrent=limits.max_concurrency)
+      let again : Array[Pending] = []
+      for i, d in settled {
+        let p = work[i]
+        let errs : Array[Json] = []
+        for e in d.errors {
+          errs.push(e.to_json())
+        }
+        match d.entry {
+          Some(body) => {
+            bodies.push((p, body, errs))
+            // The id is listed as completed in the same payload that carries its
+            // result: `incremental` says what arrived, `completed` says the
+            // pending is closed.
+            finished.push((p, []))
+          }
+          None => finished.push((p, errs))
+        }
+        for q in d.pending {
+          opened.push(q)
+          if q.kind is Fragment {
+            again.push(q)
+          }
+        }
+      }
+      work = again
+    }
+    let fresh = assign_ids(exec, opened)
+    let incremental : Array[Json] = []
+    for body in bodies {
+      let parts : Array[(String, Json)] = [("id", Json(body.0.id[0]))]
+      for part in body.1 {
+        parts.push(part)
+      }
+      if body.2.length() > 0 {
+        parts.push(("errors", Json(body.2)))
+      }
+      incremental.push(jobj(parts))
+    }
+    let completed : Array[Json] = []
+    for item in finished {
+      let parts : Array[(String, Json)] = [("id", Json(item.0.id[0]))]
+      if item.1.length() > 0 {
+        parts.push(("errors", Json(item.1)))
+      }
+      completed.push(jobj(parts))
+    }
+    let parts : Array[(String, Json)] = []
+    if !incremental.is_empty() {
+      parts.push(("incremental", Json(incremental)))
+    }
+    if !fresh.is_empty() {
+      let entries : Array[Json] = []
+      for p in fresh {
+        entries.push(pending_json(p))
+        if p.kind is Items {
+          waiting.push(p)
+        }
+      }
+      parts.push(("pending", Json(entries)))
+    }
+    if !completed.is_empty() {
+      parts.push(("completed", Json(completed)))
+    }
+    if !extensions.is_empty() {
+      parts.push(("extensions", Json(extensions)))
+    }
+    parts.push(("hasNext", Json(!waiting.is_empty())))
+    out.push(jobj(parts))
+    round = waiting
   }
   out
 }

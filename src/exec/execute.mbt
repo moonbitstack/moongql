@@ -205,6 +205,11 @@ priv struct Exec {
   ctx : Json
   errors : Array[@lang.GqlError]
   pending : Array[Pending]
+  // The next id a piece of postponed work takes, in one cell shared by the
+  // sub-executors a field group or a list element runs in: ids have to be unique
+  // across the request, not per executor, or a client cannot join a `pending`
+  // entry to its `incremental` result.
+  ids : Array[Int32]
 }
 
 ///|
@@ -1208,6 +1213,7 @@ fn coerce_variables(
     ctx: Json::null(),
     errors: [],
     pending: [],
+    ids: [0],
   }
   for vd in op.variable_definitions {
     let required = vd.typ is NonNullType(_)
@@ -1275,15 +1281,35 @@ pub fn build_response(
 }
 
 ///|
-/// Build a fresh per-request executor state with an empty error list.
+/// Build a fresh per-request executor state with an empty error list. `ids` is the
+/// id counter of the request this state belongs to; a sub-executor passes its
+/// parent's cell so the ids it hands out continue the request's numbering.
 fn Exec::state(
   schema : @schema.Schema,
   resolvers : Resolvers,
   fragments : Map[String, @lang.FragmentDefinition],
   variables : Map[String, Json],
   ctx : Json,
+  ids~ : Array[Int32] = [0],
 ) -> Exec {
-  { schema, resolvers, fragments, variables, ctx, errors: [], pending: [], }
+  {
+    schema,
+    resolvers,
+    fragments,
+    variables,
+    ctx,
+    errors: [],
+    pending: [],
+    ids,
+  }
+}
+
+///|
+/// The id the next piece of postponed work takes.
+fn Exec::take_id(self : Exec) -> String {
+  let n = self.ids[0]
+  self.ids[0] = n + 1
+  n.to_string()
 }
 
 ///|

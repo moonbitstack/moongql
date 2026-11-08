@@ -115,12 +115,14 @@ async test "app: a client that asks for multipart gets the payloads as parts" {
   let body = body_of(out)
   assert_eq(body.contains("--gql"), true)
   assert_eq(
-    body.contains("{\"data\":{\"user\":{\"id\":\"1\"}},\"hasNext\":true}"),
+    body.contains(
+      "{\"data\":{\"user\":{\"id\":\"1\"}},\"pending\":[{\"id\":\"0\",\"path\":[\"user\"]}],\"hasNext\":true}",
+    ),
     true,
   )
   assert_eq(
     body.contains(
-      "{\"incremental\":[{\"data\":{\"name\":\"Alice\"},\"path\":[\"user\"]}],\"hasNext\":false}",
+      "{\"incremental\":[{\"id\":\"0\",\"data\":{\"name\":\"Alice\"}}],\"completed\":[{\"id\":\"0\"}],\"hasNext\":false}",
     ),
     true,
   )
