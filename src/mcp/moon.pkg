@@ -1,0 +1,13 @@
+// The bridge from a schema to the Model Context Protocol: every root field
+// becomes a tool, so an agent that speaks MCP can read what this endpoint knows
+// without writing a document first.
+import {
+  "moonbitstack/moongql/lang",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moonmcp",
+}
+
+import {
+  "moonbitlang/async",
+} for "wbtest"

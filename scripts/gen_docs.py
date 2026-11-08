@@ -109,6 +109,17 @@ SECTIONS = [
      "pass are queued and deduped, then one dispatch runs the batch function over "
      "the distinct keys and fills a per-loader cache. Includes prime, clear and "
      "load_many/load_now."),
+    ("reference", "server/reference.mbt", "Schema Reference",
+     "The documentation page an endpoint serves when the Ide is `reference`: the "
+     "root types first, then every other type grouped by kind, each field with its "
+     "arguments, defaults, description and deprecation, and every type name a link. "
+     "Rendered from the schema the handler already holds, so the page fetches "
+     "nothing and runs no operation."),
+    ("mcp", "mcp/mcp.mbt", "Model Context Protocol",
+     "The same schema offered to an agent: every root field becomes a tool whose "
+     "input schema is built from the field's arguments, plus a graphql_query tool "
+     "for documents the agent writes, the SDL as a resource, and an Exposure record "
+     "that decides how much of the schema is visible."),
     ("server", "server/server.mbt", "HTTP Endpoint",
      "graphql_handler / graphql_app wire a schema onto the moonasgi seam: GET "
      "serves the GraphiQL IDE, POST reads a { query, variables, operationName } "

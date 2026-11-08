@@ -1,0 +1,23 @@
+import {
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/mcp",
+  "moonbitstack/moonmcp",
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")
+
+// `async fn main` needs the runtime's entry point, which wasm-gc does not have;
+// that target builds the notice in `wasm_gc_no_async_main.mbt` instead. On it the
+// imports above belong to a file that is not compiled, so their absence from the
+// program is not a warning worth raising.
+
+options(
+  targets: {
+    "main.mbt": [ "native", "wasm", "js" ],
+    "wasm_gc_no_async_main.mbt": [ "wasm-gc" ],
+  },
+)
+
+warnings = "-29"

@@ -1,0 +1,34 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moongql/mcp"
+
+import {
+  "moonbitstack/moongql/exec",
+  "moonbitstack/moongql/schema",
+  "moonbitstack/moonmcp/server",
+}
+
+// Values
+pub let exposure : Exposure
+
+// Errors
+
+// Types and methods
+pub(all) struct Exposure {
+  prefix : String
+  mutations : Bool
+  depth : Int32
+  width : Int32
+}
+
+pub struct Mcp {
+  schema : @schema.Schema
+  resolvers : @exec.Resolvers
+  exposure : Exposure
+}
+pub fn Mcp::attach(Self, @server.Server) -> Unit
+pub fn Mcp::of(schema~ : @schema.Schema, resolvers~ : @exec.Resolvers, exposure? : Exposure) -> Self
+pub fn Mcp::server(Self, name~ : String, version? : String) -> @server.Server
+
+// Type aliases
+
+// Traits

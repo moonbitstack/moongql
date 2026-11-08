@@ -45,6 +45,7 @@ import {
   "moonbitlang/async@0.22.5",
   "moonbitstack/moondb@0.2.7",
   "moonbitstack/moonorm@0.11.9",
+  "moonbitstack/moonmcp@0.1.11",
   "moonbitstack/moonsqlite@0.3.6",
 }
 
