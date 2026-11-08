@@ -492,3 +492,124 @@ async test "incremental: an initial count past the end collapses the stream" {
   assert_eq(out.length(), 1)
   inspect(out[0].stringify(), content="{\"data\":{\"nums\":[1,2,3]}}")
 }
+
+///|
+/// A schema with a list of objects, for the tests about streams of streams.
+fn friends_schema() -> (@schema.Schema, Resolvers) {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("users", NonNull(ListOf(NonNull(Named("User")))))
+  let u = s.object("User")
+  u.field("id", NonNull(Scalar("ID")))
+  u.field("friends", NonNull(ListOf(NonNull(Named("Friend")))))
+  let f = s.object("Friend")
+  f.field("name", NonNull(Scalar("String")))
+  let r = Resolvers::new()
+  r.field("Query", "users", fn(_info) {
+    let bob : Map[String, Json] = { "name": Json("Bob") }
+    let alice : Map[String, Json] = {
+      "id": Json("1"),
+      "friends": Json([Json(bob)]),
+    }
+    let none : Array[Json] = []
+    let cara : Map[String, Json] = { "id": Json("2"), "friends": Json(none) }
+    Json([Json(alice), Json(cara)])
+  })
+  (s, r)
+}
+
+///|
+async test "incremental: two streams opened together arrive in one payload" {
+  let (s, r) = friends_schema()
+  let out = execute_incremental(
+    s, r,
+    // two streams on two aliases: the same field twice is one group, not two
+     "{ a: users @stream(initialCount: 1) { id } b: users @stream(initialCount: 2) { id } }",
+  )
+  assert_eq(out.length(), 2)
+  assert_eq(out[0].stringify().contains("\"hasNext\":true"), true)
+  // both lists answer in one message: a streamed list is ready one turn after
+  // the payload that announced it, and one turn is one message
+  let patch = out[1].stringify()
+  assert_eq(patch.contains("\"id\":\"0\""), true)
+  assert_eq(patch.contains("\"id\":\"1\""), true)
+}
+
+///|
+async test "incremental: a streamed list of lists streams its children next" {
+  let (s, r) = friends_schema()
+  let out = execute_incremental(
+    s, r, "{ users @stream(initialCount: 1) { id friends @stream(initialCount: 0) { name } } }",
+  )
+  assert_eq(out.length(), 3)
+  // the outer list's second item and the first item's friends arrive together
+  let patch = out[1].stringify()
+  assert_eq(
+    patch.contains("{\"id\":\"0\",\"items\":[{\"name\":\"Bob\"}]}"),
+    true,
+  )
+  assert_eq(
+    patch.contains("{\"id\":\"1\",\"items\":[{\"id\":\"2\",\"friends\":[]}]}"),
+    true,
+  )
+  // the child stream of the newly arrived item closes on its own
+  assert_eq(
+    out[2].stringify(),
+    "{\"completed\":[{\"id\":\"2\"}],\"hasNext\":false}",
+  )
+}
+
+///|
+async test "incremental: a deferred fragment that does not match the type is not a pending" {
+  let s = @schema.Schema::new()
+  let q = s.object("Query")
+  q.field("things", NonNull(ListOf(NonNull(Named("Pet")))))
+  let pet = s.interface("Pet")
+  pet.field("name", NonNull(Scalar("String")))
+  let dog = s.object("Dog")
+  dog.implements("Pet")
+  dog.field("name", NonNull(Scalar("String")))
+  let cat = s.object("Cat")
+  cat.implements("Pet")
+  cat.field("name", NonNull(Scalar("String")))
+  s.union("Found", ["Dog", "Cat"])
+  let r = Resolvers::new()
+  r.field("Query", "things", fn(_info) {
+    let dog : Map[String, Json] = {
+      "__typename": Json("Dog"),
+      "name": Json("Rex"),
+    }
+    let cat : Map[String, Json] = {
+      "__typename": Json("Cat"),
+      "name": Json("Tom"),
+    }
+    Json([Json(dog), Json(cat)])
+  })
+  let out = execute_incremental(
+    s, r, "{ things { __typename ... on Dog @defer { name } } }",
+  )
+  // one deferral, for the member whose type condition matches
+  assert_eq(out[0].stringify().contains("\"path\":[\"things\",0]"), true)
+  assert_eq(out[0].stringify().contains("\"path\":[\"things\",1]"), false)
+}
+
+///|
+async test "incremental: the directives read their variables" {
+  let (s, r) = friends_schema()
+  let off = execute_incremental(
+    s,
+    r,
+    "query ($on: Boolean!) { users { id ... @defer(if: $on) { friends { name } } } }",
+    variables=Map([("on", Json(false))]),
+  )
+  // switched off: the fragment runs in place, so there is nothing to postpone
+  assert_eq(off.length(), 1)
+  assert_eq(off[0].stringify().contains("pending"), false)
+  let on = execute_incremental(
+    s,
+    r,
+    "query ($n: Int) { users @stream(if: true, initialCount: $n) { id } }",
+    variables=Map([("n", Json(1))]),
+  )
+  assert_eq(on[0].stringify().contains("\"path\":[\"users\"]"), true)
+}

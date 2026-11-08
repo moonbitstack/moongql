@@ -76,18 +76,46 @@ priv struct PendingDone {
 }
 
 ///|
+/// Read the argument a directive was given, resolving a variable through the
+/// coerced values: `@defer(if: $defer)` is a deferral or not depending on what
+/// the request supplied, and so is `@stream(initialCount: $n)`.
+fn directive_argument(
+  value : @lang.Value,
+  variables : Map[String, Json],
+) -> Json? {
+  match value {
+    Variable(name) => variables.get(name)
+    BooleanValue(b) => Some(Json(b))
+    StringValue(s, _) => Some(Json(s))
+    IntValue(text) => {
+      let n : Int32 = @string.parse_int(text) catch { _ => 0 }
+      Some(Json::number(n.to_double(), repr=text))
+    }
+    FloatValue(text) => {
+      let n : Double = @string.parse_double(text) catch { _ => 0.0 }
+      Some(Json::number(n))
+    }
+    _ => None
+  }
+}
+
+///|
 /// Read the `@defer` directive on a fragment: whether to defer, and the label to
-/// report it under. A directive that is absent, or whose `if` is false, is not a
-/// deferral.
-fn defer_of(directives : Array[@lang.Directive]) -> (Bool, String?)? {
+/// report it under. A directive that is absent, or whose `if` is false — written
+/// out or supplied as a variable — is not a deferral.
+fn defer_of(
+  directives : Array[@lang.Directive],
+  variables : Map[String, Json],
+) -> (Bool, String?)? {
   for d in directives {
     if d.name == "defer" {
       let mut on = true
       let mut label : String? = None
       for a in d.arguments {
-        match (a.name, a.value) {
-          ("if", BooleanValue(b)) => on = b
-          ("label", StringValue(s, _)) => label = Some(s)
+        match (a.name, directive_argument(a.value, variables)) {
+          ("if", Some(True)) => on = true
+          ("if", Some(False)) => on = false
+          ("label", Some(String(s))) => label = Some(s)
           _ => ()
         }
       }
@@ -103,18 +131,21 @@ fn defer_of(directives : Array[@lang.Directive]) -> (Bool, String?)? {
 ///|
 /// Read the `@stream` directive on a field: whether to stream, its label, and how
 /// many items go with the initial payload. `None` when the field is not streamed.
-fn stream_of(directives : Array[@lang.Directive]) -> (String?, Int32)? {
+fn stream_of(
+  directives : Array[@lang.Directive],
+  variables : Map[String, Json],
+) -> (String?, Int32)? {
   for d in directives {
     if d.name == "stream" {
       let mut on = true
       let mut label : String? = None
       let mut initial = 0
       for a in d.arguments {
-        match (a.name, a.value) {
-          ("if", BooleanValue(b)) => on = b
-          ("label", StringValue(s, _)) => label = Some(s)
-          ("initialCount", IntValue(s)) =>
-            initial = @string.parse_int(s) catch { _ => 0 }
+        match (a.name, directive_argument(a.value, variables)) {
+          ("if", Some(True)) => on = true
+          ("if", Some(False)) => on = false
+          ("label", Some(String(s))) => label = Some(s)
+          ("initialCount", Some(Number(n, ..))) => initial = n.to_int()
           _ => ()
         }
       }
@@ -160,7 +191,7 @@ fn Exec::collect_fields_deferred(
       FragmentSpreadSel(name, dirs, _) =>
         if self.should_include(dirs) {
           let here = if allow_defer {
-            match defer_of(dirs) {
+            match defer_of(dirs, self.variables) {
               Some((true, label)) => Some(label)
               _ => None
             }
@@ -169,8 +200,13 @@ fn Exec::collect_fields_deferred(
           }
           match here {
             Some(label) =>
+              // A deferred spread whose type condition does not match the object
+              // in hand selects nothing here, so there is nothing to postpone.
               match self.fragments.get(name) {
-                Some(frag) => deferred.push((label, frag.selection_set))
+                Some(frag) =>
+                  if self.fragment_applies(frag.type_condition, obj) {
+                    deferred.push((label, frag.selection_set))
+                  }
                 None => ()
               }
             None =>
@@ -197,7 +233,7 @@ fn Exec::collect_fields_deferred(
       InlineFragmentSel(cond, dirs, sels, _) =>
         if self.should_include(dirs) {
           let here = if allow_defer {
-            match defer_of(dirs) {
+            match defer_of(dirs, self.variables) {
               Some((true, label)) => Some(label)
               _ => None
             }
@@ -205,7 +241,15 @@ fn Exec::collect_fields_deferred(
             None
           }
           match here {
-            Some(label) => deferred.push((label, sels))
+            Some(label) => {
+              let applies = match cond {
+                None => true
+                Some(c) => self.fragment_applies(c, obj)
+              }
+              if applies {
+                deferred.push((label, sels))
+              }
+            }
             None => {
               let applies = match cond {
                 None => true
@@ -334,7 +378,7 @@ async fn Exec::complete_async(
         Null => Value(Json::null())
         Array(items) => {
           let streamed = if limits.max_stream > 0 {
-            stream_of(fields[0].directives)
+            stream_of(fields[0].directives, self.variables)
           } else {
             None
           }
@@ -515,13 +559,22 @@ fn Exec::stream_pending(
       }
       out.push(value)
     }
+    // The children this piece of work opened, in the order the announcement
+    // reads them: the deferrals they contain, then the streams.
     let later : Array[Pending] = []
+    for p in sub.pending {
+      if p.kind is Fragment {
+        later.push(p)
+      }
+    }
     match rest {
       Some(p) => later.push(p)
       None => ()
     }
     for p in sub.pending {
-      later.push(p)
+      if p.kind is Items {
+        later.push(p)
+      }
     }
     // A remainder with nothing left in it closes the pending without an entry,
     // so the payload that announces it is answered by a `completed` entry alone.
@@ -564,7 +617,18 @@ fn Exec::defer_pending(
       Bubbled => Json::null()
     }
     let entry : Array[(String, Json)] = [("data", data)]
-    { entry: Some(entry), errors: sub.errors, pending: sub.pending, }
+    let children : Array[Pending] = []
+    for p in sub.pending {
+      if p.kind is Fragment {
+        children.push(p)
+      }
+    }
+    for p in sub.pending {
+      if p.kind is Items {
+        children.push(p)
+      }
+    }
+    { entry: Some(entry), errors: sub.errors, pending: children, }
   }
   { id: [""], path: path.copy(), label, kind: Fragment, run, }
 }
@@ -831,20 +895,34 @@ fn run_prepare(
 }
 
 ///|
-/// Number the pendings one payload announces, and put them in the order the
-/// announcement reads: the deferrals of a selection first, then the streamed
-/// lists. The ids are opaque to a client — it only joins them — but a fixed
-/// order keeps two runs of the same document byte-identical, which is what the
-/// differential against the reference implementation compares.
-fn assign_ids(exec : Exec, pendings : Array[Pending]) -> Array[Pending] {
+/// Number the pendings one payload announces. The first payload lists a
+/// selection's deferrals before its streamed lists, which is the order the
+/// reference implementation announces them in; a later payload has already put
+/// its pendings in the order their work produced them, one piece of work's
+/// deferrals before its streams, so it is numbered as it stands.
+///
+/// The ids are opaque to a client — it only joins them — but a fixed order keeps
+/// two runs of the same document byte-identical, which is what the differential
+/// against the reference implementation compares.
+fn assign_ids(
+  exec : Exec,
+  pendings : Array[Pending],
+  group_first~ : Bool = true,
+) -> Array[Pending] {
   let ordered : Array[Pending] = []
-  for p in pendings {
-    if p.kind is Fragment {
-      ordered.push(p)
+  if group_first {
+    for p in pendings {
+      if p.kind is Fragment {
+        ordered.push(p)
+      }
     }
-  }
-  for p in pendings {
-    if p.kind is Items {
+    for p in pendings {
+      if p.kind is Items {
+        ordered.push(p)
+      }
+    }
+  } else {
+    for p in pendings {
       ordered.push(p)
     }
   }
@@ -928,10 +1006,12 @@ pub async fn execute_incremental(
     ),
   ]
   while !round.is_empty() {
-    // A payload carries one kind of settled work: the deferrals that are ready,
-    // together, or one streamed list's items. That is the shape a client reads —
-    // deferrals of one object arrive together, a streamed list arrives as a
-    // list — and it is what the reference implementation produces.
+    // One payload carries everything that is ready at the same moment: the
+    // deferrals of this round together, or — once no deferral is left — every
+    // streamed list of the round together. A deferral is ready as soon as the
+    // payload before it went out; a streamed list needs one more turn, because
+    // what it carries is its items. That is the shape the reference
+    // implementation produces, and a client sees one message per moment.
     let defers : Array[Pending] = []
     let streams : Array[Pending] = []
     for p in round {
@@ -944,15 +1024,9 @@ pub async fn execute_incremental(
     let batch : Array[Pending] = if !defers.is_empty() {
       defers
     } else {
-      [streams[0]]
-    }
-    let waiting : Array[Pending] = if !defers.is_empty() {
       streams
-    } else if streams.length() > 1 {
-      streams[1:].to_owned()
-    } else {
-      []
     }
+    let waiting : Array[Pending] = if !defers.is_empty() { streams } else { [] }
     // The entries are assembled once the ids are handed out: a deferral a
     // deferral opens is numbered after it has already run.
     let bodies : Array[(Pending, Array[(String, Json)], Array[Json])] = []
@@ -993,7 +1067,7 @@ pub async fn execute_incremental(
       }
       work = again
     }
-    let fresh = assign_ids(exec, opened)
+    let fresh = assign_ids(exec, opened, group_first=false)
     let incremental : Array[Json] = []
     for body in bodies {
       let parts : Array[(String, Json)] = [("id", Json(body.0.id[0]))]

@@ -1186,15 +1186,19 @@ specification fixes the shape of an error and where it is reported, not the
 sentence.
 
 `run-incremental.mjs` holds deferred and streamed work to the same standard, at the
-level of the payload sequence rather than the response: 20 documents — a deferral, a
-labelled one, two on one object, one inside another, a named fragment, a type
-condition, a null parent, one switched off, one behind a variable, a stream with
-each shape of `initialCount`, a stream past the end, a nested list, a deferral
-inside a streamed item, a stream inside a deferral, an empty list, and the two in
-one document — are replayed through `graphql-js`'s `experimentalExecuteIncrementally`
-and through this library, and both sequences are compared payload by payload, as
-text with object keys ordered. **20 of 20 agree**, ids, `pending`, `completed` and
-the order of the payloads included.
+level of the payload sequence rather than the response: 40 documents — a deferral, a
+labelled one, two on one object, three levels of them, a named fragment spread
+twice, a type condition that does and does not match, a null parent, one switched
+off by a literal and one by a variable, aliased fields, conditional fields inside a
+deferral, streams with each shape of `initialCount`, past the end, of an empty list
+and of a missing one, two streams on sibling fields, a stream inside a streamed
+item, a deferral inside a stream inside a deferral, a deferral wrapping a stream
+and vice versa, and the two in one document — are replayed through
+`graphql-js`'s `experimentalExecuteIncrementally` and through this library, and both
+sequences are compared payload by payload, as text with object keys ordered.
+**40 of 40 agree**: how many payloads there are, which ids they announce, when a
+piece of work settles, and the order of `pending`, `incremental` and `completed`
+within each.
 
 ## License
 

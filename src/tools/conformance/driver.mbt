@@ -20,23 +20,39 @@
 ///|
 /// A person, the object most of the schema is about.
 fn user(id : String, name : String, age : Int32, role : String) -> Json {
+  friend_of(id, name, age, role, [])
+}
+
+///|
+/// The same person with the friends the fixture gives them. The reference schema
+/// the audits compare against says Alice has one friend and the other two have
+/// none, so this one says it too: a streamed `friends` is only worth replaying if
+/// both sides stream the same list.
+fn friend_of(
+  id : String,
+  name : String,
+  age : Int32,
+  role : String,
+  friends : Array[Json],
+) -> Json {
   let m : Map[String, Json] = Map([])
   m["__typename"] = Json("User")
   m["id"] = Json(id)
   m["name"] = Json(name)
   m["age"] = Json(age)
   m["role"] = Json(role)
-  let none : Array[Json] = []
-  m["friends"] = Json(none)
+  m["friends"] = Json(friends)
   Json(m)
 }
 
 ///|
-/// The three people the schema knows, in id order.
+/// The three people the schema knows, in id order: Alice, who knows Bob; Bob; and
+/// Cara, who knows nobody.
 fn people() -> Array[Json] {
+  let bob = user("2", "Bob", 25, "GUEST")
   [
-    user("1", "Alice", 30, "ADMIN"),
-    user("2", "Bob", 25, "GUEST"),
+    friend_of("1", "Alice", 30, "ADMIN", [bob]),
+    bob,
     user("3", "Cara", 41, "ADMIN"),
   ]
 }
@@ -115,8 +131,6 @@ fn resolvers() -> @exec.Resolvers {
     let id : String = info.read("id")
     for p in people() {
       if p is Object(m) && m.get("id") == Some(Json(id)) {
-        let none : Array[Json] = []
-        m["friends"] = if id == "1" { Json([people()[1]]) } else { Json(none) }
         return Json(m)
       }
     }
