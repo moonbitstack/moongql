@@ -112,3 +112,7 @@ jobs:
       - name: differential against graphql-js
         working-directory: scripts/audit
         run: node run-differential.mjs
+
+      - name: incremental delivery against graphql-js
+        working-directory: scripts/audit
+        run: node run-incremental.mjs
