@@ -93,6 +93,7 @@ pub using @server {
   graphql_handler,
   graphql_ws_app,
   graphql_ws_handler,
+  reference,
   off,
 }
 

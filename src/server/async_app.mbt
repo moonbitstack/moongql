@@ -136,7 +136,7 @@ pub fn graphql_app(
             if ide.is_off() {
               reply(send, 405, "Method Not Allowed")
             } else {
-              let page = @utf8.encode(ide.html(endpoint=path))
+              let page = @utf8.encode(ide.html(endpoint=path, schema~))
               send(
                 @spec.Event::HttpResponseStart(
                   status=200,

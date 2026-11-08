@@ -1,5 +1,5 @@
 ///|
-/// The in-browser IDE a `GET` on the GraphQL endpoint serves. Four of them are on
+/// The in-browser IDE a `GET` on the GraphQL endpoint serves. Five of them are on
 /// offer and the whole thing can be turned off:
 ///
 ///   * **the MoonQL page** (`site`, the default) — the library's own IDE, built
@@ -21,6 +21,12 @@
 ///   * **Altair** (`altair`) — the fullest of the three: environments, saved
 ///     collections, and subscriptions over WebSocket or SSE.
 ///
+///   * **the schema reference** (`reference`) — not an IDE: a documentation page
+///     rendered from the schema the server holds, with the root types first,
+///     every field linked to the type it returns, descriptions, deprecations and
+///     a filter box. It runs no operation, which is what makes it safe to serve
+///     anywhere the schema itself may be shown.
+///
 /// Every asset is pinned to an exact version, so a page served today keeps
 /// working when the CDN moves on. The IDE is a development surface: it
 /// introspects the schema and runs arbitrary operations, which is why `off`
@@ -34,6 +40,7 @@ pub(all) enum IdeKind {
   GraphiQL
   ApolloSandbox
   Altair
+  Reference
   Off
 }
 
@@ -67,6 +74,11 @@ pub let apollo_sandbox : Ide = {
 pub let altair : Ide = { kind: Altair, subscription_endpoint: None, }
 
 ///|
+/// The schema reference: a documentation page built from the schema, for readers
+/// rather than for running operations.
+pub let reference : Ide = { kind: Reference, subscription_endpoint: None, }
+
+///|
 /// No IDE at all: a `GET` without a `?query=` is a 405.
 pub let off : Ide = { kind: Off, subscription_endpoint: None, }
 
@@ -84,6 +96,7 @@ pub fn Ide::title(self : Ide) -> String {
     GraphiQL => "GraphiQL"
     ApolloSandbox => "Apollo Sandbox"
     Altair => "Altair"
+    Reference => "Schema reference"
     Off => ""
   }
 }
@@ -91,12 +104,26 @@ pub fn Ide::title(self : Ide) -> String {
 ///|
 /// The full HTML page mounting this IDE against `endpoint`. `Off` has no page,
 /// and answers the empty string.
-pub fn Ide::html(self : Ide, endpoint~ : String = "/graphql") -> String {
+///
+/// `schema` is what the reference page is rendered from; the four IDEs do not
+/// read it, since they introspect the endpoint the way any client does. A
+/// reference page asked for without a schema says so rather than pretending to
+/// be one.
+pub fn Ide::html(
+  self : Ide,
+  endpoint~ : String = "/graphql",
+  schema? : @schema.Schema,
+) -> String {
   match self.kind {
     Site => site_page(endpoint)
     GraphiQL => graphiql_page(endpoint, self.subscription_endpoint)
     ApolloSandbox => apollo_page(endpoint)
     Altair => altair_page(endpoint, self.subscription_endpoint)
+    Reference =>
+      match schema {
+        Some(s) => reference_html(s, endpoint~)
+        None => missing_schema_page(endpoint)
+      }
     Off => ""
   }
 }

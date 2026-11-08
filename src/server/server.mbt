@@ -403,7 +403,7 @@ pub fn graphql_handler(
               @moonasgi.Response::new(
                 200,
                 [("content-type", "text/html; charset=utf-8")],
-                @utf8.encode(ide.html(endpoint=path)),
+                @utf8.encode(ide.html(endpoint=path, schema~)),
               )
             }
         }

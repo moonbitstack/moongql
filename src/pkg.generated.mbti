@@ -53,6 +53,8 @@ pub fn parse(String) -> @lang.Document raise @lang.Refused
 
 pub fn[T : @exec.FromGql] read(@json.Json, String) -> T raise @exec.FieldError
 
+pub let reference : @server.Ide
+
 pub fn refusal(Error) -> @lang.GqlError
 
 pub fn refused(String, @lang.Pos) -> @lang.Refused

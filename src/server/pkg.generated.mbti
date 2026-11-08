@@ -35,6 +35,10 @@ pub fn multipart_part(String, @json.Json) -> String
 
 pub let off : Ide
 
+pub let reference : Ide
+
+pub fn reference_html(@schema.Schema, endpoint? : String) -> String
+
 pub let site : Ide
 
 // Errors
@@ -65,7 +69,7 @@ pub(all) struct Ide {
   kind : IdeKind
   subscription_endpoint : String?
 }
-pub fn Ide::html(Self, endpoint? : String) -> String
+pub fn Ide::html(Self, endpoint? : String, schema? : @schema.Schema) -> String
 pub fn Ide::is_off(Self) -> Bool
 pub fn Ide::title(Self) -> String
 
@@ -75,6 +79,7 @@ pub(all) enum IdeKind {
   GraphiQL
   ApolloSandbox
   Altair
+  Reference
   Off
 }
 pub fn IdeKind::equal(Self, Self) -> Bool
