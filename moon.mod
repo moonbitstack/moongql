@@ -1,6 +1,6 @@
 name = "moonbitstack/moongql"
 
-version = "0.10.10"
+version = "0.10.11"
 
 readme = "README.md"
 
@@ -37,16 +37,16 @@ keywords = [
 description = "Code-first GraphQL for MoonBit."
 
 import {
-  "moonbitstack/moonasgi@0.10.6",
-  "moonbitstack/moonfetch@0.1.6",
-  "moonbitstack/moonast@0.2.6",
+  "moonbitstack/moonasgi@0.10.8",
+  "moonbitstack/moonfetch@0.1.8",
+  "moonbitstack/moonast@0.2.7",
   "moonbitlang/parser@0.4.6",
   "moonbitlang/x@0.5.1",
   "moonbitlang/async@0.22.5",
-  "moonbitstack/moondb@0.2.7",
-  "moonbitstack/moonorm@0.11.9",
-  "moonbitstack/moonmcp@0.1.11",
-  "moonbitstack/moonsqlite@0.3.6",
+  "moonbitstack/moondb@0.2.8",
+  "moonbitstack/moonorm@0.11.10",
+  "moonbitstack/moonmcp@0.1.12",
+  "moonbitstack/moonsqlite@0.3.7",
 }
 
 source = "src"

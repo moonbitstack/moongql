@@ -99,7 +99,7 @@ fn sdl_sources(
   let found = []
   for decl in decls {
     match decl {
-      Other(file~, raw=TopLetDef(binder~, expr~, attrs~, ..)) =>
+      Other(file~, raw=TopLetDef(binder~, expr~, attrs~, ..), ..) =>
         if sdl_attr(attrs, file) is Some(attr) {
           let where_ = at(attr, file)
           if sdl_spec.bind(attr).str("file") is Some(_) {
