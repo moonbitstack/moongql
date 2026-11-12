@@ -68,6 +68,8 @@ A `GET` without a `?query=` serves a page: the library's own IDE by default, or
 `@moongql.graphiql`, `@moongql.apollo_sandbox`, `@moongql.altair`, the schema
 reference at `@moongql.reference`, or `@moongql.off`. The reference is rendered
 from the schema the handler already holds — a documentation page, not an editor:
+every type and field, and the directives a document may write, with their
+locations and defaults.
 
 ```moonbit
 let app = @moongql.graphql_app(schema, resolvers, ide=@moongql.reference)
