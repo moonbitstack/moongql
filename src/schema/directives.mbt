@@ -261,6 +261,82 @@ pub fn applied_directives_sdl(ds : Array[AppliedDirective]) -> String {
 }
 
 ///|
+/// The four directives the specification makes every schema understand, in the
+/// order introspection reports them. They are not registered on a `Schema` — the
+/// validator and the executor know them by name — so this is where their
+/// definitions live for anything that has to show them, introspection included.
+pub fn standard_directives() -> Array[DirectiveDef] {
+  [
+    {
+      name: "include",
+      description: Some(
+        "Directs the executor to include this field or fragment only when the `if` argument is true.",
+      ),
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+      args: [("if", NonNull(Scalar("Boolean")))],
+      arg_defaults: Map([]),
+      is_repeatable: false,
+      on_field: None,
+    },
+    {
+      name: "skip",
+      description: Some(
+        "Directs the executor to skip this field or fragment when the `if` argument is true.",
+      ),
+      locations: ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+      args: [("if", NonNull(Scalar("Boolean")))],
+      arg_defaults: Map([]),
+      is_repeatable: false,
+      on_field: None,
+    },
+    {
+      name: "deprecated",
+      description: Some(
+        "Marks an element of a GraphQL schema as no longer supported.",
+      ),
+      locations: [
+        "FIELD_DEFINITION", "ARGUMENT_DEFINITION", "INPUT_FIELD_DEFINITION", "ENUM_VALUE",
+      ],
+      args: [("reason", Scalar("String"))],
+      arg_defaults: Map([("reason", Json("No longer supported"))]),
+      is_repeatable: false,
+      on_field: None,
+    },
+    {
+      name: "specifiedBy",
+      description: Some(
+        "Exposes a URL that specifies the behavior of this scalar.",
+      ),
+      locations: ["SCALAR"],
+      args: [("url", NonNull(Scalar("String")))],
+      arg_defaults: Map([]),
+      is_repeatable: false,
+      on_field: None,
+    },
+  ]
+}
+
+///|
+/// Every directive a document may write against this schema — the four the
+/// specification fixes, the two this server executes, and the ones the schema
+/// registered — one entry per name, in that order of precedence.
+pub fn Schema::all_directives(self : Schema) -> Array[DirectiveDef] {
+  let out = standard_directives()
+  for name in ["defer", "stream"] {
+    match builtin_exec_directive(name) {
+      Some(d) => out.push(d)
+      None => ()
+    }
+  }
+  for d in self.directive_defs {
+    if !out.any(fn(known) { known.name == d.name }) {
+      out.push(d)
+    }
+  }
+  out
+}
+
+///|
 /// The definition of a built-in executable directive (`@skip` / `@include`), or
 /// `None` for a name that is not a built-in. The validator reads its locations and
 /// its `if: Boolean!` argument; the executor evaluates the directive itself, so no

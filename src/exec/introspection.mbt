@@ -341,69 +341,13 @@ fn Exec::introspection_type_by_name(self : Exec, name : String) -> Json {
 }
 
 ///|
-/// The three standard built-in directives, materialised as `__Directive`s.
+/// The directives a schema knows, as `__Directive`s: the ones the specification
+/// fixes, then the ones this schema registered. The definitions come from the
+/// schema package, so what a document may write and what introspection reports
+/// are one list.
 fn Exec::directives_json(self : Exec) -> Json {
-  let field_locs : Array[Json] = [
-    Json("FIELD"),
-    Json("FRAGMENT_SPREAD"),
-    Json("INLINE_FRAGMENT"),
-  ]
-  let bool_if : Array[Json] = [
-    self.input_value_json("if", NonNull(@schema.Scalar("Boolean"))),
-  ]
-  let deprecated_reason : Array[Json] = [
-    self.input_value_json(
-      "reason",
-      Scalar("String"),
-      default=Json("No longer supported"),
-    ),
-  ]
-  let directive = fn(
-    name : String,
-    description : String,
-    locs : Array[Json],
-    args : Array[Json],
-    is_repeatable : Bool,
-  ) -> Json {
-    jobj([
-      ("name", Json(name)),
-      ("description", Json(description)),
-      ("locations", Json(locs)),
-      ("args", Json(args)),
-      ("isRepeatable", Json(is_repeatable)),
-    ])
-  }
-  let out : Array[Json] = [
-    directive(
-      "include", "Directs the executor to include this field or fragment only when the `if` argument is true.",
-      field_locs, bool_if, false,
-    ),
-    directive(
-      "skip", "Directs the executor to skip this field or fragment when the `if` argument is true.",
-      field_locs, bool_if, false,
-    ),
-    directive(
-      "deprecated",
-      "Marks an element of a GraphQL schema as no longer supported.",
-      [
-        Json("FIELD_DEFINITION"),
-        Json("ARGUMENT_DEFINITION"),
-        Json("INPUT_FIELD_DEFINITION"),
-        Json("ENUM_VALUE"),
-      ],
-      deprecated_reason,
-      false,
-    ),
-    directive(
-      "specifiedBy",
-      "Exposes a URL that specifies the behavior of this scalar.",
-      [Json("SCALAR")],
-      [self.input_value_json("url", NonNull(@schema.Scalar("String")))],
-      false,
-    ),
-  ]
-  // User-registered directives (@upper, @auth, ...) show up alongside the built-ins.
-  for d in self.schema.directive_defs {
+  let out : Array[Json] = []
+  let emit = fn(d : @schema.DirectiveDef) {
     let locs : Array[Json] = []
     for l in d.locations {
       locs.push(Json(l))
@@ -430,6 +374,12 @@ fn Exec::directives_json(self : Exec) -> Json {
         ("isRepeatable", Json(d.is_repeatable)),
       ]),
     )
+  }
+  for d in @schema.standard_directives() {
+    emit(d)
+  }
+  for d in self.schema.directive_defs {
+    emit(d)
   }
   Json(out)
 }

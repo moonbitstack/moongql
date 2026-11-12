@@ -701,9 +701,12 @@ The MoonQL page is built by the library — one HTML string, nothing fetched fro
 `@moongql.reference` is not an editor: it is the schema written down, rendered from
 the one the handler already holds. The root types come first, then every other type
 grouped by kind, each field with its arguments, its default values, its description
-and its deprecation, and every type name a link to its own section. A filter box
-narrows the rail and the page together. Nothing is fetched and no operation runs,
-which is what makes the page safe to serve wherever the schema itself may be shown.
+and its deprecation, and every type name a link to its own section. The directives a
+document may write come last — the four the specification fixes, `@defer` and
+`@stream`, and whatever the schema registered — each with the locations it may be
+written at and the defaults its arguments run with. A filter box narrows the rail
+and the page together. Nothing is fetched and no operation runs, which is what makes
+the page safe to serve wherever the schema itself may be shown.
 
 ```moonbit
 test {

@@ -131,6 +131,64 @@ fn fields_html(
 }
 
 ///|
+/// One directive's section: where a document may write it, the arguments it takes
+/// with their defaults, and what it is for. The anchor carries the `@`, so a
+/// link into the page names the directive the way a document would.
+fn directive_section(
+  schema : @schema.Schema,
+  d : @schema.DirectiveDef,
+) -> String {
+  let body = StringBuilder()
+  body.write_string("<p class=\"impl\">Locations: ")
+  let mut first = true
+  for loc in d.locations {
+    if !first {
+      body.write_string("<span class=\"p\"> \u{b7} </span>")
+    }
+    first = false
+    body.write_string("<code>" + html_escape(loc) + "</code>")
+  }
+  if d.is_repeatable {
+    body.write_string(
+      "<span class=\"p\"> \u{b7} </span><code>repeatable</code>",
+    )
+  }
+  body.write_string("</p>")
+  if d.args.is_empty() {
+    body.write_string("<p class=\"empty\">No arguments.</p>")
+  } else {
+    body.write_string("<div class=\"fields\">")
+    for a in d.args {
+      body.write_string(
+        "<div class=\"field\"><div class=\"sig\"><span class=\"aname\">",
+      )
+      body.write_string(html_escape(a.0))
+      body.write_string("</span><span class=\"p\">: </span>")
+      body.write_string(type_ref_html(schema, a.1))
+      match d.arg_defaults.get(a.0) {
+        Some(v) => {
+          body.write_string("<span class=\"p\"> = </span><span class=\"def\">")
+          body.write_string(html_escape(@moonjson.dumps(v)))
+          body.write_string("</span>")
+        }
+        None => ()
+      }
+      body.write_string("</div></div>")
+    }
+    body.write_string("</div>")
+  }
+  type_section(
+    schema,
+    "@" + d.name,
+    "DIRECTIVE",
+    d.description,
+    [],
+    body.to_string(),
+    anchor="directive-" + d.name,
+  )
+}
+
+///|
 /// One type's section: the heading with its kind, the description, the
 /// interfaces it implements, and the body each kind of type has.
 fn type_section(
@@ -140,9 +198,14 @@ fn type_section(
   description : String?,
   implements : Array[String],
   body : String,
+  anchor? : String,
 ) -> String {
   let out = StringBuilder()
-  out.write_string("<section class=\"type\" id=\"" + html_escape(name) + "\">")
+  let id = match anchor {
+    Some(a) => a
+    None => name
+  }
+  out.write_string("<section class=\"type\" id=\"" + html_escape(id) + "\">")
   out.write_string("<h2><span class=\"name\">" + html_escape(name) + "</span>")
   out.write_string("<span class=\"kind\">" + html_escape(kind) + "</span></h2>")
   match description {
@@ -333,6 +396,7 @@ pub fn reference_html(
       @schema.Input => inputs.push(t)
     }
   }
+  let directives = schema.all_directives()
   let out = StringBuilder()
   out.write_string("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
   out.write_string("<meta charset=\"utf-8\" />\n")
@@ -411,10 +475,28 @@ pub fn reference_html(
   if !in_names.is_empty() {
     groups.push(("Input objects", dict_order(in_names)))
   }
+  if !directives.is_empty() {
+    groups.push(("Directives", []))
+  }
   for group in groups {
     out.write_string(
       "<div class=\"group\"><h3>" + html_escape(group.0) + "</h3>",
     )
+    if group.0 == "Directives" {
+      for d in directives {
+        out.write_string(
+          "<a href=\"#directive-" +
+          html_escape(d.name) +
+          "\" data-name=\"@" +
+          html_escape(d.name.to_lower()) +
+          "\">@" +
+          html_escape(d.name) +
+          "</a>",
+        )
+      }
+      out.write_string("</div>")
+      continue
+    }
     for name in group.1 {
       out.write_string(
         "<a href=\"#" +
@@ -433,7 +515,7 @@ pub fn reference_html(
   out.write_string("<div class=\"lede-block\">")
   out.write_string("<h1>Everything this endpoint answers</h1>")
   out.write_string(
-    "<p>A rendering of the schema the server holds, in the order a caller works through it. Fields link to the type they return; deprecated ones say so. The same material is available as SDL from the schema itself.</p>",
+    "<p>A rendering of the schema the server holds, in the order a caller works through it. Fields link to the type they return, their arguments carry their defaults, and deprecated ones say so; the directives a document may write come last. The same material is available as SDL from the schema itself.</p>",
   )
   out.write_string("</div>")
   out.write_string("<div class=\"counts\">")
@@ -453,6 +535,9 @@ pub fn reference_html(
   )
   out.write_string(
     "<div>Unions<b>" + schema.unions.length().to_string() + "</b></div>",
+  )
+  out.write_string(
+    "<div>Directives<b>" + directives.length().to_string() + "</b></div>",
   )
   out.write_string("</div>\n")
 
@@ -560,6 +645,9 @@ pub fn reference_html(
     out.write_string(
       type_section(schema, s.name, "SCALAR", s.description, [], body),
     )
+  }
+  for d in directives {
+    out.write_string(directive_section(schema, d))
   }
   out.write_string(
     "<footer class=\"foot\">query " +

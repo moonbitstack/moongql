@@ -476,6 +476,14 @@ pub fn kind_keyword(k : TypeKind) -> String {
 }
 
 ///|
+/// Every directive the schema declares, in the order they were registered. This
+/// is the definition side of `__schema { directives }`, for a caller that wants
+/// the locations and the arguments rather than the introspected JSON.
+pub fn Schema::directives(self : Schema) -> Array[DirectiveDef] {
+  self.directive_defs.copy()
+}
+
+///|
 /// Render a directive definition to SDL: `directive @name(a: A) repeatable on
 /// LOCATION | LOCATION`. A definition is what a `Schema::directive` call
 /// registers; the places a directive is *used* are `AppliedDirective`s, which
