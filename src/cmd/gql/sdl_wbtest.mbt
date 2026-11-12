@@ -257,7 +257,7 @@ test "a subscription in SDL declares its events and registers its source" {
   assert_true(
     code.contains(
       flat(
-        "subscribers.field(gql_subscription.name, \"ticks\", info => {(try { Subscription::ticks(info.read(\"from\")) } catch { e => raise @moongql.field_error(e) }).map(e => @moongql.ToGql::to_gql(e))})",
+        "subscribers.field(gql_subscription.name, \"ticks\", info => {(Subscription::ticks(info.read(\"from\")) catch { e => raise @moongql.field_error(e) }).map(e => @moongql.ToGql::to_gql(e))})",
       ),
     ),
   )

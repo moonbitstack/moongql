@@ -121,9 +121,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   )
   resolvers.field(
     gql_mutation.name, "addBook", info => {
-      try {
-        @moongql.ToGql::to_gql(add_book(info.read("input")))
-      } catch{
+      @moongql.ToGql::to_gql(add_book(info.read("input"))) catch {
         e => raise  @moongql.field_error(e)
       }
     },

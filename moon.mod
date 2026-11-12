@@ -39,9 +39,9 @@ description = "Code-first GraphQL for MoonBit."
 import {
   "moonbitstack/moonasgi@0.10.8",
   "moonbitstack/moonfetch@0.1.8",
-  "moonbitstack/moonast@0.2.7",
-  "moonbitlang/parser@0.4.6",
-  "moonbitlang/x@0.5.1",
+  "moonbitstack/moonast@0.2.8",
+  "moonbitlang/parser@0.4.8",
+  "moonbitlang/x@0.5.7",
   "moonbitlang/async@0.22.5",
   "moonbitstack/moondb@0.2.8",
   "moonbitstack/moonorm@0.11.10",

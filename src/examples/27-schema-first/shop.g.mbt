@@ -2,20 +2,16 @@
 
 ///|
 pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Unit {
-  try {
-    schema.add_sdl(shop_sdl + "\n" + mutations_sdl())
-  } catch{
+  schema.add_sdl(shop_sdl + "\n" + mutations_sdl()) catch {
     e => abort(e.to_string())
   }
   resolvers.field(
     "Author", "books", info => {
       @moongql.ToGql::to_gql(
-        try {
-          Author::books(
-            @moongql.FromGql::from_gql(info.parent),
-            first?=info.read("first"),
-          )
-        } catch{
+        Author::books(
+          @moongql.FromGql::from_gql(info.parent),
+          first?=info.read("first"),
+        ) catch {
           e => raise  @moongql.field_error(e)
         },
       )
@@ -24,9 +20,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   resolvers.field(
     "Book", "author", info => {
       @moongql.ToGql::to_gql(
-        try {
-          Book::author(@moongql.FromGql::from_gql(info.parent))
-        } catch{
+        Book::author(@moongql.FromGql::from_gql(info.parent)) catch {
           e => raise  @moongql.field_error(e)
         },
       )
@@ -35,9 +29,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   resolvers.field(
     "Query", "book", info => {
       @moongql.ToGql::to_gql(
-        try {
-          Query::book(info.read("id"))
-        } catch{
+        Query::book(info.read("id")) catch {
           e => raise  @moongql.field_error(e)
         },
       )
@@ -46,9 +38,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   resolvers.field(
     "Query", "search", info => {
       @moongql.ToGql::to_gql(
-        try {
-          Query::search(info.read("text"))
-        } catch{
+        Query::search(info.read("text")) catch {
           e => raise  @moongql.field_error(e)
         },
       )
@@ -57,9 +47,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   resolvers.field(
     "Mutation", "addBook", info => {
       @moongql.ToGql::to_gql(
-        try {
-          Mutation::add_book(info.read("input"))
-        } catch{
+        Mutation::add_book(info.read("input")) catch {
           e => raise  @moongql.field_error(e)
         },
       )
@@ -87,9 +75,7 @@ pub fn register_subscriptions(
   subscribers.field(
     gql_subscription.name, "bookAdded", info => {
       (
-        try {
-          Subscription::book_added(author_id?=info.read("authorId"))
-        } catch{
+        Subscription::book_added(author_id?=info.read("authorId")) catch {
           e => raise  @moongql.field_error(e)
         }
       ).map(e => @moongql.ToGql::to_gql(e))

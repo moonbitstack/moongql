@@ -59,9 +59,7 @@ pub fn register(schema : @moongql.Schema, resolvers : @moongql.Resolvers) -> Uni
   )
   resolvers.field(
     gql_mutation.name, "addBook", info => {
-      try {
-        @moongql.ToGql::to_gql(add_book(info.read("input")))
-      } catch{
+      @moongql.ToGql::to_gql(add_book(info.read("input"))) catch {
         e => raise  @moongql.field_error(e)
       }
     },
@@ -102,9 +100,7 @@ pub fn register_federation(federation : @moongql.Federation) -> Unit {
     key="id",
     resolve=(rep, _) => {
       @moongql.ToGql::to_gql(
-        try {
-          book_by_id(@moongql.read(rep, "id"))
-        } catch{
+        book_by_id(@moongql.read(rep, "id")) catch {
           e => raise  @moongql.field_error(e)
         },
       )
