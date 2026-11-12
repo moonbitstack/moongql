@@ -3,7 +3,7 @@
 // between the platforms, so the binary is found by name rather than by path, and
 // the repository root is found from this file so the scripts run from anywhere.
 import { existsSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 function repositoryRoot() {
@@ -16,7 +16,7 @@ function repositoryRoot() {
   }
 }
 
-function findFile(directory, names, depth) {
+function findFile(directory, names, depth, where = () => true) {
   if (depth < 0) return null;
   let entries;
   try {
@@ -27,7 +27,7 @@ function findFile(directory, names, depth) {
   for (const entry of entries) {
     if (names.includes(entry)) {
       const candidate = join(directory, entry);
-      if (statSync(candidate).isFile()) return candidate;
+      if (statSync(candidate).isFile() && where(candidate)) return candidate;
     }
   }
   for (const entry of entries) {
@@ -37,7 +37,7 @@ function findFile(directory, names, depth) {
     } catch {
       continue;
     }
-    const found = findFile(child, names, depth - 1);
+    const found = findFile(child, names, depth - 1, where);
     if (found) return found;
   }
   return null;
@@ -51,5 +51,22 @@ export function resolveBinary() {
   if (found) return found;
   throw new Error(
     `the conformance driver is not built; run \`moon build --target native\` first (looked under ${build})`,
+  );
+}
+
+// The same for the other half of the pipe: the program that drives this
+// library's client against a server written somewhere else. Both the library and
+// the probe are called `client`, so the path has to name the one under `tools`.
+export function resolveClientProbe() {
+  const build = join(repositoryRoot(), '_build', 'native');
+  const found = findFile(
+    build,
+    ['client.exe', 'client'],
+    6,
+    (path) => path.includes(`${sep}tools${sep}client${sep}`),
+  );
+  if (found) return found;
+  throw new Error(
+    `the client probe is not built; run \`moon build --target native\` first (looked under ${build})`,
   );
 }

@@ -1173,6 +1173,7 @@ cd scripts/audit && npm install
 node run-audit.mjs          # the graphql-http specification audit
 node run-differential.mjs   # the same corpus through graphql-js, compared
 node run-incremental.mjs    # deferred and streamed payloads, replayed
+node run-client.mjs         # this library's client against a graphql-js server
 ```
 
 The audit is `graphql-http`'s own: **61 checks, 61 passing**, with no failures and
@@ -1202,6 +1203,15 @@ sequences are compared payload by payload, as text with object keys ordered.
 **40 of 40 agree**: how many payloads there are, which ids they announce, when a
 piece of work settles, and the order of `pending`, `incremental` and `completed`
 within each.
+
+`run-client.mjs` asks the same question from the other side. A `graphql-js` schema
+behind `graphql-http`'s own handler serves a real socket, and this library's client
+talks to it: seven requests — a plain field, arguments bound from variables, an
+alias with a fragment, a field error under a non-null field, one operation named out
+of two, a field the schema does not have, and a document that is not GraphQL at all
+— and **7 of 7 agree**, with `data` compared exactly and errors by the path and
+location they point at. The last one never reaches the server: the client checks a
+document before spending a round trip on it.
 
 ## License
 

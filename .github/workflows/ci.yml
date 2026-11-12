@@ -131,3 +131,7 @@ jobs:
       - name: incremental delivery against graphql-js
         working-directory: scripts/audit
         run: node run-incremental.mjs
+
+      - name: the client against a graphql-js server
+        working-directory: scripts/audit
+        run: node run-client.mjs

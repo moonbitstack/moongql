@@ -94,6 +94,22 @@ Over HTTP a client asks for it with `Accept: multipart/mixed`, and `graphql_app`
 writes one part per payload. A client that does not ask receives one JSON body, in
 which `@defer` and `@stream` mean what they would have meant inline.
 
+## Calling someone else's endpoint
+
+`moonbitstack/moongql/client` speaks the same shapes in the other direction. The
+document is parsed before it is sent, so a typo costs no round trip, and `request`
+answers the response as it came, `errors` and all:
+
+```moonbit native
+async test {
+  let client = @client.Client::new(url="http://127.0.0.1:12000/graphql")
+  let whole = client.request("{ hello }")
+  assert_eq(whole is Object(_), true)
+  let data = client.query("{ hello }")
+  assert_eq(data is Object(_), true)
+}
+```
+
 ## The same schema as agent tools
 
 `mcp` offers every root field as a Model Context Protocol tool: the field's name is

@@ -6,7 +6,8 @@
   "scripts": {
     "audit": "node run-audit.mjs",
     "differential": "node run-differential.mjs",
-    "incremental": "node run-incremental.mjs"
+    "incremental": "node run-incremental.mjs",
+    "client": "node run-client.mjs"
   },
   "dependencies": {
     "graphql": "17.1.0",

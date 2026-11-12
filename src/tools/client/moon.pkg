@@ -1,0 +1,14 @@
+// The client half of the conformance pipe: a request per line in, the answer the
+// library's client read per line out. Native only, because it opens a socket and
+// because the scripts that drive it are.
+supported_targets = "native"
+
+pkgtype(kind: "executable")
+
+import {
+  "moonbitstack/moongql/client" @gqlclient,
+  "moonbitstack/moonjson",
+  "moonbitlang/async",
+  "moonbitlang/async/stdio",
+  "moonbitlang/core/env",
+}
