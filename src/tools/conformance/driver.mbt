@@ -260,7 +260,7 @@ fn event_line(event : @spec.Event) -> Json? {
 async fn emit(out : @stdio.Output, lock : @async.Mutex, line : Json) -> Unit {
   lock.acquire()
   defer lock.release()
-  out.write(line.stringify() + "\n")
+  out.write(@moonjson.dumps(line) + "\n")
 }
 
 ///|
@@ -380,7 +380,9 @@ async fn main {
       if text.trim() == "" {
         continue
       }
-      let parsed = @json.parse(text) catch { _ => continue }
+      let parsed = @moonjson.loads(text, @moonjson.strict) catch {
+        _ => continue
+      }
       let m = match parsed {
         Object(m) => m
         _ => continue

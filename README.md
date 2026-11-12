@@ -682,7 +682,7 @@ test {
 }
 ```
 
-A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — the library's own **MoonQL page** by default, or **GraphiQL**, **Apollo Sandbox** and **Altair** through the `ide~` argument, or nothing at all with `off`:
+A `POST` reads an `application/json` body — `{ query, variables, operationName }`, or an array of those for a batch, answered by an array of results. A POST with no `Content-Type` is a 415: the server will not guess what the bytes are. The body is read as [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) and nothing else, so a comment, a trailing comma or an unquoted member name is a 400 rather than a document only this server would accept; nesting is bounded before the reader recurses, so a body of ten thousand open brackets is refused instead of taking the stack down with it. A response is one line of text with the escapes JSON names, and non-ASCII written as it stands. A `GET` carrying `?query=` runs it (a query only — a mutation over `GET` is a 405, since a `GET` must stay safe), taking `variables` as a JSON-encoded parameter; a `GET` without one serves the built-in IDE — the library's own **MoonQL page** by default, or **GraphiQL**, **Apollo Sandbox** and **Altair** through the `ide~` argument, or nothing at all with `off`:
 
 ```moonbit
 test {

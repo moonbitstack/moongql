@@ -120,7 +120,7 @@ fn SdlCursor::value(self : SdlCursor) -> Json raise @lang.Refused {
   let t = self.bump()
   match t.kind {
     @lang.IntVal | @lang.FloatVal =>
-      @json.parse(t.value) catch {
+      @moonjson.loads(t.value, @moonjson.strict) catch {
         _ => Json::null()
       }
     @lang.StringVal | @lang.BlockStringVal => Json(t.value)

@@ -28,14 +28,14 @@ pub async fn Client::request(
   )
   let answer : @moonfetch.Response = @moonfetch.post(
     self.url,
-    body=@moonfetch.Body::Text(body.stringify()),
+    body=@moonfetch.Body::Text(@moonjson.dumps(body)),
     headers~,
     timeout=self.timeout.unwrap_or(@moonfetch.timeout),
   ) catch {
     e => raise Transport(e.to_string())
   }
   let text = answer.text()
-  @json.parse(text) catch {
+  @moonjson.loads(text, @moonjson.strict) catch {
     _ => raise Malformed(text)
   }
 }
@@ -64,7 +64,7 @@ pub async fn Client::query(
     None =>
       match answer {
         Object(m) => m.get("data").unwrap_or(Json::null())
-        _ => raise Malformed(answer.stringify())
+        _ => raise Malformed(@moonjson.dumps(answer))
       }
   }
 }
@@ -101,14 +101,16 @@ pub async fn Client::batch(
   )
   let answer : @moonfetch.Response = @moonfetch.post(
     self.url,
-    body=@moonfetch.Body::Text(Json(bodies).stringify()),
+    body=@moonfetch.Body::Text(@moonjson.dumps(Json(bodies))),
     headers~,
     timeout=self.timeout.unwrap_or(@moonfetch.timeout),
   ) catch {
     e => raise Transport(e.to_string())
   }
   let text = answer.text()
-  let parsed = @json.parse(text) catch { _ => raise Malformed(text) }
+  let parsed = @moonjson.loads(text, @moonjson.strict) catch {
+    _ => raise Malformed(text)
+  }
   match parsed {
     Array(items) => items
     _ => raise Malformed(text)

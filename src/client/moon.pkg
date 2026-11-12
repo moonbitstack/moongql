@@ -3,6 +3,7 @@
 import {
   "moonbitstack/moongql/lang",
   "moonbitstack/moonfetch",
+  "moonbitstack/moonjson",
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }

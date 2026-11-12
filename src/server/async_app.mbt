@@ -35,7 +35,7 @@ fn wants_incremental(accept : String?) -> Bool {
 /// payload itself. Parts end with the closing boundary rather than each carrying
 /// it, so `close_multipart` writes the last one.
 pub fn multipart_part(boundary : String, payload : Json) -> String {
-  let body = payload.stringify()
+  let body = @moonjson.dumps(payload)
   "\r\n--" +
   boundary +
   "\r\nContent-Type: application/json; charset=utf-8\r\n\r\n" +
@@ -195,7 +195,7 @@ async fn read_body(
     }
   }
   let text = @utf8.decode_lossy(Bytes::from_array(buf[:]))
-  let body = @json.parse(text) catch {
+  let body = @moonjson.loads(text, @moonjson.strict) catch {
     _ => return reply(send, 400, "Request body is not valid JSON")
   }
   match body {
@@ -297,7 +297,7 @@ async fn run_get(
     None => Map([])
     Some(text) =>
       match
-        (@json.parse(text) catch {
+        (@moonjson.loads(text, @moonjson.strict) catch {
           _ =>
             return reply(
               send, 400, "The 'variables' parameter is not valid JSON",
@@ -369,7 +369,7 @@ async fn incremental(
 ///|
 /// Write a whole JSON response in one body.
 async fn send_json(send : @moonasgi.Send, wire : Wire, body : Json) -> Unit {
-  let encoded = @utf8.encode(body.stringify())
+  let encoded = @utf8.encode(@moonjson.dumps(body))
   send(
     @spec.Event::HttpResponseStart(
       status=wire_status(wire, body),

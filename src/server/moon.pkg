@@ -9,7 +9,7 @@ import {
   "moonbitstack/moonasgi",
   "moonbitstack/moonasgi/ws",
   "moonbitstack/moonasgi/spec",
-  "moonbitlang/core/json",
+  "moonbitstack/moonjson",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/async",
 }

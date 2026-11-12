@@ -29,7 +29,7 @@ pub fn FieldError::message(self : FieldError) -> String {
 /// The refusal of a value that is not a `want`, as every [`FromGql`] here writes
 /// it: `expected Int, got "x"`.
 pub fn FieldError::expected(want : String, got : Json) -> FieldError {
-  FieldError("expected \{want}, got \{got.stringify()}")
+  FieldError("expected \{want}, got \{@moonjson.dumps(got)}")
 }
 
 ///|

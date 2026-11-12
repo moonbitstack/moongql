@@ -4,7 +4,7 @@ import {
   "moonbitstack/moongql/lang",
   "moonbitstack/moongql/schema",
   "moonbitstack/moongql/valid",
-  "moonbitlang/core/json",
+  "moonbitstack/moonjson",
   "moonbitlang/core/string",
   "moonbitlang/async",
   "moonbitlang/async/aqueue",

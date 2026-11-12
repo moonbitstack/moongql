@@ -2,5 +2,5 @@
 // built-in scalars and meta-fields, SDL printing, and reading SDL back.
 import {
   "moonbitstack/moongql/lang",
-  "moonbitlang/core/json",
+  "moonbitstack/moonjson",
 }

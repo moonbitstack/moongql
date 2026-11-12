@@ -183,7 +183,7 @@ fn json_bool(j : Json) -> Bool? {
 /// literal syntax is a subset of JSON number syntax, so the lexer-validated text
 /// parses directly; malformed text (unreachable for well-formed input) is null.
 fn parse_number_json(s : String) -> Json {
-  @json.parse(s) catch {
+  @moonjson.loads(s, @moonjson.strict) catch {
     _ => Json::null()
   }
 }

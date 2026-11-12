@@ -101,7 +101,7 @@ fn fields_html(
         match f.arg_defaults.get(a.0) {
           Some(d) => {
             out.write_string("<span class=\"p\"> = </span><span class=\"def\">")
-            out.write_string(html_escape(d.stringify()))
+            out.write_string(html_escape(@moonjson.dumps(d)))
             out.write_string("</span>")
           }
           None => ()

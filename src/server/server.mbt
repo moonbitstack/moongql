@@ -173,7 +173,7 @@ fn wire_response(wire : Wire, body : Json) -> @moonasgi.Response {
   @moonasgi.Response::new(
     wire_status(wire, body),
     [("content-type", wire_content_type(wire))],
-    @utf8.encode(body.stringify()),
+    @utf8.encode(@moonjson.dumps(body)),
   )
 }
 
@@ -285,7 +285,7 @@ fn get_request(
     None => Map([])
     Some(text) =>
       match
-        (@json.parse(text) catch {
+        (@moonjson.loads(text, @moonjson.strict) catch {
           _ =>
             return error_response(
               400, "The 'variables' parameter is not valid JSON",
@@ -334,7 +334,7 @@ fn post_request(
         )
       }
   }
-  let body = @json.parse(@utf8.decode_lossy(req.body[:])) catch {
+  let body = @moonjson.loads(@utf8.decode_lossy(req.body[:]), @moonjson.strict) catch {
     _ => return error_response(400, "Request body is not valid JSON")
   }
   match body {

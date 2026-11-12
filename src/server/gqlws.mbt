@@ -199,7 +199,7 @@ fn gql_ws_message(type_ : String, id : String?, payload : Json?) -> String {
     Some(p) => entries.push(("payload", p))
     None => ()
   }
-  jobj(entries).stringify()
+  @moonjson.dumps(jobj(entries))
 }
 
 ///|
@@ -240,7 +240,7 @@ fn GqlWs::op_context(self : GqlWs) -> Json {
 /// Handle one text frame, returning the frames to send back. Parses the control
 /// message and dispatches on its `type`.
 fn GqlWs::recv_text(self : GqlWs, text : String) -> Array[@moonasgi.WsSend] {
-  let json = @json.parse(text) catch {
+  let json = @moonjson.loads(text, @moonjson.strict) catch {
     _ => return [@ws.Close(code=4400, reason="invalid JSON")]
   }
   let obj = match json {

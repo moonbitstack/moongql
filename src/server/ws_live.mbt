@@ -164,7 +164,7 @@ async fn handle_text(
   root_value : Json,
   limits : @exec.Limits,
 ) -> Unit {
-  let json = @json.parse(text) catch { _ => return }
+  let json = @moonjson.loads(text, @moonjson.strict) catch { _ => return }
   let obj = match json {
     Object(m) => m
     _ => return

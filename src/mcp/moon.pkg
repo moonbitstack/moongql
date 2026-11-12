@@ -6,6 +6,7 @@ import {
   "moonbitstack/moongql/schema",
   "moonbitstack/moongql/exec",
   "moonbitstack/moonmcp",
+  "moonbitstack/moonjson",
 }
 
 import {

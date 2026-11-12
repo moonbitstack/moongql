@@ -168,7 +168,7 @@ fn Mcp::add_tool(
 /// when the response carries one — a GraphQL response with `errors` is a failed
 /// call, and a client that reads `isError` should see it that way.
 fn tool_result(value : Json) -> @moonmcp.ToolResult raise @moonmcp.FastMCPError {
-  let text = value.stringify()
+  let text = @moonjson.dumps(value)
   match value {
     Object(m) => {
       let failed = m.get("errors") is Some(_)
