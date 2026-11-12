@@ -193,7 +193,7 @@ test "orm: a predicate and a limit are part of the statement, values are not" {
     predicate="author_id = ?",
     params=[@moondb.Text("a1")],
     order_by="title DESC",
-    limit=Some(2),
+    limit=2,
   )
   assert_eq(
     fake.sql[0],

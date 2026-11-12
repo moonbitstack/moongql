@@ -45,7 +45,7 @@ fn select_sql(
   columns : Array[String],
   predicate~ : String,
   order_by~ : String,
-  limit~ : Int32?,
+  limit? : Int32,
 ) -> String {
   let sb = StringBuilder()
   sb.write_string("SELECT ")
@@ -126,11 +126,11 @@ pub fn[D : @moondb.Driver] Database::select(
   predicate~ : String = "",
   params~ : Array[@moondb.Value] = [],
   order_by~ : String = "",
-  limit~ : Int32? = None,
+  limit? : Int32,
   keep~ : Array[String] = [],
 ) -> Array[Json] raise @exec.FieldError {
   let cols = projected(info, columns, keep)
-  let sql = select_sql(table, cols, predicate~, order_by~, limit~)
+  let sql = select_sql(table, cols, predicate~, order_by~, limit?)
   let rows = self.rows(sql, params~)
   let out : Array[Json] = []
   for row in rows {
@@ -156,7 +156,7 @@ pub fn[D : @moondb.Driver] Database::select_one(
     columns,
     predicate~,
     params~,
-    limit=Some(1),
+    limit=1,
     keep~,
   )
   if rows.is_empty() {

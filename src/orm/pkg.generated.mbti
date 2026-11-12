@@ -28,7 +28,7 @@ pub fn[D] Database::new(() -> D raise @moondb.DbError, max_size? : Int32, pre_pi
 pub fn[D] Database::reset_statements(Self[D]) -> Unit
 pub fn[D : @moondb.Driver] Database::rows(Self[D], String, params? : Array[@moondb.Value]) -> Array[@moondb.Row] raise @exec.FieldError
 pub fn[D : @moondb.Driver] Database::rows_by_key(Self[D], String, Array[String], String, Array[String]) -> Map[String, @json.Json] raise @exec.FieldError
-pub fn[D : @moondb.Driver] Database::select(Self[D], @exec.ResolveInfo, String, Array[String], predicate? : String, params? : Array[@moondb.Value], order_by? : String, limit? : Int32?, keep? : Array[String]) -> Array[@json.Json] raise @exec.FieldError
+pub fn[D : @moondb.Driver] Database::select(Self[D], @exec.ResolveInfo, String, Array[String], predicate? : String, params? : Array[@moondb.Value], order_by? : String, limit? : Int32, keep? : Array[String]) -> Array[@json.Json] raise @exec.FieldError
 pub fn[D : @moondb.Driver] Database::select_one(Self[D], @exec.ResolveInfo, String, Array[String], predicate~ : String, params? : Array[@moondb.Value], keep? : Array[String]) -> @json.Json? raise @exec.FieldError
 pub fn[D : @moondb.Driver, R] Database::session(Self[D], (@session.Session) -> R raise) -> R raise @exec.FieldError
 pub fn[D] Database::statements(Self[D]) -> Int32
