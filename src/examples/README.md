@@ -1,8 +1,9 @@
 # Examples
 
 A tour of the public `@moongql` API. Each folder is a runnable `main` package that
-builds a schema in code and exercises one feature end to end, printing the real
-result so running it proves the feature works.
+builds a schema — with calls, with annotations, or from SDL — and exercises one
+feature end to end, printing the real result so running it proves the feature
+works.
 
 ```bash
 moon run src/examples/00-hello
@@ -38,6 +39,7 @@ moon run src/examples/00-hello
 | 26 | [`annotated-subgraph`](26-annotated-subgraph/) | Subscriptions, permissions and federation written as `#gql` annotations |
 | 27 | [`schema-first`](27-schema-first/) | A schema written in SDL, with the types and the declaration of every resolver generated |
 | 28 | [`mcp`](28-mcp/) | The same schema offered to an agent as Model Context Protocol tools: one tool per root field, and a document tool for the rest | `Mcp::of`, `Mcp::server`, `Exposure`, `graphql_query` |
+| 29 | [`sdl-runtime`](29-sdl-runtime/) | A schema that lives as SDL text: read at run time, extended by a second document, every resolver registered by name | `Schema::of_sdl`, `Schema::add_sdl`, `Resolvers::field` |
 
 `00-hello` declares a `Query` type with two scalar fields, backs each with a
 resolver keyed by `"Type.field"`, then runs `{ greeting luckyNumber }` through

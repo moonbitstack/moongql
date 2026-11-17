@@ -1,0 +1,7 @@
+// A schema read from SDL at run time, with a second document extending it.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}
+
+pkgtype(kind: "executable")
