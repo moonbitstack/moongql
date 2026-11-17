@@ -2,11 +2,12 @@
 """Write the code and the recorded output of docs/guide.html from src/examples/guide.
 
 Each way of writing the same server has a package there: `annotations` (`#gql`
-annotations), `functions` (calls on the schema and the resolver map) and
-`classes` (a struct per type, its two conversions, a method per field). A block
-between `// guide:<name>` and `// end` is a snippet, shown as written; `check`
-runs every document of the guide against all three and fails if they answer
-differently, so its output is what the page records.
+annotations), `functions` (calls on the schema and the resolver map), `classes`
+(a struct per type, its two conversions, a method per field) and `sdl` (the type
+system as SDL, with a resolver per field). A block between `// guide:<name>` and
+`// end` is a snippet, shown as written; `check` runs every document of the guide
+against all four and fails if they answer differently, so its output is what the
+page records.
 
     python3 scripts/gen_guide.py           rewrite docs/guide.html
     python3 scripts/gen_guide.py --check   fail if docs/guide.html is not what this would write
@@ -22,7 +23,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "examples" / "guide"
 GUIDE = ROOT / "docs" / "guide.html"
 
-STYLES = ("annotations", "functions", "classes")
+STYLES = ("annotations", "functions", "classes", "sdl")
 
 KEYWORDS = {
     "let", "fn", "pub", "priv", "struct", "enum", "impl", "trait", "match",
@@ -111,7 +112,7 @@ def variant(style, body, note):
 
 
 def group(key, notes=None, extra=None):
-    """One block written three ways. `extra` lists further snippet names per style."""
+    """One block written four ways. `extra` lists further snippet names per style."""
     notes = notes or {}
     boxes = []
     for style in STYLES:
@@ -134,11 +135,11 @@ def recorded():
     )
     if run.returncode != 0:
         sys.exit("the guide's check program failed:\n" + run.stdout + run.stderr)
-    if "DIFFERS" in run.stdout:
+    if "answer differently" in run.stdout:
         sys.exit(
-            "the three ways of writing the guide answer differently:\n" + run.stdout
+            "the four ways of writing the guide answer differently:\n" + run.stdout
         )
-    if "the three ways agree" not in run.stdout:
+    if "the four ways agree" not in run.stdout:
         sys.exit("the guide's check program did not finish:\n" + run.stdout)
     got = {}
     for line in run.stdout.splitlines():
@@ -160,16 +161,18 @@ def sections(got):
 
     return {
         "1. TYPE": f"""<section id="type">
-    <h2><span class="n">01</span>One type, three ways</h2>
+    <h2><span class="n">01</span>One type, four ways</h2>
     <p>A schema is types with fields. Write them as <code>#gql</code> annotations on the structs you
-    already have, as calls on the schema, or as types with an <code>impl</code> saying how they
-    cross the wire. The switch at the top of the page picks which way every block here is written;
-    all three build the same schema and answer the same documents.</p>
+    already have, as calls on the schema, as types with an <code>impl</code> saying how they cross
+    the wire, or as SDL text with a resolver registered per field. The switch at the top of the
+    page picks which way every block here is written; all four build the same schema and answer the
+    same documents.</p>
 
 {group("type", notes={
         "annotations": "The generator reads the annotations and writes the calls the other two ways write by hand.",
         "functions": "Each call names a type and gives it a field; a field's type says how its value is read.",
         "classes": "The two impls are exactly what the generator writes for an annotated struct; writing them yourself is how a type joins the executor.",
+        "sdl": "The type system is the source: `Schema::of_sdl` reads it, and the fields it declares are the fields the executor resolves.",
     })}
 
   </section>""",
@@ -179,7 +182,9 @@ def sections(got):
     type, or a closure registered under <code>"Type.field"</code>. The field's declared type tells
     the executor whether what comes back is a leaf, a list or an object.</p>
 
-{group("field", extra=field_extra)}
+{group("field", extra=field_extra, notes={
+        "sdl": "`books` is already a field of `Author` in the SDL; all that is left is the function registered under its name.",
+    })}
 
     <p>Only the fields the document selects are resolved, and a resolver's value is read under the
     names the schema uses — which is why <code>author_id</code> is written out as
@@ -192,7 +197,7 @@ def sections(got):
 
 {group("root", extra=every)}
 
-    <p class="tag">recorded · the same answer from all three</p>
+    <p class="tag">recorded · the same answer from all four</p>
 {output(author)}
 {output(books)}
 
@@ -210,6 +215,7 @@ def sections(got):
         "annotations": "`#gql.input` and `#gql.mutation`; the input struct's reading side is generated with it.",
         "functions": "The input is a type with fields, and the payload is one argument declared with it.",
         "classes": "The input is a struct with the reading half only — nothing sends one back out.",
+        "sdl": "The input and the mutation are SDL; the resolver that fills the mutation in is the MoonBit part.",
     })}
 
 {group("mutation", extra={style: ["mutation.register"] for style in STYLES})}

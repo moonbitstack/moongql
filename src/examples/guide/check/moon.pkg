@@ -1,10 +1,11 @@
-// Runs every document of the guide against the three ways of writing it, and
+// Runs every document of the guide against the four ways of writing it, and
 // fails if they answer differently.
 import {
   "moonbitstack/moongql",
   "moonbitstack/moongql/examples/guide/annotations",
   "moonbitstack/moongql/examples/guide/functions",
   "moonbitstack/moongql/examples/guide/classes",
+  "moonbitstack/moongql/examples/guide/sdl",
 }
 
 pkgtype(kind: "executable")

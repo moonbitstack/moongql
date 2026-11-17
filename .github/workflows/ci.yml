@@ -54,6 +54,15 @@ jobs:
             fi
           done
 
+      # The guide's four ways of writing one server are only worth the page if they
+      # answer the same documents; the check program says so or stops.
+      - name: the guide's four ways agree
+        if: runner.os == 'Linux'
+        run: |
+          out=$(moon run src/examples/guide/check --target native)
+          echo "$out"
+          echo "$out" | grep -q "the four ways agree"
+
       - name: generated annotations are fresh
         run: moon run src/cmd/gql --target native -- -C . src/examples/24-annotations/library.mbt -o src/examples/24-annotations/library.g.mbt --check
 

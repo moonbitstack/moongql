@@ -19,7 +19,7 @@
   var style="annotations";
   try{
     var stored=localStorage.getItem("moongql-style");
-    if(stored==="functions"||stored==="classes"){style=stored}
+    if(stored==="functions"||stored==="classes"||stored==="sdl"){style=stored}
   }catch(e){}
   document.documentElement.setAttribute("data-style",style);
 })();
@@ -117,11 +117,12 @@ p, li, .note { overflow-wrap: anywhere; }
   background:color-mix(in oklab,var(--gold) 14%,transparent)}
 .style-hint{font-family:var(--sans);font-size:.74rem;color:var(--faint)}
 
-/* one block, three writings; the switch on the bar shows one of them */
+/* one block, four writings; the switch on the bar shows one of them */
 .styles > .variant{display:none}
 html[data-style="annotations"] .styles > .variant[data-style="annotations"],
 html[data-style="functions"] .styles > .variant[data-style="functions"],
-html[data-style="classes"] .styles > .variant[data-style="classes"]{display:block}
+html[data-style="classes"] .styles > .variant[data-style="classes"],
+html[data-style="sdl"] .styles > .variant[data-style="sdl"]{display:block}
 .styles > .variant > .way{font-family:var(--caps);font-size:.62rem;letter-spacing:.2em;
   text-transform:uppercase;color:var(--bronze-dim);margin:1.1rem 0 0}
 .why{font-size:.88rem;color:var(--muted);margin:.5rem 0 0;max-width:64ch}
@@ -159,6 +160,7 @@ html[data-style="classes"] .styles > .variant[data-style="classes"]{display:bloc
     <button type="button" data-pick="annotations" aria-pressed="true">Annotations</button>
     <button type="button" data-pick="functions" aria-pressed="false">Functions</button>
     <button type="button" data-pick="classes" aria-pressed="false">Classes</button>
+    <button type="button" data-pick="sdl" aria-pressed="false">SDL</button>
   </div>
   <span class="style-hint">every block below switches with it</span>
 </div></div>
@@ -178,19 +180,20 @@ html[data-style="classes"] .styles > .variant[data-style="classes"]{display:bloc
     <p>One line, and the same code runs on <code>wasm</code>, <code>wasm-gc</code>,
     <code>js</code> and <code>native</code>.</p>
 <pre>moon add moonbitstack/moongql</pre>
-    <p>The three packages beside this guide build one server each — the same types, the same
-    answers, three ways of writing them. <code>src/examples/guide/check</code> runs every document
-    below against all three and stops if they disagree, so what you see here is the output of the
+    <p>The four packages beside this guide build one server each — the same types, the same
+    answers, four ways of writing them. <code>src/examples/guide/check</code> runs every document
+    below against all four and stops if they disagree, so what you see here is the output of the
     way you picked.</p>
   </section>
 
   <!-- ============ 1. TYPE ============ -->
 <section id="type">
-    <h2><span class="n">01</span>One type, three ways</h2>
+    <h2><span class="n">01</span>One type, four ways</h2>
     <p>A schema is types with fields. Write them as <code>#gql</code> annotations on the structs you
-    already have, as calls on the schema, or as types with an <code>impl</code> saying how they
-    cross the wire. The switch at the top of the page picks which way every block here is written;
-    all three build the same schema and answer the same documents.</p>
+    already have, as calls on the schema, as types with an <code>impl</code> saying how they cross
+    the wire, or as SDL text with a resolver registered per field. The switch at the top of the
+    page picks which way every block here is written; all four build the same schema and answer the
+    same documents.</p>
 
 <div class="styles">
     <div class="variant" data-style="annotations">
@@ -268,6 +271,29 @@ book.field(<span class="c">"authorId"</span>, <span class="ty">NonNull</span>(<s
 <span class="k">pub</span> <span class="k">extend</span> <span class="ty">Book</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}</code></pre>
       <p class="why">The two impls are exactly what the generator writes for an annotated struct; writing them yourself is how a type joins the executor.</p>
     </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code><span class="k">let</span> schema = @moongql.<span class="ty">Schema</span>::of_sdl(
+  (
+    #|<span class="c">"Someone who writes books."</span>
+    #|<span class="k">type</span> <span class="ty">Author</span> {
+    #|  id: <span class="ty">ID</span>!
+    #|  name: <span class="ty">String</span>!
+    #|  <span class="c">"Their books, in the order they were added"</span>
+    #|  books: [<span class="ty">Book</span>!]!
+    #|}
+    #|
+    #|<span class="k">type</span> <span class="ty">Book</span> {
+    #|  id: <span class="ty">ID</span>!
+    #|  title: <span class="ty">String</span>!
+    #|  authorId: <span class="ty">String</span>!
+    #|}
+  ),
+) <span class="k">catch</span> {
+  e =&gt; abort(e.to_string())
+}</code></pre>
+      <p class="why">The type system is the source: `Schema::of_sdl` reads it, and the fields it declares are the fields the executor resolves.</p>
+    </div>
   </div>
 
   </section>
@@ -310,6 +336,14 @@ resolvers.field(<span class="c">"Author"</span>, <span class="c">"books"</span>,
     <span class="ty">Author</span>::books(@moongql.<span class="ty">FromGql</span>::from_gql(info.parent)),
   )
 })</code></pre>
+    </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code>resolvers.field(<span class="c">"Author"</span>, <span class="c">"books"</span>, info =&gt; {
+  <span class="k">let</span> id = key_of(info.parent, <span class="c">"id"</span>)
+  <span class="ty">Json</span>(shelf.filter(b =&gt; key_of(b, <span class="c">"authorId"</span>) == id))
+})</code></pre>
+      <p class="why">`books` is already a field of `Author` in the SDL; all that is left is the function registered under its name.</p>
     </div>
   </div>
 
@@ -377,9 +411,31 @@ resolvers.field(<span class="c">"Query"</span>, <span class="c">"books"</span>, 
   @moongql.<span class="ty">ToGql</span>::to_gql(<span class="ty">Query</span>::books())
 })</code></pre>
     </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code>schema.add_sdl(
+  (
+    #|<span class="k">type</span> <span class="ty">Query</span> {
+    #|  author(id: <span class="ty">ID</span>!): <span class="ty">Author</span>
+    #|  books: [<span class="ty">Book</span>!]!
+    #|}
+  ),
+) <span class="k">catch</span> {
+  e =&gt; abort(e.to_string())
+}
+
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"author"</span>, info =&gt; {
+  <span class="k">let</span> id = info.arg(<span class="c">"id"</span>)
+  <span class="k">match</span> writers.iter().find_first(a =&gt; key_of(a, <span class="c">"id"</span>) == id) {
+    <span class="ty">Some</span>(a) =&gt; a
+    <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
+  }
+})
+resolvers.field(<span class="c">"Query"</span>, <span class="c">"books"</span>, _info =&gt; <span class="ty">Json</span>(shelf.copy()))</code></pre>
+    </div>
   </div>
 
-    <p class="tag">recorded · the same answer from all three</p>
+    <p class="tag">recorded · the same answer from all four</p>
 <pre class="out">{"data":{"author":{"name":"Ursula","books":[{"title":"The Dispossessed"},{"title":"Lathe"}]}}}</pre>
 <pre class="out">{"data":{"books":[{"title":"The Dispossessed"},{"title":"Lathe"},{"title":"Exhalation"}]}}</pre>
 
@@ -436,6 +492,24 @@ schema.set_mutation(<span class="c">"Mutation"</span>)</code></pre>
 
 <span class="k">pub</span> <span class="k">extend</span> <span class="ty">NewBook</span> <span class="k">with</span> @moongql.<span class="ty">FromGql</span>::{from_gql}</code></pre>
       <p class="why">The input is a struct with the reading half only — nothing sends one back out.</p>
+    </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code>schema.add_sdl(
+  (
+    #|input <span class="ty">NewBook</span> {
+    #|  title: <span class="ty">String</span>!
+    #|  authorId: <span class="ty">String</span>!
+    #|}
+    #|
+    #|<span class="k">type</span> <span class="ty">Mutation</span> {
+    #|  addBook(input: <span class="ty">NewBook</span>!): <span class="ty">Book</span>!
+    #|}
+  ),
+) <span class="k">catch</span> {
+  e =&gt; abort(e.to_string())
+}</code></pre>
+      <p class="why">The input and the mutation are SDL; the resolver that fills the mutation in is the MoonBit part.</p>
     </div>
   </div>
 
@@ -502,6 +576,26 @@ resolvers.field(<span class="c">"Mutation"</span>, <span class="c">"addBook"</sp
   @moongql.<span class="ty">ToGql</span>::to_gql(result)
 })</code></pre>
     </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code>resolvers.field(<span class="c">"Mutation"</span>, <span class="c">"addBook"</span>, info =&gt; {
+  <span class="k">let</span> input = info.arg(<span class="c">"input"</span>)
+  <span class="k">let</span> title = <span class="k">match</span> key_of(input, <span class="c">"title"</span>) {
+    <span class="ty">String</span>(t) =&gt; t
+    _ =&gt; <span class="c">""</span>
+  }
+  <span class="k">if</span> title == <span class="c">""</span> {
+    <span class="k">raise</span> @exec.<span class="ty">FieldError</span>(<span class="c">"a book needs a title"</span>)
+  }
+  <span class="k">let</span> book : <span class="ty">Json</span> = {
+    <span class="c">"id"</span>: <span class="ty">Json</span>(<span class="c">"b\{shelf.length() + 1}"</span>),
+    <span class="c">"title"</span>: <span class="ty">Json</span>(title),
+    <span class="c">"authorId"</span>: key_of(input, <span class="c">"authorId"</span>),
+  }
+  shelf.push(book)
+  book
+})</code></pre>
+    </div>
   </div>
 
     <p class="tag">recorded · one book added, one refused</p>
@@ -544,6 +638,20 @@ resolvers.field(<span class="c">"Mutation"</span>, <span class="c">"addBook"</sp
 subscribers.field(<span class="c">"Subscription"</span>, <span class="c">"bookAdded"</span>, _info =&gt; {
   <span class="ty">Subscription</span>::book_added().map(b =&gt; @moongql.<span class="ty">ToGql</span>::to_gql(b))
 })</code></pre>
+    </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code>schema.add_sdl(
+  (
+    #|<span class="k">type</span> <span class="ty">Subscription</span> {
+    #|  bookAdded: <span class="ty">Book</span>!
+    #|}
+  ),
+) <span class="k">catch</span> {
+  e =&gt; abort(e.to_string())
+}
+
+subscribers.field(<span class="c">"Subscription"</span>, <span class="c">"bookAdded"</span>, _info =&gt; shelf.copy())</code></pre>
     </div>
   </div>
 
@@ -590,6 +698,17 @@ fed.entity(name=<span class="c">"Book"</span>, key=<span class="c">"id"</span>, 
   <span class="k">let</span> id : <span class="ty">String</span> = @moongql.read(rep, <span class="c">"id"</span>)
   <span class="k">match</span> shelf.iter().find_first(b =&gt; b.id == id) {
     <span class="ty">Some</span>(b) =&gt; @moongql.<span class="ty">ToGql</span>::to_gql(b)
+    <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
+  }
+})</code></pre>
+    </div>
+    <div class="variant" data-style="sdl">
+      <p class="way">sdl</p>
+      <pre class="hl"><code><span class="k">let</span> fed = @moongql.<span class="ty">Federation</span>::new(v2=<span class="k">true</span>)
+fed.entity(name=<span class="c">"Book"</span>, key=<span class="c">"id"</span>, resolve=(rep, _ctx) =&gt; {
+  <span class="k">let</span> id = key_of(rep, <span class="c">"id"</span>)
+  <span class="k">match</span> shelf.iter().find_first(b =&gt; key_of(b, <span class="c">"id"</span>) == id) {
+    <span class="ty">Some</span>(b) =&gt; b
     <span class="ty">None</span> =&gt; <span class="ty">Json</span>::null()
   }
 })</code></pre>

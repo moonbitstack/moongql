@@ -1,9 +1,9 @@
-// Runs every document the guide shows against all three ways of writing the same
-// server, and prints each answer once — after checking that all three answered
+// Runs every document the guide shows against all four ways of writing the same
+// server, and prints each answer once — after checking that all four answered
 // the same thing. `scripts/gen_guide.py` puts this output on the page.
 
 ///|
-/// One server, in the shape all three packages expose.
+/// One server, in the shape all four packages expose.
 type Server = (@moongql.Schema, @moongql.Resolvers, @moongql.Subscribers)
 
 ///|
@@ -81,6 +81,7 @@ fn main {
     ("annotations", answers(@annotations.server, @annotations.federated)),
     ("functions", answers(@functions.server, @functions.federated)),
     ("classes", answers(@classes.server, @classes.federated)),
+    ("sdl", answers(@sdl.server, @sdl.federated)),
   ]
   let mut differs = false
   for i, doc in documents {
@@ -101,12 +102,13 @@ fn main {
     }
   }
   println("_entities -> \{entity}")
-  // The three schemas are also held to the type system's own rules.
+  // The four schemas are also held to the type system's own rules.
   for
     way in [
       ("annotations", @annotations.server()),
       ("functions", @functions.server()),
       ("classes", @classes.server()),
+      ("sdl", @sdl.server()),
     ] {
     let (schema, _, _) = way.1
     for problem in schema.check() {
@@ -115,8 +117,8 @@ fn main {
     }
   }
   if differs {
-    println("DIFFERS")
+    abort("the four ways of writing the guide answer differently")
   } else {
-    println("the three ways agree")
+    println("the four ways agree")
   }
 }

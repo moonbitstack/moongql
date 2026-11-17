@@ -1,0 +1,5 @@
+// The guide's examples written as SDL, with the resolvers registered by name.
+import {
+  "moonbitstack/moongql",
+  "moonbitstack/moongql/exec",
+}
