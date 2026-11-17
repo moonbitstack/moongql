@@ -230,7 +230,7 @@ fn Subscription::book_added() -> Array[Book] raise { ... }
 
 ## Without annotations
 
-The generator is a convenience, not the only door: everything it writes is ordinary API. These are the same server written the other two ways — the [guide](https://moonbitstack.github.io/moongql/guide.html) shows every block in all three, side by side.
+The generator is a convenience, not the only door: everything it writes is ordinary API. The [guide](https://moonbitstack.github.io/moongql/guide.html) shows the same server in all four ways, side by side; these are the two that build it by hand.
 
 ### Functions
 
@@ -360,6 +360,56 @@ A definition that stops mid-way reports where it stopped (`2:1 expected a type
 system definition`), so a bad document is reported, not silently dropped. The
 same round trip is a command: `moon run src/cmd/sdl -- schema.graphql` prints a
 document the way this printer writes it.
+
+### A schema written as SDL, at run time
+
+`Schema::of_sdl` is also a way to write the schema, not just to read one back.
+The text is the type system, and a resolver is a closure registered under the
+name the document gives the field — no generator and no annotations. `add_sdl`
+adds a second document to a schema already in use, and `extend type` reaches into
+a type it already holds:
+
+```moonbit
+fn sdl_pair() -> (@moongql.Schema, @moongql.Resolvers) raise {
+  let schema = @moongql.Schema::of_sdl(
+    (
+      #|type Query {
+      #|  book(id: ID!): Book
+      #|}
+      #|type Book {
+      #|  id: ID!
+      #|  title: String!
+      #|}
+    ),
+  )
+  let resolvers = @moongql.Resolvers::new()
+  resolvers.field("Query", "book", info => {
+    { "id": info.arg("id"), "title": Json("Lathe") }
+  })
+  (schema, resolvers)
+}
+
+test {
+  let (schema, resolvers) = sdl_pair()
+  assert_eq(
+    @moongql.execute(schema, resolvers, "{ book(id: \"b2\") { title } }").stringify(),
+    "{\"data\":{\"book\":{\"title\":\"Lathe\"}}}",
+  )
+  schema.add_sdl("extend type Query { count: Int! }") catch {
+    e => abort(e.to_string())
+  }
+  resolvers.field("Query", "count", _info => Json(1))
+  assert_eq(
+    @moongql.execute(schema, resolvers, "{ count }").stringify(),
+    "{\"data\":{\"count\":1}}",
+  )
+}
+```
+
+This is the fourth way the [guide](https://moonbitstack.github.io/moongql/guide.html)
+writes its server, and [`29-sdl-runtime`](src/examples/29-sdl-runtime/) runs it
+end to end: interfaces, unions, an enum argument, a mutation root that arrives in
+a second document.
 
 ## Packages
 

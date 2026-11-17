@@ -55,6 +55,48 @@ assert_eq(
 A resolver that waits is registered with `field_async`; the rest of the call is
 unchanged, and `execute_async` runs it.
 
+## The schema as SDL
+
+The type system can be the source instead: `Schema::of_sdl` reads a document at
+run time, and every resolver is registered under the name the document gives the
+field. `add_sdl` adds a second document to a schema already in use, and
+`extend type` reaches into a type it already holds.
+
+```moonbit
+test {
+  let text =
+    (
+      #|type Query {
+      #|  book(id: ID!): Book
+      #|}
+      #|type Book {
+      #|  id: ID!
+      #|  title: String!
+      #|}
+    )
+  let schema = @moongql.Schema::of_sdl(text) catch { e => abort(e.to_string()) }
+  let resolvers = @moongql.Resolvers::new()
+  resolvers.field("Query", "book", info => {
+    { "id": info.arg("id"), "title": Json("Lathe") }
+  })
+  assert_eq(
+    @moongql.execute(schema, resolvers, "{ book(id: \"b2\") { title } }").stringify(),
+    "{\"data\":{\"book\":{\"title\":\"Lathe\"}}}",
+  )
+  schema.add_sdl("extend type Query { count: Int! }") catch {
+    e => abort(e.to_string())
+  }
+  resolvers.field("Query", "count", _info => Json(1))
+  assert_eq(
+    @moongql.execute(schema, resolvers, "{ count }").stringify(),
+    "{\"data\":{\"count\":1}}",
+  )
+}
+```
+
+A document that does not parse is refused at the line and column it stopped at.
+`to_sdl` writes the same text back, so print, parse and print again agree.
+
 ## Serving it
 
 `graphql_app` lifts the handler onto the ASGI seam, which is what `mooncat` binds:

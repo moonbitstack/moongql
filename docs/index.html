@@ -548,7 +548,9 @@ s.to_sdl()
 <span class="cm">// and custom directives all survive</span></pre>
           <p style="color:var(--muted);font-size:.9rem;margin-top:.9rem">A definition that stops
           mid-way reports where it stopped &mdash; <code>2:1 expected a type system definition</code>
-          &mdash; rather than being silently dropped.</p>
+          &mdash; rather than being silently dropped. Reading a document back is also a way to
+          write the schema: the text is the type system, and a resolver registered under
+          <code>Type.field</code> fills each field in.</p>
           <span class="knot top"></span><span class="knot bottom"></span>
         </div>
       </div>
